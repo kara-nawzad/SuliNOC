@@ -54,6 +54,8 @@ assumption-based dollar scenarios.
 - An ML pipeline with separate diagnosis and prediction roles, plus an expected-value policy layer.
 - A four-arm, matched-seed study that exposes both operational outcomes and a clearly labeled
   model-cost proxy.
+- Isolated, anonymous browser sessions: each visitor receives a server-issued cookie and an
+  independent in-memory simulation, controls, AI state, approvals, telemetry, and run history.
 - A MapLibre vector basemap using OpenFreeMap-hosted OpenMapTiles/OpenStreetMap data, rendered
   beneath Leaflet overlays. A schematic fallback is available when the street layer cannot load;
   online street tiles require network access.
@@ -198,6 +200,24 @@ an actual incident saved $684.
   advances.
 - The simulation runs for 30 simulated days, then records an aggregate completion summary and starts
   a fresh Day 1 world using the same seed and network layout. This is a new run, not a continuation.
+- Each browser gets an `autonoc_session` HTTP-only, high-entropy cookie. The server resolves that
+  cookie to a process-local session; the browser never supplies a session identifier. Engines,
+  speed, pause state, AI settings, fault/fiber controls, approvals, current-run telemetry, and
+  displayed history are session-scoped, and run IDs are checked only within that session.
+- Live sessions are intentionally in memory and are not restored after a restart. By default the
+  single Fly machine accepts **16 active sessions**, expires sessions after **3 minutes idle**, and
+  reclaims a slot from a dashboard that has been silent for **15 seconds** when a new visitor needs
+  one. Configure `AUTONOC_MAX_SESSIONS`, `AUTONOC_SESSION_IDLE_SECONDS`,
+  `AUTONOC_SESSION_RECLAIM_GRACE` and `AUTONOC_SESSION_RECLAIM` for a deployment.
+- **Only `/api/*` traffic takes a session.** `/api/health`, the dashboard HTML, the favicon and
+  static assets are answered by the shared default engine, because they cannot keep a cookie —
+  uptime monitors and crawlers must never occupy a dashboard slot.
+- A full registry still answers HTTP 503 with `code: session_capacity`, but it is transient: the
+  dashboard retries with an `X-AutoNOC-Retry` marker, which tells the server a visitor is waiting,
+  and receives a reclaimed slot instead of a second refusal. `/api/health` reports the live gauge
+  under `sessions`. See [docs/SESSION_CAPACITY_FIX.md](docs/SESSION_CAPACITY_FIX.md).
+- The model bundle is loaded once per process and shared read-only by inference workers. These
+  limits keep the design appropriate for the existing 1 shared CPU / 1 GB Fly machine.
 - Completed-run History is separate: the API stores aggregate completion summaries in SQLite under
   `AUTONOC_DATA_DIR` (default `./data`). On Fly.io, `/data` is mounted on the app's persistent
   volume.

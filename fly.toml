@@ -5,6 +5,14 @@ primary_region = "ams"
 
 [env]
   AUTONOC_DATA_DIR = "/data"
+  # Browser sessions. These are the API defaults; they are pinned here so the
+  # deployed limits are visible in the repository next to the machine size they
+  # were chosen for (1 shared CPU / 1024 MB). Only /api/* traffic takes a slot,
+  # idle dashboards expire, and quiet ones are reclaimed, so a full registry
+  # cannot lock visitors out. See docs/SESSION_CAPACITY_FIX.md.
+  AUTONOC_MAX_SESSIONS = "16"
+  AUTONOC_SESSION_IDLE_SECONDS = "180"
+  AUTONOC_SESSION_RECLAIM_GRACE = "15"
 
 [http_service]
   internal_port = 8080
