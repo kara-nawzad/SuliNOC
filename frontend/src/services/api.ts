@@ -7,15 +7,47 @@ import type {
   TelemetryTimeframe,
 } from "../types/api";
 
-/** Relative paths deliberately use Vite's proxy / FastAPI's same origin. */
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+/** The backend refuses a new dashboard only when every slot is genuinely busy.
+ * It is transient by design: the retry marker below tells the server that a
+ * visitor is waiting, which lets it reclaim the least recently seen dashboard
+ * instead of refusing again. */
+const CAPACITY_CODE = "session_capacity";
+const RETRY_HEADER = "X-AutoNOC-Retry";
+
+async function send(path: string, init: RequestInit): Promise<Response> {
   const timeout = AbortSignal.timeout(15_000);
   const signal = init.signal
     ? AbortSignal.any([init.signal, timeout])
     : timeout;
-  const response = await fetch(path, { ...init, signal, cache: "no-store" });
-  const body = await response.json().catch(() => null);
+  return fetch(path, { ...init, signal, cache: "no-store" });
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // Relative paths deliberately use Vite's proxy / FastAPI's same origin.
+  let response = await send(path, init);
+  let body = await response.json().catch(() => null);
+  if (
+    response.status === 503 &&
+    (body as { code?: string } | null)?.code === CAPACITY_CODE
+  ) {
+    const hinted = Number(response.headers.get("Retry-After"));
+    const wait = Number.isFinite(hinted)
+      ? Math.min(Math.max(hinted, 0) * 1000, 1500)
+      : 1000;
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    // A 503 never reached the engine, so repeating the request is safe even
+    // for POST controls.
+    response = await send(path, {
+      ...init,
+      headers: { ...(init.headers ?? {}), [RETRY_HEADER]: "1" },
+    });
+    body = await response.json().catch(() => null);
+  }
   if (!response.ok) {
+    if ((body as { code?: string } | null)?.code === CAPACITY_CODE)
+      throw new Error(
+        "AutoNOC is at capacity. Close an idle dashboard tab and try again.",
+      );
     const detail =
       typeof body?.detail === "string"
         ? body.detail

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import shutil
 import threading
 import time
 import uuid
@@ -27,10 +28,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from autonoc.engine import config as C
@@ -39,10 +40,44 @@ from autonoc.engine.engine import NOCEngine
 from . import presentation as P
 from . import schemas as S
 from .run_history import RunSummaryStore
+from .sessions import (Session, SessionRegistry, SessionCapacityError,
+                       COOKIE_NAME, requires_session)
 
 BASE_TICK_SECONDS = 1.0
 RUN_DAYS = 30
 RUN_TICKS = C.TICKS_PER_DAY * RUN_DAYS
+
+# Capacity defaults for the demo. Benchmarked on the deployment target: one
+# engine.step() costs ~2 ms and eight live engines hold ~100 MB RSS, so the old
+# limit of 8 was well below what a single shared vCPU can serve. The cap is a
+# safety rail against runaway concurrency, not the hardware ceiling. Orphaned
+# sessions (a visitor who lost their cookie) are reclaimed rather than locked
+# out, and idle ones expire quickly, so raising the cap does not weaken the
+# protection it was added for. See docs/SESSION_CAPACITY_FIX.md.
+DEFAULT_MAX_SESSIONS = 16
+DEFAULT_SESSION_IDLE_SECONDS = 180.0
+# A dashboard silent for this long may have its slot handed to a new visitor.
+DEFAULT_SESSION_RECLAIM_GRACE = 15.0
+
+# Sent by the dashboard when it is retrying after a capacity refusal. A waiting
+# visitor must always end up with a working dashboard, so such a request may
+# adopt the least recently seen session instead of being refused again.
+RETRY_HEADER = "x-autonoc-retry"
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(str(os.environ.get(name, default)).strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(str(os.environ.get(name, default)).strip())
+    except (TypeError, ValueError):
+        return default
+
 
 # M8 — demo support. The "Storm over Goizha" demo runs a cast seed:
 #   $env:AUTONOC_SEED=131; python -m uvicorn autonoc.api.main:app
@@ -69,6 +104,86 @@ _run_error: str | None = None
 _history = P.History()
 _history.reset(engine)
 _summary_store = RunSummaryStore()
+
+# Session registry is deliberately process-local: Fly runs one shared-CPU
+# machine and live state is not checkpointed. Requests are activated one at a
+# time while rendering, so the legacy API implementation remains small while
+# each session retains its own engine, lock, history, controls and worker.
+_dispatch_lock = threading.RLock()
+_registry: SessionRegistry | None = None
+_shared_bundle = None
+
+def _make_session(token: str) -> Session:
+    e = NOCEngine(seed=_DEFAULT_SEED, ai_enabled=_DEFAULT_AI, horizon=RUN_TICKS)
+    h = P.History(); h.reset(e)
+    # Completed summaries remain durable, but each cookie gets its own small
+    # SQLite namespace; live engine state is never checkpointed or restored.
+    summary_root = Path(os.environ.get("AUTONOC_DATA_DIR", "./data")) / "sessions" / token
+    session = Session(token, e, threading.Lock(), 1.0, h, uuid.uuid4().hex,
+                      summary_store=RunSummaryStore(summary_root),
+                      data_dir=str(summary_root))
+    from autonoc.ai.serve import InferenceWorker
+    session.worker = InferenceWorker(e, session.lock,
+        auto_approve_seconds=_DEFAULT_AUTO_APPROVE,
+        run_id=session.run_id, bundle=_shared_bundle)
+    session.worker.start()
+    return session
+
+
+def _drop_session_assets(session: Session) -> None:
+    """Release the disk a retired session owned.
+
+    Every reclaim creates a fresh token, so without this the per-session
+    summary directories would accumulate on the 1 GB Fly volume for as long as
+    the demo runs. Best-effort: a failure here must never affect capacity.
+    """
+    if session.data_dir:
+        shutil.rmtree(session.data_dir, ignore_errors=True)
+
+
+def _shared_session() -> Session:
+    """A detached session that fronts the shared default engine.
+
+    Session-free paths (``/api/health``, HTML, static assets) are answered from
+    the module-level engine. This object is never registered, so such requests
+    can never occupy, leak or exhaust a browser slot.
+    """
+    with _dispatch_lock:
+        return Session(
+            token="__shared__", engine=engine, lock=_lock, speed=_speed,
+            history=_history, run_id=_run_id, reset_notice=_reset_notice,
+            run_error=_run_error, worker=worker, summary_store=_summary_store,
+            slow_ticks=_slow_ticks,
+        )
+
+
+def _cookie_secure(request: Request) -> bool:
+    """Whether the session cookie carries the ``Secure`` flag.
+
+    "auto" (the default) follows the request, so the flag is on wherever TLS
+    terminates — including behind Fly's proxy header — and local http previews
+    keep working. ``AUTONOC_COOKIE_SECURE=1`` or ``=0`` forces it.
+    """
+    mode = os.environ.get("AUTONOC_COOKIE_SECURE", "auto").strip().lower()
+    if mode in {"0", "false", "no", "off"}:
+        return False
+    if mode in {"1", "true", "yes", "on"}:
+        return True
+    forwarded = request.headers.get("x-forwarded-proto", "").split(",")[0].strip()
+    return (forwarded or request.url.scheme) == "https"
+
+
+def _activate(s: Session) -> None:
+    global engine, _lock, _speed, _slow_ticks, _run_id, _reset_notice, _run_error, _history, _summary_store, worker
+    engine, _lock, _speed, _slow_ticks = s.engine, s.lock, s.speed, s.slow_ticks
+    _run_id, _reset_notice, _run_error, _history, worker = s.run_id, s.reset_notice, s.run_error, s.history, s.worker
+    _summary_store = s.summary_store or _summary_store
+
+def _deactivate(s: Session) -> None:
+    s.engine, s.speed, s.slow_ticks = engine, _speed, _slow_ticks
+    s.run_id, s.reset_notice, s.run_error, s.history, s.worker = _run_id, _reset_notice, _run_error, _history, worker
+    s.summary_store = _summary_store
+
 
 
 def _assert_current_run(run_id: str) -> None:
@@ -196,33 +311,70 @@ def _step_locked(automatic: bool = True, expected_run_id: str | None = None) -> 
 
 
 async def simulation_loop() -> None:
-    """The ONLY place engine.step() is called during normal operation."""
+    """Advance every active browser session without sharing simulation state.
+
+    Pacing is deadline-based. ``engine.step()`` costs ~2 ms at 300 nodes, so
+    stepping every session back-to-back and sleeping a *full* tick afterwards
+    would still hand each dashboard exactly one simulated minute per second.
+    Waiting a whole tick per session instead would silently stretch the clock
+    on a busy demo, so the next cycle is scheduled one tick after the previous
+    cycle began rather than after it ended.
+    """
+    next_at = time.monotonic()
+    interval = BASE_TICK_SECONDS
     while True:
         try:
-            # `_step_locked` rechecks Pause after acquiring the engine lock, so
-            # a racing pause cannot permit a boundary reset behind the user.
-            await asyncio.to_thread(_step_locked, True)
+            with _dispatch_lock:
+                sessions = list(_registry._sessions.values()) if _registry else []
+                speed = max((s.speed for s in sessions), default=_speed)
+                interval = BASE_TICK_SECONDS / max(speed, 0.1)
+            if sessions:
+                for session in sessions:
+                    if _registry is not None and not _registry.holds(session):
+                        continue        # reclaimed while this cycle was running
+                    with _dispatch_lock:
+                        _activate(session)
+                        try:
+                            await asyncio.to_thread(_step_locked, True)
+                        finally:
+                            _deactivate(session)
+            else:
+                # No registry (unit tests, teardown): legacy single-engine clock.
+                with _dispatch_lock:
+                    await asyncio.to_thread(_step_locked, True)
         except asyncio.CancelledError:
             raise
-        except Exception:                      # never let the clock die
-            import traceback
-            traceback.print_exc()
-        with _lock:
-            interval = BASE_TICK_SECONDS / max(_speed, 0.1)
-        await asyncio.sleep(interval)
+        except Exception:
+            import traceback; traceback.print_exc()
+        next_at += interval
+        delay = next_at - time.monotonic()
+        if delay <= 0:
+            # A cycle that overran its budget must not bank debt and busy-spin.
+            next_at = time.monotonic()
+            delay = 0.0
+        await asyncio.sleep(delay)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global worker
+    global worker, _registry, _shared_bundle
+    from autonoc.ai.serve import ModelBundle
+    _shared_bundle = ModelBundle()
+    _registry = SessionRegistry(
+        _make_session,
+        max_sessions=max(1, _env_int("AUTONOC_MAX_SESSIONS", DEFAULT_MAX_SESSIONS)),
+        idle_timeout=_env_float("AUTONOC_SESSION_IDLE_SECONDS",
+                                DEFAULT_SESSION_IDLE_SECONDS),
+        reclaim_grace=_env_float("AUTONOC_SESSION_RECLAIM_GRACE",
+                                 DEFAULT_SESSION_RECLAIM_GRACE),
+        reclaim=os.environ.get("AUTONOC_SESSION_RECLAIM", "1").strip().lower()
+        not in {"0", "false", "no", "off"},
+        on_drop=_drop_session_assets)
     task = asyncio.create_task(simulation_loop())
-    from autonoc.ai.serve import InferenceWorker
-    worker = InferenceWorker(engine, _lock,
-                             auto_approve_seconds=_DEFAULT_AUTO_APPROVE,
-                             run_id=_run_id)
-    worker.start()
     yield
-    worker.stop()
+    _registry.clear()
+    _registry = None
+    _shared_bundle = None
     task.cancel()
     try:
         await task
@@ -256,6 +408,63 @@ async def no_cache_dashboard(request, call_next):
         response.headers["Cache-Control"] = "no-store"
     return response
 
+
+@app.middleware("http")
+async def browser_session(request: Request, call_next):
+    """Bind this request to its server-issued high-entropy session cookie.
+
+    Session-free traffic is served by the shared default engine. Health probes,
+    crawlers and asset requests cannot keep a cookie, so counting them against
+    dashboard capacity let a single uptime monitor fill the demo — that was the
+    root cause of the "at capacity" lockout. They are also the payload for this
+    documented failure:
+    ``{"detail": "AutoNOC is at capacity …", "code": "session_capacity"}``.
+    """
+    if _registry is None:
+        return await call_next(request)
+
+    if not requires_session(request.url.path):
+        with _dispatch_lock:                    # re-entrant: held across render
+            session = _shared_session()
+            _activate(session)
+            try:
+                return await call_next(request)
+            finally:
+                _deactivate(session)
+
+    token = request.cookies.get(COOKIE_NAME)
+    retrying = request.headers.get(RETRY_HEADER, "").strip().lower() in {
+        "1", "true", "yes", "on"}
+    try:
+        # A retrying dashboard is a visitor who is demonstrably waiting, so it
+        # may adopt the oldest session; a first-time request only takes a slot
+        # that has been idle past the grace window.
+        session, created = (_registry.get_or_default(token) if retrying
+                            else _registry.get(token))
+    except SessionCapacityError as exc:
+        # Only reachable when every slot is genuinely in use and reclaiming is
+        # disabled. Retry-After tells clients (and the dashboard) to back off
+        # instead of hammering a full demo.
+        return JSONResponse(
+            {"detail": str(exc), "code": "session_capacity"},
+            status_code=503,
+            headers={
+                "Retry-After": str(max(1, int(round(exc.retry_after)))),
+                "Cache-Control": "no-store",
+            },
+        )
+    with _dispatch_lock:
+        _activate(session)
+        try:
+            response = await call_next(request)
+            if created:
+                response.set_cookie(
+                    COOKIE_NAME, session.token, httponly=True, samesite="lax",
+                    secure=_cookie_secure(request),
+                    max_age=int(_registry.idle_timeout))
+            return response
+        finally:
+            _deactivate(session)
 
 # ------------------------------------------------------------------ config
 @app.get("/api/config", response_model=S.ConfigResponse)
@@ -438,11 +647,16 @@ async def run_history():
 @app.get("/api/health")
 async def health():
     with _lock:
-        return {"status": "ok", "tick": engine.tick, "paused": engine.paused,
-                "speed": _speed, "slow_ticks": _slow_ticks,
-                "seed": engine.seed, "run_id": _run_id,
-                "run_error": _run_error, "ai_enabled": engine.ai_enabled,
-                "ai_policy": engine.ai_policy}
+        payload = {"status": "ok", "tick": engine.tick, "paused": engine.paused,
+                   "speed": _speed, "slow_ticks": _slow_ticks,
+                   "seed": engine.seed, "run_id": _run_id,
+                   "run_error": _run_error, "ai_enabled": engine.ai_enabled,
+                   "ai_policy": engine.ai_policy}
+    # Capacity is part of health: "at capacity" was previously invisible until a
+    # visitor was refused, which made the failure impossible to diagnose live.
+    if _registry is not None:
+        payload["sessions"] = _registry.stats()
+    return payload
 
 
 # ------------------------------------------------------------------ control
