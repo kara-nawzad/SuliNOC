@@ -32,6 +32,8 @@ htmlcov/
 /frontend/dist/
 /frontend/.vite/
 /frontend/.npm/
+/ui-standalone/dist/
+/ui-standalone/.vite/
 .npm/
 npm-debug.log*
 yarn-debug.log*
