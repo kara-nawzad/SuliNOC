@@ -63,7 +63,12 @@
 .field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--t2)}
 .field select,.tb select,.tb input,select{background:var(--s1);border:1px solid var(--ln);padding:5px 8px;border-radius:4px;color:var(--tx)}
 .tb input[type=range]{width:220px;padding:0;border:0;background:none}
-.crewlist{position:absolute;right:12px;top:12px;background:#F3F8FEf2;border:1px solid var(--ln);border-radius:6px;padding:8px 10px;max-height:40%;overflow:auto;font-size:12px;z-index:4}
+.crewlist{position:absolute;right:12px;top:12px;z-index:4;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border:1px solid #bae6fd;border-radius:10px;box-shadow:0 4px 14px rgba(15,23,42,.10);font-size:12px;max-width:260px}
+.crewlist summary{cursor:pointer;list-style:none;padding:7px 12px;font:500 12px var(--m);color:#0c4a6e;user-select:none}
+.crewlist summary::-webkit-details-marker{display:none}
+.crewlist summary::after{content:' ▾';color:#0284c7}
+.crewlist[open] summary::after{content:' ▴'}
+.crewbody{padding:4px 12px 10px;max-height:40vh;overflow:auto}
 .mapbox.live{height:calc(100vh - 230px);min-height:420px;margin-top:10px}
 .mapbox.live svg.map{width:100%;height:100%}
 .road{fill:none;stroke:#A9C2E6;stroke-width:3;stroke-linecap:round;opacity:.8}
@@ -98,3 +103,99 @@
 .ap-close{float:right}
 .legend-wrap{display:flex;gap:12px;flex-wrap:wrap}
 #toast.err{border-color:var(--crit);color:var(--crit)}
+
+/* ---- light-mode markers: crisp white outlines and soft shadows ---- */
+.nd .halo{opacity:.10}
+.nd .dot{stroke:#ffffff;stroke-width:2;stroke-opacity:1;filter:drop-shadow(0 2px 4px rgba(15,23,42,.16))}
+.nd:hover .dot,.nd.sel .dot{stroke-width:3}
+.nd.sel .ring{stroke:#0284c7;stroke-width:2;opacity:1}
+.ring{stroke:#0284c7;stroke-width:2;opacity:.75}
+.ring.isolated{stroke:#ef4444;stroke-width:3;stroke-dasharray:6 8;animation:fibre-pulse 1.4s linear infinite}
+@keyframes fibre-pulse{to{stroke-dashoffset:-14}}
+.crew .badge{fill:#ffffff;stroke:#0284c7;stroke-width:2;filter:drop-shadow(0 2px 4px rgba(15,23,42,.16))}
+.crew:hover .badge{stroke-width:3}
+
+/* ---- mobile (< 768px): keep controls, filters and fleet off the map ---- */
+@media (max-width:767px){
+  #bar{flex-wrap:wrap;gap:6px 10px;padding:6px 10px;height:auto;position:relative;z-index:10}
+  #bar>.sm{flex:1 1 100%}
+  #simctl{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px;scrollbar-width:none}
+  #simctl::-webkit-scrollbar{display:none}
+  #simctl .btn{flex:none}
+  #bar input#q{width:100%;order:9}
+  #bar #clk2{display:none}
+  #bar>span[style]{display:none}
+  .tb{flex-wrap:wrap;gap:6px 10px}
+  .tb select,.tb label{font-size:12px}
+  .mapbox.live{height:calc(100vh - 210px);min-height:340px}
+  .crewlist{top:auto;bottom:56px;right:auto;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);max-height:45%}
+  .crewlist[open]{width:min(92vw,320px)}
+  .crewlist summary{padding:8px 12px}
+  .zc{left:12px;bottom:12px;z-index:20}
+  .zc .btn{background:rgba(255,255,255,.95);box-shadow:0 2px 8px rgba(15,23,42,.12)}
+}
+
+/* ---- Leaflet live map (CARTO Voyager) ---- */
+.mapbox.live{background:#E3EEFB}
+.leafmap{position:absolute;inset:0;z-index:0;border-radius:inherit;overflow:hidden}
+.leafmap .leaflet-container{font:12px var(--m);background:#E3EEFB}
+.leafmap .leaflet-control-attribution{font-size:10px;background:rgba(255,255,255,.8)}
+.leafmap .leaflet-control-zoom a{color:#0c4a6e}
+.fibre.iso{animation:fibre-pulse 1.4s linear infinite}
+.map-label{font:500 11px var(--m);color:#334155;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff;pointer-events:none;transform:translate(-50%,-150%)}
+.map-label-epc{transform:translate(10px,-50%)}
+.map-label-agg{transform:translate(-50%,-190%);font-weight:600}
+.epc-icon{width:14px;height:14px;background:#10265C;border-radius:3px;box-shadow:0 1px 3px rgba(15,23,42,.3);border:2px solid #fff;box-sizing:border-box}
+.van-icon{background:none;border:0}
+.van-icon svg{display:block;filter:drop-shadow(0 2px 4px rgba(15,23,42,.16))}
+@media (max-width:767px){
+  .leafmap .leaflet-bottom.leaflet-right{top:10px;bottom:auto}
+}
+
+/* ---- inspector sections ---- */
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px}
+.kv-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #e2ecf8}
+/* ---- crew glide and site ripples (old console motion) ---- */
+.van-icon{transition:transform 1.2s linear}
+.leaflet-zoom-anim .van-icon{transition:none}
+.tw-icon{background:none;border:0}
+.tw{position:relative;width:12px;height:12px}
+.tw i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--c);opacity:0;animation:tw-ping 2.2s ease-out infinite}
+.tw.warn i{animation-duration:3s;border-style:dashed}
+@keyframes tw-ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(3.2);opacity:0}}
+
+/* ---- design motion: site rings and crew route ---- */
+.ring-crit{animation:ring-pulse 2s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes ring-pulse{from{transform:scale(1);opacity:.9}to{transform:scale(2.4);opacity:0}}
+.route-ants{animation:fibre-pulse 1s linear infinite}
+
+/* ---- crew HUD (design .hud): crews on a job, steps, progress and ETA ---- */
+.mapbox>.hud{position:absolute;left:12px;top:12px;z-index:5;max-width:270px;max-height:60%;overflow:auto;background:rgba(243,248,254,.95);backdrop-filter:blur(8px);border:1px solid #bae6fd;border-radius:10px;box-shadow:0 4px 14px rgba(15,23,42,.10);padding:10px 12px;font-size:12px;color:#10265C}
+.mapbox>.hud[hidden]{display:none}
+.hud-job+.hud-job{margin-top:10px;padding-top:10px;border-top:1px solid #d6e6f8}
+.hud .stp{display:flex;flex-wrap:wrap;gap:4px 8px;margin:6px 0 2px}
+.hud .stp i{font-style:normal;font-size:11px;color:#4B6192;opacity:.45}
+.hud .stp i.on{opacity:1;color:#0C9C83}
+.hud .bar{height:3px;background:#bae6fd;margin:6px 0}
+.hud .bar i{display:block;height:100%;background:#0C9C83;transition:width .6s linear}
+@media (max-width:767px){.mapbox>.hud{max-width:200px;font-size:11px}}
+
+.gauge small.u{font-size:10px;color:var(--t2);font-weight:400}
+
+/* ---- design link network: lines between neighbouring sites, drawn in on load ---- */
+.leaflet-links-pane .lk{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.1s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* ---- intro telemetry readout (design: top right, follows engine ticks) ---- */
+#hero-stats.tel{right:32px;left:auto;top:84px;text-align:right;font:12px var(--m);color:#d8e8f4}
+#hero-stats .tel-line{display:inline-flex;align-items:center;gap:8px}
+#hero-stats .tel-line i{width:7px;height:7px;border-radius:50%;background:#7ff5e0;animation:br 2.4s ease-in-out infinite}
+#hero-stats .tel-sub{display:block;margin-top:4px;opacity:.85}
+
+
+/* ---- intro: the design's halo breathing ---- */
+#hm .nd .halo{animation:hb 3.4s ease-in-out infinite}
+#hm .nd:nth-child(4n+1) .halo{animation-delay:-.9s}
+#hm .nd:nth-child(4n+2) .halo{animation-delay:-1.7s}
+#hm .nd:nth-child(4n+3) .halo{animation-delay:-2.5s}
+@keyframes hb{50%{opacity:.08}}

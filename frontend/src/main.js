@@ -6,6 +6,7 @@ import { api } from "./api.js";
 import { getState, subscribe, loadConfig, startPolling, refreshNow } from "./store.js";
 import { $, $$, esc, num, toast, reduceMotion } from "./util.js";
 import { NetworkMap } from "./map.js";
+import { LiveMap } from "./livemap.js";
 import { VIEWS, nodeCounts, OFFLINE, districtName } from "./views.js";
 import { openInspector, closeInspector, openScenario, openCounterfactual, openHistory, openAbout, closeModal } from "./panels.js";
 
@@ -38,23 +39,24 @@ if (!NAV.some(([k]) => k === ctx.view)) ctx.view = "ov";
 
 let map = null;
 let heroMap = null;
+let heroDrawn = false;
 
 // -------------------------------------------------------------------- hero
 function bootHero(cfg) {
   const hm = $("#hm");
-  heroMap = new NetworkMap(hm, { interactive: false });
+  heroMap = new NetworkMap(hm, { interactive: false, hero: true });
   const enter = () => {
     $("#hero").classList.add("off");
     setTimeout(() => ($("#hero").hidden = true), 400);
   };
   $("#enter").onclick = enter;
   $("#skip").onclick = enter;
-  $("#hero-sub").textContent = `${cfg.num_nodes} sites · ${cfg.agg_sites.length} districts · live from the engine`;
+  $("#hero-sub").textContent = `${Math.min(36, cfg.num_nodes)} of ${cfg.num_nodes} sites shown · ${cfg.agg_sites.length} districts · schematic positions`;
 }
 
 // -------------------------------------------------------------------- shell
 function buildNav() {
-  $("#side").innerHTML = `<div class="wm"><img class="logo" src="/assets/suli-noc-logo.png" alt="SuliNOC"></div>` +
+  $("#side").innerHTML = `<div class="wm"><img class="logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC"></div>` +
     NAV.map(([k, label, d]) => `<button data-view="${k}" title="${label}"><svg viewBox="0 0 24 24"><path d="${d}"/></svg><span>${label}</span></button>`).join("");
   $("#side").addEventListener("click", (e) => {
     const b = e.target.closest("[data-view]");
@@ -75,13 +77,19 @@ function paint(animate = false) {
   const st = getState();
   const snap = st.snap, cfg = st.config;
   if (!snap || !cfg) return;
+  // The intro draws its stations once and stays still until the workspace opens.
+  if (heroMap && !heroDrawn && !$("#hero").classList.contains("off")) {
+    heroMap.update(snap, cfg);
+    heroDrawn = true;
+  }
   const view = $("#view");
   if (ctx.view === "live") {
     // The live map is persistent; it updates in place so pan and zoom survive.
     if (!view.querySelector("#netmap")) {
+      map?.destroy();
       view.innerHTML = VIEWS.live(snap, cfg, ctx);
       view.classList.toggle("anim", animate);
-      map = new NetworkMap($("#netmap"), {
+      map = new LiveMap($("#netmap"), {
         onSelect: (id) => selectNode(id),
         onHover: (id, e) => showTip(id, e),
       });
@@ -91,12 +99,27 @@ function paint(animate = false) {
     applyMapFilter(snap, cfg);
     return;
   }
+  map?.destroy();
   map = null;
   // Other views re-render from the snapshot; keep scroll position stable.
   const scroll = $("#main").scrollTop;
   view.innerHTML = VIEWS[ctx.view](snap, cfg, ctx);
   $("#main").scrollTop = scroll;
   if (animate) { view.classList.remove("anim"); void view.offsetWidth; view.classList.add("anim"); }
+}
+
+// Intro readout, as in the design: simulated telemetry that advances with the engine ticks.
+function renderHeroStats(snap) {
+  const el = $("#hero-stats");
+  if (!el) return;
+  // No ticks on the intro: the readout starts once the workspace is opened.
+  if (!$("#hero").classList.contains("off") || !snap.kpis) { el.innerHTML = ""; return; }
+  const k = snap.kpis;
+  const nodes = snap.nodes ?? [];
+  const gbps = nodes.reduce((a, n) => a + (Number(n.throughput) || 0), 0) / 1000;
+  const loss = nodes.length ? nodes.reduce((a, n) => a + (Number(n.loss) || 0), 0) / nodes.length : 0;
+  el.innerHTML = `<span class="tel-line"><i></i>Simulated telemetry ${esc(k.sim_time)} · tick ${esc(k.tick)}</span>
+    <span class="tel-sub">availability ${Number(k.availability).toFixed(2)} % · ${gbps.toFixed(1)} Gbps · drop ${loss.toFixed(2)} %</span>`;
 }
 
 function applyMapFilter(snap, cfg) {
@@ -109,10 +132,7 @@ function applyMapFilter(snap, cfg) {
     if (ctx.status === "ai") return n.warn;
     return true;
   };
-  for (const el of $$("#netmap .nd")) {
-    const n = getState().nodeById.get(el.dataset.id);
-    el.classList.toggle("fade", !!n && !show(n));
-  }
+  map?.applyFilter((n) => show(n));
 }
 
 function showTip(id, e) {
@@ -315,18 +335,13 @@ function onStoreEvent(kind, st) {
   const ai = $("#simctl [data-sim=ai]");
   if (ai && document.activeElement !== ai) ai.checked = !!snap.ai?.ai_enabled;
   $("#clk").textContent = snap.kpis.sim_time;
+  renderHeroStats(snap);
   $("#clk2").textContent = snap.kpis.sim_time;
   paint();
   if (ctx.view === "ana") loadTelemetry();
   if (ctx.selected && st.nodeById.has(ctx.selected) && $("#ap").classList.contains("open")) {
     openInspector(ctx.selected);
   }
-}
-
-function startClock() {
-  const tick = () => { $("#clk2").textContent = new Date().toLocaleTimeString("en-GB"); };
-  tick();
-  setInterval(tick, 1000);
 }
 
 // -------------------------------------------------------------------- boot
@@ -346,7 +361,6 @@ async function boot() {
   bindBar();
   bindDelegation();
   bootHero(cfg);
-  startClock();
   $("#app").classList.toggle("c", matchMedia("(max-width: 900px)").matches);
   if (reduceMotion()) document.documentElement.classList.add("rm");
   subscribe(onStoreEvent);

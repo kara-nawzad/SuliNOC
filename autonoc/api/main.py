@@ -63,6 +63,7 @@ DEFAULT_SESSION_RECLAIM_GRACE = 15.0
 # visitor must always end up with a working dashboard, so such a request may
 # adopt the least recently seen session instead of being refused again.
 RETRY_HEADER = "x-autonoc-retry"
+SESSION_HEADER = "x-autonoc-session"
 
 
 def _env_int(name: str, default: int) -> int:
@@ -443,7 +444,10 @@ async def browser_session(request: Request, call_next):
             finally:
                 _deactivate(session)
 
-    token = request.cookies.get(COOKIE_NAME)
+    # Prefer the cookie; fall back to the session header that the console keeps
+    # in sessionStorage. Some embedded previews drop cross-site cookies even with
+    # SameSite=None, and a header always arrives.
+    token = request.cookies.get(COOKIE_NAME) or request.headers.get(SESSION_HEADER)
     retrying = request.headers.get(RETRY_HEADER, "").strip().lower() in {
         "1", "true", "yes", "on"}
     try:
@@ -469,9 +473,15 @@ async def browser_session(request: Request, call_next):
         try:
             response = await call_next(request)
             if created:
+                response.headers[SESSION_HEADER] = session.token
+                # The console is often embedded cross-site (the preview frame), and
+                # a SameSite=Lax cookie is then never sent back: each poll would open
+                # a fresh simulation at tick 0. Over HTTPS use SameSite=None; Secure.
+                secure = _cookie_secure(request)
                 response.set_cookie(
-                    COOKIE_NAME, session.token, httponly=True, samesite="lax",
-                    secure=_cookie_secure(request),
+                    COOKIE_NAME, session.token, httponly=True,
+                    samesite="none" if secure else "lax",
+                    secure=secure,
                     max_age=int(_registry.idle_timeout))
             return response
         finally:
