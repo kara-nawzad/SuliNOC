@@ -147,8 +147,14 @@ export class NetworkMap {
             return `<line class="route" x1="${x}" y1="${y}" x2="${tx}" y2="${ty}"/>`; })()
         : "";
       return `${route}<g class="crew ${esc(t.state)}" transform="translate(${x} ${y})">
-        <circle r="10" fill="#10265C" stroke="#fff" stroke-width="2"/>
-        <text class="crew-t" y="4" text-anchor="middle">${esc(t.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase())}</text>
+        <rect class="badge" x="-13" y="-11" width="26" height="22" rx="7"/>
+        <g class="van" transform="translate(0 0.5)">
+          <path d="M-8 3 V-2 Q-8 -4 -6 -4 H1 L4 -1 H7.5 Q8.5 -1 8.5 0 V3 Z" fill="#0c4a6e"/>
+          <path d="M-3.5 -3 H0 L2.5 -1 H-3.5 Z" fill="#bae6fd"/>
+          <rect x="-1.5" y="-0.5" width="3" height="1.2" fill="#e0f2fe"/>
+          <circle cx="-4.5" cy="3.5" r="2" fill="#0c4a6e" stroke="#fff" stroke-width="1"/>
+          <circle cx="5" cy="3.5" r="2" fill="#0c4a6e" stroke="#fff" stroke-width="1"/>
+        </g>
         <title>${esc(t.name)} · ${esc(t.state.toLowerCase())}</title></g>`;
     }).join("");
     this.layer("crews").innerHTML = teams;

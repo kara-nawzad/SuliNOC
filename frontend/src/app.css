@@ -112,9 +112,8 @@
 .ring{stroke:#0284c7;stroke-width:2;opacity:.75}
 .ring.isolated{stroke:#ef4444;stroke-width:3;stroke-dasharray:6 8;animation:fibre-pulse 1.4s linear infinite}
 @keyframes fibre-pulse{to{stroke-dashoffset:-14}}
-.crew circle{fill:#ffffff;stroke:#0284c7;stroke-width:2;filter:drop-shadow(0 2px 4px rgba(15,23,42,.16))}
-.crew.EN_ROUTE circle,.crew.REPAIRING circle{fill:#ffffff;stroke:#0c4a6e}
-.crew-t{fill:#0c4a6e}
+.crew .badge{fill:#ffffff;stroke:#0284c7;stroke-width:2;filter:drop-shadow(0 2px 4px rgba(15,23,42,.16))}
+.crew:hover .badge{stroke-width:3}
 
 /* ---- mobile (< 768px): keep controls, filters and fleet off the map ---- */
 @media (max-width:767px){
