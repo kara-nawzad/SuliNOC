@@ -19,8 +19,8 @@ Spoken script; stage directions in italics. Rehearsed runtime: 85–95 s.
 ## 0:15 — THE PROOF, IN NUMBERS  (~20 s)
 
 > "Thirty seeds, ten simulated days each, identical fault schedules per arm.
-> Against a pure rule-engine NOC, AutoNOC cuts **5,664 tower-minutes of
-> downtime** and **18.6% of OPEX** — and it reaches **61.7% of a
+> Against a pure rule-engine NOC, AutoNOC cuts **5,124 tower-minutes of
+> downtime** and **12.9% of the cost proxy** — and it reaches **55.0% of a
 > clairvoyant dispatcher**: two thirds of what a crystal ball would get you,
 > with zero false alarms at the site. The advisory arm — AI that waits for a
 > human to click approve — scores exactly zero benefit. Latency eats it.
@@ -50,7 +50,7 @@ Spoken script; stage directions in italics. Rehearsed runtime: 85–95 s.
 > "So the ask is small and the arithmetic is public: every number you saw
 > is reproduced by a deterministic simulation with 87 passing tests and a
 > four-arm counterfactual you can rerun yourself — no vendor black box.
-> 5,664 tower-minutes back on air, 18.6% off site OPEX, and 30 alarms
+> 5,124 tower-minutes back on air, 12.9% off the cost proxy, and 30 alarms
 > instead of 30 phone calls. I'd like two pilots: Goizha for predictive
 > dispatch, Bakrajo for power and fuel integrity. Shall we pick the seeds?"
 

@@ -93,6 +93,10 @@ class NOCEngine:
         self.pending_actions: list[dict] = []
         self._next_action_id: int = 1
         self._tier2_cooldown: dict[str, int] = {}
+        # tier-1 action bets: [due_tick, node_id, bet_tick, seen_faulty].
+        # One bet per committed tier-1 attempt; settled against the world at
+        # the Oracle horizon (see _settle_action_bets).
+        self._action_bets: list[list] = []
 
     # ------------------------------------------------------------ helpers
     @property
@@ -156,6 +160,37 @@ class NOCEngine:
         self._dispatch()
         self._advance_teams()
         self._watchdog()
+        self._settle_action_bets()
+
+    def _settle_action_bets(self) -> None:
+        """Settle tier-1 action bets against the world, one tick at a time.
+
+        The M7 cost proxy charges 35 for a FALSE DISPATCH — a wrong
+        prediction acted on — not for a right prediction whose mitigation
+        could not stop the fault (that episode pays its activation cost).
+        So each committed tier-1 attempt is a bet on "this node fails within
+        the Oracle horizon" (STANDBY_HORIZON_TICKS, the same window a
+        pre-dispatched crew stands by). A fault touching the node inside the
+        window settles the bet as a true positive; an uneventful expiry
+        charges it exactly like an expired standby. This is the tier-2
+        accounting symmetry, settled by world events, never by peeking at
+        the ledger from the controller path (audit P1, 2026-10-15).
+        """
+        if not self._action_bets:
+            return
+        keep = []
+        for due, nid, bet_tick, seen in self._action_bets:
+            node = self.net.by_id.get(nid)
+            if node is not None and (node.is_faulty or node.under_repair):
+                seen = True                       # a failure came: true bet
+            if not seen and self.tick >= due:
+                self.stats["false_dispatch"] += 1
+                self.log(f"AI: tier-1 action on {nid} — no failure within "
+                         f"{C.STANDBY_HORIZON_TICKS * C.TICK_MINUTES} min "
+                         f"(FALSE DISPATCH)", "WARNING", nid)
+            elif not seen:
+                keep.append([due, nid, bet_tick, seen])
+        self._action_bets = keep
 
     # ------------------------------------------------------------ faults
     def _start_scheduled_faults(self) -> None:
@@ -592,11 +627,23 @@ class NOCEngine:
                 if did and node.episode_id >= 0 and node.is_gradual \
                         and CM.mark_preempted(self, node):
                     CM.reset_preempted_node(self, node)
+                    # pre-empted = a failure was really coming: settle any
+                    # open bets on this node as true positives
+                    self._action_bets = [b for b in self._action_bets
+                                         if b[1] != node_id]
                 else:
-                    self.stats["false_dispatch"] += 1
-                    self.log(f"AI: tier-1 {action} on {node.node_id} did not "
-                             f"pre-empt anything (FALSE DISPATCH)", "WARNING",
-                             node.node_id)
+                    # The action is committed; its falseness is settled by
+                    # the WORLD, never guessed here: one bet per attempt,
+                    # expiring at the Oracle horizon (STANDBY_HORIZON_TICKS).
+                    # A failure inside the window (activated or pre-empted)
+                    # makes it a true positive; an uneventful window makes it
+                    # a false dispatch, charged exactly like an expired
+                    # standby. The old ledger peek dropped wrong actions
+                    # silently; charging their MECHANICS over-charged right
+                    # predictions an action could not stop.
+                    self._action_bets.append(
+                        [self.tick + C.STANDBY_HORIZON_TICKS, node_id,
+                         self.tick, False])
             else:
                 # tier 2 — needs an operator; dedupe per node + cooldown so a
                 # persistent verdict cannot spam the approval queue

@@ -147,21 +147,25 @@ availability includes the report's 95% confidence interval.
 
 | Arm   | Policy                          |  Availability | Downtime (tower-min) | Pre-empted episodes | False dispatches | Team-occupation hours | Cost proxy (tower-min units) |
 | ----- | ------------------------------- | ------------: | -------------------: | ------------------: | ---------------: | --------------------: | ---------------------------: |
-| **A** | No AI; reactive                 | 98.75% ± 0.02 |               54,033 |                   0 |                0 |                773.33 |                   104,229.00 |
-| **B** | Advisory; 2-tick approval delay | 98.75% ± 0.02 |               54,070 |                   0 |             4.37 |                778.90 |                   104,384.83 |
-| **C** | Autonomous Commander            | 98.88% ± 0.02 |               48,369 |              448.03 |             3.77 |                781.89 |                    84,811.33 |
-| **D** | Predictive upper bound          | 98.96% ± 0.02 |             44,856.5 |              490.63 |             0.03 |                813.40 |                    83,120.67 |
+| **A** | No AI; reactive                 | 98.30% ± 0.03 |               73,271 |                   0 |              0.00 |              1,002.02 |                   103,827.00 |
+| **B** | Advisory; 2-tick approval delay | 98.31% ± 0.03 |               73,104 |                   0 |              0.73 |              1,001.30 |                   103,849.67 |
+| **C** | Autonomous Commander            | 98.42% ± 0.03 |               68,147 |             423.10 |            147.00 |              1,005.66 |                    90,463.50 |
+| **D** | Predictive upper bound          | 98.52% ± 0.03 |               63,948 |             489.83 |              1.03 |              1,037.20 |                    82,828.67 |
 
 For **C versus A**, the report records:
 
-- **5,664 fewer tower-minutes** of aggregate downtime (about 10.5% lower) and a **0.13
+- **5,124 fewer tower-minutes** of aggregate downtime (about 7.0% lower) and a **0.12
   percentage-point** increase in availability.
-- **19,417.67 fewer cost-proxy units** (about 18.6% lower). The proxy is
+- **13,363.50 fewer cost-proxy units** (about 12.9% lower). The proxy is
   `90 × activated + 45 × pre-empted + 35 × false dispatches`; these are model units, **not dollars
   or measured OPEX**.
-- **8.56 more team-occupation hours** in C. The study does not show reduced crew occupation or
+- **3.64 more team-occupation hours** in C. The study does not show reduced crew occupation or
   payroll hours.
-- C captures **61.7% of the A-to-D downtime-reduction headroom** in this study. Arm D has perfect
+- C's **147 false dispatches** per run are honestly charged wrong predictions: every tier-1 action
+  is a 60-minute bet settled against real failures, the same accounting a pre-dispatched crew's
+  standby window uses. (Before the 2026-10-15 evaluation-honesty pass, wrong tier-1 actions were
+  silently dropped by a peek at simulator ground truth and the published table showed 3.77.)
+- C captures **55.0% of the A-to-D downtime-reduction headroom** in this study. Arm D has perfect
   knowledge of gradual scheduled faults while retaining the modeled crew/travel constraints; instant
   faults remain unpredictable, so D is a predictive upper bound, not omniscience.
 

@@ -116,36 +116,69 @@ def test_tier1_never_preempts_crew_worthy_fault():
         e.step()
     assert e.ledger.get(episode, {}).get("state") != "pre_empted", \
         "tier-1 must never pre-empt a crew-worthy fault"
-    # ...and the wasted attempt is CHARGED, not silently dropped. The old
-    # truth-gate peeked at the ledger and skipped the action entirely, which
-    # hid wrong-prediction costs from the panel and the M7 cost proxy.
-    assert e.stats["false_dispatch"] == 1, \
-        "a tier-1 action that cannot pre-empt must count as a false dispatch"
-    assert e.ai_payload()["false_dispatches"] == 1
+    # the attempt is settled by the WORLD: the fault lands inside the 60-min
+    # window, so the prediction was RIGHT — a failed pre-emption is not a
+    # false dispatch. (The old truth-gate peeked at the ledger and dropped
+    # the action silently; charging its MECHANICS would over-charge right
+    # predictions. Only wrong predictions are false dispatches.)
+    assert e.stats["false_dispatch"] == 0, \
+        "a prediction that came true is not a false dispatch"
+    assert node.status != C.STATUS_HEALTHY, \
+        "the crew-worthy fault should have activated"
 
 
 def test_tier1_false_positive_on_clean_node_is_charged():
-    """A tier-1 action on a node with nothing pending is a false action: the
-    controller committed on its verdict, so the action runs (reversibly) and
-    is charged once per verdict — never re-charged while the verdict is
-    stale, never silently skipped."""
+    """A tier-1 action whose 60-min bet window passes with no failure is a
+    FALSE DISPATCH — charged once per verdict when the bet expires, exactly
+    like an expired standby. The old truth-gate dropped these silently,
+    which hid wrong-prediction costs from the panel and the M7 cost proxy."""
     e = NOCEngine(seed=42, ai_enabled=True, horizon=C.TICKS_PER_DAY * 8)
     for _ in range(120):
         e.step()
-    node = next(n for n in e.nodes
-                if n.status == C.STATUS_HEALTHY and n.episode_id < 0
-                and not n.is_gradual and not n.tech_dispatched)
+    node = _node_with_no_scheduled_fault(e, horizon_ticks=200)
+    assert node is not None, "no clean node found — test setup"
     e.ai_verdicts[node.node_id] = {
         "p_fail": 0.94, "cls": C.STATUS_CONGESTION, "action": "throttle",
         "tier": 1,
     }
     e.step()
     assert node.throttle_pct > 0, "the committed action must actually run"
-    assert e.stats["false_dispatch"] == 1
+    assert e.stats["false_dispatch"] == 0, "the bet is still open"
+    for _ in range(C.STANDBY_HORIZON_TICKS + 2):
+        e.step()
+    assert e.stats["false_dispatch"] == 1, \
+        "an uneventful bet window must be charged as a false dispatch"
     for _ in range(20):
         e.step()
     assert e.stats["false_dispatch"] == 1, \
         "a resolved verdict must not be re-charged on later ticks"
+
+
+def test_tier1_bet_settles_true_when_a_late_fault_lands():
+    """The bet window rewards RIGHT predictions even when the mitigation
+    could not pre-empt (e.g. an instant fault, or a hard fault
+    misclassified as soft): a failure inside 60 minutes is a true positive."""
+    e = NOCEngine(seed=42, ai_enabled=True, horizon=C.TICKS_PER_DAY * 8)
+    for _ in range(120):
+        e.step()
+    node = _node_with_no_scheduled_fault(e, horizon_ticks=200)
+    assert node is not None
+    e.ai_verdicts[node.node_id] = {
+        "p_fail": 0.94, "cls": C.STATUS_CONGESTION, "action": "throttle",
+        "tier": 1,
+    }
+    e.step()
+    assert e.stats["false_dispatch"] == 0
+    # the world answers inside the window: force a fault on the node and let
+    # one step's settlement see it before cleaning it up
+    node.fault_started_tick = e.tick
+    node.status = C.STATUS_POWER
+    e.step()
+    e._heal(node, "test repair")
+    for _ in range(C.STANDBY_HORIZON_TICKS + 5):
+        e.step()
+    assert e.stats["false_dispatch"] == 0, \
+        "a failure inside the window settles the bet as a true positive"
 
 
 def test_tier1_action_preempts_scheduled_fault():
