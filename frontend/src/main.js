@@ -39,6 +39,7 @@ if (!NAV.some(([k]) => k === ctx.view)) ctx.view = "ov";
 
 let map = null;
 let heroMap = null;
+let heroDrawn = false;
 
 // -------------------------------------------------------------------- hero
 function bootHero(cfg) {
@@ -76,7 +77,11 @@ function paint(animate = false) {
   const st = getState();
   const snap = st.snap, cfg = st.config;
   if (!snap || !cfg) return;
-  if (heroMap && !$("#hero").hidden) heroMap.update(snap, cfg);
+  // The intro draws its stations once and stays still until the workspace opens.
+  if (heroMap && !heroDrawn && !$("#hero").classList.contains("off")) {
+    heroMap.update(snap, cfg);
+    heroDrawn = true;
+  }
   const view = $("#view");
   if (ctx.view === "live") {
     // The live map is persistent; it updates in place so pan and zoom survive.
@@ -106,7 +111,9 @@ function paint(animate = false) {
 // Intro readout, as in the design: simulated telemetry that advances with the engine ticks.
 function renderHeroStats(snap) {
   const el = $("#hero-stats");
-  if (!el || !snap.kpis) return;
+  if (!el) return;
+  // No ticks on the intro: the readout starts once the workspace is opened.
+  if (!$("#hero").classList.contains("off") || !snap.kpis) { el.innerHTML = ""; return; }
   const k = snap.kpis;
   const nodes = snap.nodes ?? [];
   const gbps = nodes.reduce((a, n) => a + (Number(n.throughput) || 0), 0) / 1000;

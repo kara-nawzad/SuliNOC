@@ -192,3 +192,10 @@
 #hero-stats .tel-line{display:inline-flex;align-items:center;gap:8px}
 #hero-stats .tel-line i{width:7px;height:7px;border-radius:50%;background:#7ff5e0;animation:br 2.4s ease-in-out infinite}
 #hero-stats .tel-sub{display:block;margin-top:4px;opacity:.85}
+
+/* ---- intro stations: smaller dots, halos and rings (CSS r overrides the attributes) ---- */
+#hm .nd .dot{r:2.4px}
+#hm .nd:hover .dot,#hm .nd.sel .dot{r:3.2px}
+#hm .nd .halo{r:6px}
+#hm .nd .ring{r:4.5px}
+#hm .pu{r:1.6px}
