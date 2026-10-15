@@ -189,7 +189,9 @@ export function AnalyticsRow({
               <span key={source.name}>
                 <Dot color={config.presentation.power_colors[source.name]} />
                 {source.name === "Generator" ? "Diesel DG" : source.name}
-                <b className="mono">{source.count}</b>
+                <b className="mono">
+                  <NumberTween value={source.count} />
+                </b>
               </span>
             ))}
           </div>

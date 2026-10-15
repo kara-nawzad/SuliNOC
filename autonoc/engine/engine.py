@@ -285,24 +285,32 @@ class NOCEngine:
         """
         # ---- ATS (Automatic Transfer Switch) ----
         if node.grid_available:
-            if node.ats_failed:
-                node.ats_failed = False   # mains back: ATS resets with the plant
+            if node.ats_failed or node.dg_running:
+                # mains back: the plant returns to normal service
+                node.ats_failed = False
+                node.dg_running = False
         elif node.ats_failed:
             # jammed: retry the crank every tick until the switch recovers
             if self.rng_ops.random() < C.ATS_RECOVER_CHANCE:
                 node.ats_failed = False
-                self.log(f"{node.node_id} ATS recovered — DG cranked, "
-                         f"plant back on generator", "CLEARED", node.node_id)
-        elif (node.battery_pct <= C.GEN_START_BATTERY_PCT
+                self.log(f"{node.node_id} ATS recovered — transfer switch "
+                         f"free, DG will crank at the start threshold",
+                         "CLEARED", node.node_id)
+        elif (not node.dg_running
+              and node.battery_pct <= C.GEN_START_BATTERY_PCT
               and node.generator_fuel_pct > 0.0):
             # a crank is being requested RIGHT NOW (battery at the generator
-            # start level, fuel in the tank) — roll the transfer switch
+            # start level, fuel in the tank) — roll the transfer switch once.
+            # The plant latches on success; it does NOT re-roll every tick
+            # around the threshold.
             if self.rng_ops.random() < C.ATS_CRANK_FAIL_CHANCE:
                 node.ats_failed = True
                 self.stats["ats_failures"] += 1
                 self.log(f"{node.node_id} ATS FAILURE TO CRANK — mains down, "
                          f"battery {node.battery_pct:.0f}%, DG did NOT start",
                          "CRITICAL", node.node_id)
+            else:
+                node.dg_running = True
 
         # ---- fuel theft / abnormal fuel drop ----
         # The DG is OFF but the tank lost 15-25% in one telemetry interval —
@@ -355,6 +363,7 @@ class NOCEngine:
         node.assigned_team = None
         node.fault_started_tick = -1
         node.ats_failed = False          # a service visit resets the ATS
+        node.dg_running = False
         node.last_changed_tick = self.tick
         node.s11 += (-22.0 - node.s11) * 0.8
         node.packet_loss *= 0.2
@@ -516,6 +525,7 @@ class NOCEngine:
                         n.generator_fuel_pct = 100.0   # tank refuelled on visit
                         n.battery_pct = max(n.battery_pct, 50.0)
                         n.ats_failed = False           # ATS serviced
+                        n.dg_running = False
                     n.dust_accum = 0.0        # service cleans filters
                     self._heal(n, f"repaired by {team.name}")
             mttr = (self.tick - team.mission_start_tick) * C.TICK_MINUTES
