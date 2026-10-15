@@ -28,6 +28,14 @@ window.addEventListener("keydown", (e) => {
 });
 
 // ---------------------------------------------------------------- inspector
+const GENERATION = ["Legacy", "Standard", "Modernised"];
+
+// Each section lists the readings it owns, in the order the old console showed them.
+const SECTIONS = [
+  ["Radio · 3GPP PM counters", ["rsrp", "sinr", "cqi", "vswr", "prb", "throughput", "loss", "latency"]],
+  ["Hardware", ["temp", "cpu", "dust", "jitter", "s11"]],
+];
+
 export function openInspector(id) {
   const st = getState();
   const n = st.nodeById.get(id);
@@ -37,14 +45,22 @@ export function openInspector(id) {
   const district = st.snap.agg.find((a) => a.id === n.agg)?.name ?? `District ${n.agg}`;
   const statusName = cfg.status_names[n.status] ?? "Unknown";
   const color = cfg.status_colors[n.status] ?? "#4B6192";
-  const gauges = Object.entries(cfg.gauges ?? {})
-    .filter(([k]) => Number.isFinite(n[k]))
-    .map(([k, spec]) => gaugeBar(n[k], spec, cfg.metric_labels?.[k] ?? k)).join("");
+  const label = (k) => cfg.metric_labels?.[k] ?? k;
+  const gauge = (k) => (Number.isFinite(n[k]) && cfg.gauges?.[k] ? gaugeBar(n[k], cfg.gauges[k], label(k)) : "");
+  const sections = SECTIONS.map(([title, keys]) =>
+    `<div class="sec"><h3>${esc(title)}</h3><div class="gauges">${keys.map(gauge).join("")}</div></div>`).join("");
+  const pwrType = n.pwr ?? "";
+  const pwrName = cfg.power_configs?.[pwrType] ?? "";
+  const powerRows = [
+    `<div class="kv-row"><span class="t2 sm">Power source</span><b style="color:${n.power === "Grid" ? "#15803d" : "#b45309"}">${esc(n.power ?? "—")}</b></div>`,
+    gauge("voltage"), gauge("battery"), gauge("fuel"),
+    n.ats ? `<div class="kv-row"><span class="t2 sm">ATS</span><b style="color:#D42F52">FAILED TO CRANK</b></div>` : "",
+  ].join("");
   const kv = [
-    ["Power source", n.power], ["Power config", cfg.power_configs?.[n.pwr] ?? n.pwr],
-    ["Battery", pct(n.battery, 0)], ["Fuel", pct(n.fuel, 0)],
-    ["Throughput", `${num(n.throughput, 1)} Mbps`], ["Latency", `${num(n.latency, 1)} ms`],
-    ["PRB load", pct(n.prb, 0)], ["Dust", num(n.dust, 2)],
+    ["District", district],
+    ["Generation", GENERATION[n.gen] ?? "—"],
+    ["Fibre ring", n.ring >= 0 ? `Ring ${n.ring}` : "Unprotected"],
+    ["Power type", `${pwrType}${pwrName ? ` · ${pwrName}` : ""}`],
   ].map(([k, v]) => `<div><span class="t2 sm">${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
   const faulty = n.status !== cfg.presentation.healthy_status;
   const kinds = cfg.presentation.fault_options.map((o) => `<option value="${o.value}">${esc(o.label)}</option>`).join("");
@@ -54,9 +70,12 @@ export function openInspector(id) {
     <div class="status-line"><i style="background:${esc(color)}"></i><b>${esc(statusName)}</b>
       ${n.critical ? `<span class="chip" style="--c:#D42F52">critical site</span>` : ""}
       ${n.dispatched ? `<span class="chip" style="--c:#1479C4">crew assigned</span>` : ""}
-      ${n.warn ? `<span class="chip" style="--c:#6A4BD8">AI prediction</span>` : ""}</div>
+      ${n.repairing ? `<span class="chip" style="--c:#1479C4">under repair</span>` : ""}
+      ${n.warn ? `<span class="chip" style="--c:#6A4BD8">AI prediction</span>` : ""}
+      ${n.ats ? `<span class="chip" style="--c:#D42F52">ATS fail to crank</span>` : ""}</div>
     <div class="kv">${kv}</div>
-    <div class="sec"><h3>Signal & plant</h3>${gauges || `<div class="t2 sm">No gauge readings.</div>`}</div>
+    ${sections}
+    <div class="sec"><h3>Site power${pwrName ? ` · ${esc(pwrName)}` : ""}</h3><div class="gauges">${powerRows}</div></div>
     ${n.warn ? `<div class="ai-box"><h4>Predictive assessment <span class="src">AI estimate</span></h4>
       <div class="sm t2">The Commander's live verdict sits at or above break-even precision for this site.</div></div>` : ""}
     <div class="sec"><h3>Simulate a fault</h3>

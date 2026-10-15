@@ -152,3 +152,15 @@
 @media (max-width:767px){
   .leafmap .leaflet-bottom.leaflet-right{top:10px;bottom:auto}
 }
+
+/* ---- inspector sections ---- */
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px}
+.kv-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #e2ecf8}
+/* ---- crew glide and site ripples (old console motion) ---- */
+.van-icon{transition:transform 1.2s linear}
+.leaflet-zoom-anim .van-icon{transition:none}
+.tw-icon{background:none;border:0}
+.tw{position:relative;width:12px;height:12px}
+.tw i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--c);opacity:0;animation:tw-ping 2.2s ease-out infinite}
+.tw.warn i{animation-duration:3s;border-style:dashed}
+@keyframes tw-ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(3.2);opacity:0}}

@@ -39,6 +39,7 @@ export class LiveMap {
     this.visible = () => true;
     this.nodes = new Map();   // site id -> circleMarker
     this.crews = new Map();   // crew name -> marker
+    this.rips = new Map();    // site id -> pulsing ripple marker (fault or AI warning)
     this.latest = null;
 
     const map = L.map(el, { center: START.center, zoom: START.zoom, zoomControl: false, attributionControl: true });
@@ -136,6 +137,7 @@ export class LiveMap {
   update(snap, cfg) {
     this.drawStatic(cfg);
     const nodeById = new Map(snap.nodes.map((n) => [n.id, n]));
+    const colors = cfg.status_colors ?? {};
     this.latest = { snap, cfg, nodeById };
 
     // Fibre rings, cut markers and crew routes are rebuilt each snapshot.
@@ -176,6 +178,23 @@ export class LiveMap {
     this.styleSites();
     if (this.selected) this.setSelected(this.selected);
 
+    // Ripples as in the old console: a radar ripple for a faulted site, a sonar ping for an AI warning.
+    const healthy = cfg.presentation?.healthy_status ?? 0;
+    for (const n of snap.nodes) {
+      const key = n.status !== healthy ? "fault" : n.warn ? "warn" : null;
+      const cur = this.rips.get(n.id);
+      if (cur?.key === key) continue;
+      if (cur) { cur.marker.remove(); this.rips.delete(n.id); }
+      if (key) {
+        const marker = L.marker([n.lat, n.lon], {
+          pane: "sites", interactive: false, keyboard: false, zIndexOffset: key === "fault" ? 400 : 350,
+          icon: L.divIcon({ className: "tw-icon", iconSize: [12, 12], iconAnchor: [6, 6],
+            html: `<div class="tw ${key}" style="--c:${colors[n.status] ?? "#4DDB9B"}"><i></i></div>` }),
+        }).addTo(this.siteLayer);
+        this.rips.set(n.id, { key, marker });
+      }
+    }
+
     // Maintenance vans: one marker per crew, moved along the real streets.
     const seen = new Set();
     for (const t of snap.teams ?? []) {
@@ -191,7 +210,7 @@ export class LiveMap {
         m.addTo(this.vanLayer);
         this.crews.set(t.name, m);
       }
-      m.setLatLng([t.lat, t.lon]);
+      m.setLatLng([t.lat, t.lon]); // CSS transition on .van-icon glides it between polls
       m.setTooltipContent(tip);
     }
     for (const [name, m] of this.crews) {
