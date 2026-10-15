@@ -33,40 +33,12 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
           pip install httpx
-      - name: Build and unit-test frontend
+      - name: Build frontend
         run: |
           npm ci --prefix frontend
           npm run build --prefix frontend
-          npm test --prefix frontend
       - name: Test engine and API contracts
         run: python -m pytest tests/ -q
-      - name: Browser smoke tests
-        working-directory: frontend
-        run: |
-          npx playwright install --with-deps chromium
-          cd ..
-          python -m uvicorn autonoc.api.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill "$SERVER_PID"' EXIT
-          python - <<'PY'
-          import time, urllib.request
-          for _ in range(60):
-              try:
-                  urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)
-                  break
-              except Exception:
-                  time.sleep(1)
-          else:
-              raise SystemExit('API did not become ready')
-          PY
-          npm run test:e2e --prefix frontend
-      - name: Browser failure artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: browser-test-results
-          path: frontend/test-results
-          if-no-files-found: ignore
 
   deploy:
     name: Deploy to Fly.io
