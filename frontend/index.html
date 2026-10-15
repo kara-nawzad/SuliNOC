@@ -592,7 +592,7 @@ const ser=(b,a,n=48,s=3)=>{sd=s;return Array.from({length:n},(_,i)=>b+a*Math.sin
 const sev=t=>T[t].st=='crit'?'crit':T[t].st=='warn'?'':'ok';
 const V={
 ov:ovView,
-live:()=>`<h2>Live network</h2><div class="sm t2">Tower positions from the backend. Status is live from the simulation.</div><div class="lnbox mapbox"><div id="lnmap" role="region" aria-label="Map of towers"></div><svg id="lnsvg" class="map" viewBox="0 0 1000 600" hidden role="img" aria-label="Schematic map of towers"></svg></div><div id="lnmsg" class="sm t2" role="status">Loading map…</div>`,
+live:()=>`<h2>Live network</h2><div class="sm t2">Tower positions from the backend. Status is live from the simulation.</div><div class="lnbar" role="group" aria-label="Map filters"><label class="lnf">District <select id="lnd"><option value="all">All districts</option>${D.map(d=>`<option>${d}</option>`).join("")}</select></label><label class="lnf">Status <select id="lns"><option value="all">All</option><option value="ok">In service</option><option value="warn">Warning</option><option value="crit">Alarm</option></select></label><label class="lnf lnchk"><input type="checkbox" id="lno"> Model flags (estimate)</label><button type="button" class="btn" id="lnr">Reset view</button></div><div class="lnbox mapbox"><div id="lnmap" role="region" aria-label="Map of towers"></div><svg id="lnsvg" class="map" viewBox="0 0 1000 600" hidden role="img" aria-label="Schematic map of towers"></svg></div><div class="leg lnleg"><span class="le"><i style="background:#0C9C83"></i>In service</span><span class="le"><i style="background:#C27400"></i>Warning</span><span class="le"><i style="background:#D42F52"></i>Alarm (measured)</span><span class="le"><i style="background:#6A4BD8"></i>Model flag (estimate)</span><span class="le"><i style="background:#1479C4"></i>Fibre ring (solid = selected)</span></div><div id="lnmsg" class="sm t2" role="status">Loading map…</div>`,
 towers:towersView,
 topo:()=>`<h2>Topology</h2><div class="sm t2">Schematic positions, simulated links. Scroll to zoom, drag to pan, select a tower to focus.</div><div class="tb"><select id="fd" aria-label="District"><option value="">All districts</option>${D.map(d=>`<option ${d==DF?'selected':''}>${d}</option>`).join('')}</select><select id="fs" aria-label="Status"><option value="">All towers</option><option value="alarm" ${SF=='alarm'?'selected':''}>Alarms and warnings</option><option value="ai" ${SF=='ai'?'selected':''}>Model flags</option></select><label class="sm t2"><input type="checkbox" id="fa" checked> Prediction overlay</label></div><div class="mapbox" style="margin-top:10px"><svg class="map" id="tm" viewBox="0 0 1000 600"></svg><div class="zc"><button class="btn" data-z="0.8" aria-label="Zoom in">+</button><button class="btn" data-z="1.25" aria-label="Zoom out">−</button><button class="btn" data-z="0">Reset</button></div></div><div class="sm t2" style="margin-top:8px"><span class="leg"><span class="le"><i style="background:#39E6C1"></i>In service</span><span class="le"><i style="background:#FFBD59"></i>Warning</span><span class="le"><i style="background:#FF647C"></i>Open alarm (measured)</span><span class="le"><i style="background:#A88BFA"></i>Model flag (prediction, not a failure)</span><span class="le"><i style="background:#36DFFF"></i>Active backhaul pulse</span></span></div>`,
 inc:incView,
@@ -875,7 +875,9 @@ function lnMsg(t){const m=$('#lnmsg');if(m)m.textContent=t}
 function lnFallback(msg){LNFB=true;const m=$('#lnmap'),s=$('#lnsvg');if(m)m.hidden=true;if(s){s.hidden=false;s.innerHTML=mapHTML('ln');wire(s,$('#ap'))}lnMsg(msg)}
 function lnBody(){
   if(!LNMAP)return;
+  lnRingStyle();
   T.forEach(t=>{const e=LNMK.get(t.id);if(!e||e.st===t.st)return;e.m.setStyle({fillColor:LN_COL[t.st]||LN_COL.ok});e.st=t.st;e.m.setTooltipContent(`${t.n} · ${t.st==='ok'?'In service':t.st==='warn'?'Warning':'Alarm'}`)});
+  lnFilter();
 }
 function liveInit(){
   const el=$('#lnmap');if(!el||LNMAP||LNFB)return;
@@ -892,6 +894,7 @@ function liveInit(){
   const cr=L.canvas({padding:.5});
   T.forEach(t=>{const m=L.circleMarker([t.raw.lat,t.raw.lon],{renderer:cr,radius:5,color:'#fff',weight:1.5,fillColor:LN_COL[t.st]||LN_COL.ok,fillOpacity:1}).bindTooltip(`${t.n} · ${t.st==='ok'?'In service':t.st==='warn'?'Warning':'Alarm'}`);m.on('click',()=>pick(t.id,$('#ap')));m.addTo(LNMAP);LNMK.set(t.id,{m,st:t.st})});
   lnMsg('Live positions from backend coordinates. © OpenStreetMap contributors © CARTO');
+  lnRings();
   lnBody();
 }
 function liveAfter(){
@@ -902,6 +905,29 @@ function liveAfter(){
   window.addEventListener('leaflet-ready',()=>{if(view==='live')liveInit()},{once:true});
   lnMsg('Loading map…');
 }
+/* group 8: filters, rings, reset. Filters fade non-matching towers; they never hide them. */
+let LNRINGS=new Map();
+function lnFilter(){
+  const dsel=$('#lnd'),ssel=$('#lns'),ov=$('#lno');if(!dsel)return;
+  const d=dsel.value,s=ssel.value,flags=ov.checked;
+  if(LNFB)document.querySelectorAll('#lnsvg .nd').forEach(n=>{const t=T[+n.dataset.id];if(!t)return;const m=(d==='all'||t.d===d)&&(s==='all'||t.st===s);n.style.opacity=m?1:.18});
+  T.forEach(t=>{const e=LNMK.get(t.id);if(!e)return;
+    const match=(d==='all'||t.d===d)&&(s==='all'||t.st===s);
+    const flagged=!!t.ai;
+    e.m.setStyle({fillOpacity:match?1:.18,opacity:match?1:.25,weight:flagged&&flags?3:1.5,color:flagged&&flags?'#6A4BD8':'#fff'});
+  });
+}
+function lnRings(){
+  if(!LNMAP||!window.L||!RINGS.length)return;
+  RINGS.forEach(r=>{if(LNRINGS.has(r.id)||!r.path||!r.path.length)return;
+    const pl=window.L.polyline(r.path,{color:'#1479C4',weight:2,opacity:.35,interactive:false}).addTo(LNMAP);LNRINGS.set(r.id,pl);
+    if(r.cut||(r.cuts&&r.cuts.length)){const m=r.path[Math.floor(r.path.length/2)];window.L.circleMarker(m,{radius:6,color:'#D42F52',weight:2,fillColor:'#fff',fillOpacity:1,interactive:false}).addTo(LNMAP)}
+  });
+  lnRingStyle();
+}
+function lnRingStyle(){RINGS.forEach(r=>{const pl=LNRINGS.get(r.id);if(!pl)return;const sel=RINGSEL===r.id;pl.setStyle({opacity:sel?.95:.35,weight:sel?3.5:2})})}
+document.addEventListener('change',e=>{if(['lnd','lns','lno'].includes(e.target.id))lnFilter()});
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#lnr')&&LNMAP){LNMAP.fitBounds(T.map(t=>[t.raw.lat,t.raw.lon]),{padding:[24,24]})}});
 function go(v,keep){const hh=V[v]();if(keep&&v==view&&hh===LASTH)return;LASTH=hh;view=v;syncNav();const tfq=$('#tf')?.value;$('#view').classList.toggle('keep',!!keep);if(!keep){$('#view').style.animation='none';void $('#view').offsetWidth;$('#view').style.animation=''}$('#view').innerHTML=hh;if(tfq!=null&&$('#tf'))$('#tf').value=tfq;document.querySelectorAll('#side button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));$('#main').dataset.v=v;if(!keep)cnt();const m=$('#tm');if(m){if(!keep)VB={x:0,y:0,w:1000,h:600};m.innerHTML=mapHTML('t',0);setVB(m,VB);wire(m,$('#ap'));panAble(m);filt();if(sel!=null)m.querySelector(`.nd[data-id="${sel}"]`)?.classList.add('sel')}
 if(v=='ov')ovAfter();if(v=='towers')towersAfter();if(v=='inc')incBody();if(v=='mnt')mntAfter();if(v=='live')liveAfter();}
 $('#view').addEventListener('click',e=>{const r=e.target.closest('[data-t]');const z=e.target.closest('[data-z]');
