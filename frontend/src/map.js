@@ -32,6 +32,7 @@ export class NetworkMap {
     this.heroPos = new Map(); // site id -> [x, y] in the schematic viewBox
     this.heroPulses = [];    // travelling pulse dots riding the links (design: PL)
     this.heroRaf = 0;
+    this.heroIds = null;     // the 36 sites shown in the intro, as in the design
     this.onSelect = onSelect;
     this.onHover = onHover;
     this.view = { x: 0, y: 0, w: W, h: H };
@@ -128,6 +129,22 @@ export class NetworkMap {
     return g;
   }
 
+  // Pick k sites spread across the network (farthest-point sampling), so the
+  // intro shows a few well-spaced towers like the design rather than every site.
+  heroSample(nodes, k = 36) {
+    if (nodes.length <= k) return nodes;
+    const d2 = (a, b) => (a.lat - b.lat) ** 2 + (a.lon - b.lon) ** 2;
+    const chosen = [nodes[0]];
+    const dist = nodes.map((n) => d2(n, nodes[0]));
+    while (chosen.length < k) {
+      let best = 0;
+      for (let i = 1; i < dist.length; i++) if (dist[i] > dist[best]) best = i;
+      chosen.push(nodes[best]);
+      for (let i = 0; i < nodes.length; i++) dist[i] = Math.min(dist[i], d2(nodes[i], nodes[best]));
+    }
+    return chosen;
+  }
+
   // Hero intro: the design's link network, travelling pulses and the AI flag.
   drawHero(snap) {
     const p = this.project;
@@ -186,7 +203,11 @@ export class NetworkMap {
   update(snap, cfg) {
     if (!this.project) this.drawStatic(cfg);
     const p = this.project;
-    if (this.hero) this.drawHero(snap);
+    if (this.hero) {
+      if (!this.heroIds) this.heroIds = new Set(this.heroSample(snap.nodes).map((n) => n.id));
+      snap = { ...snap, nodes: snap.nodes.filter((n) => this.heroIds.has(n.id)), rings: [], teams: [] };
+      this.drawHero(snap);
+    }
     const colors = cfg.status_colors ?? {};
     const offline = new Set(cfg.presentation?.offline_statuses ?? []);
     const healthy = cfg.presentation?.healthy_status ?? 0;
