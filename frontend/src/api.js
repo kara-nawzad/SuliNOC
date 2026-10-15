@@ -4,10 +4,21 @@
 const CAPACITY_CODE = "session_capacity";
 const RETRY_HEADER = "X-AutoNOC-Retry";
 
+// The backend issues a session token in a response header on first contact.
+// Keeping it in sessionStorage and echoing it back works even where the browser
+// blocks the session cookie (for example inside an embedded preview frame).
+const SESSION_KEY = "suli-noc-session";
+const SESSION_HEADER = "X-AutoNOC-Session";
+
 async function send(path, init = {}) {
   const timeout = AbortSignal.timeout(15000);
   const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
-  return fetch(path, { ...init, signal, cache: "no-store" });
+  const token = sessionStorage.getItem(SESSION_KEY);
+  const headers = { ...(init.headers ?? {}), ...(token ? { [SESSION_HEADER]: token } : {}) };
+  const response = await fetch(path, { ...init, headers, signal, cache: "no-store" });
+  const issued = response.headers.get(SESSION_HEADER);
+  if (issued) sessionStorage.setItem(SESSION_KEY, issued);
+  return response;
 }
 
 async function request(path, init = {}) {
