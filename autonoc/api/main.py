@@ -469,9 +469,14 @@ async def browser_session(request: Request, call_next):
         try:
             response = await call_next(request)
             if created:
+                # The console is often embedded cross-site (the preview frame), and
+                # a SameSite=Lax cookie is then never sent back: each poll would open
+                # a fresh simulation at tick 0. Over HTTPS use SameSite=None; Secure.
+                secure = _cookie_secure(request)
                 response.set_cookie(
-                    COOKIE_NAME, session.token, httponly=True, samesite="lax",
-                    secure=_cookie_secure(request),
+                    COOKIE_NAME, session.token, httponly=True,
+                    samesite="none" if secure else "lax",
+                    secure=secure,
                     max_age=int(_registry.idle_timeout))
             return response
         finally:
