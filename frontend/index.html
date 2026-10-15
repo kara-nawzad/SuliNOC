@@ -8,7 +8,7 @@
 @font-face{font-family:'Manrope';font-style:normal;font-weight:700;font-display:swap;src:url(/assets/fonts/manrope-latin-700-normal.woff2) format('woff2')}
 @font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;font-display:swap;src:url(/assets/fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
 @font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:500;font-display:swap;src:url(/assets/fonts/ibm-plex-mono-latin-500-normal.woff2) format('woff2')}
-:root{color-scheme:dark;--bg:#D6E7FB;--s1:#EAF3FE;--s2:#F6FAFF;--ln:#A9C2E6;--tx:#10265C;--t2:#4B6192;--live:#0C9C83;--cy:#1479C4;--cb:#3768F5;--ai:#6A4BD8;--warn:#C27400;--crit:#D42F52;--e:cubic-bezier(.3,.7,.2,1);--m:'IBM Plex Mono',ui-monospace,monospace}
+:root{color-scheme:dark;--bg:#D6E7FB;--s1:#EAF3FE;--s2:#F6FAFF;--ln:#A9C2E6;--tx:#10265C;--t2:#33487A;--live:#0C9C83;--cy:#1479C4;--cb:#3768F5;--ai:#6A4BD8;--warn:#C27400;--crit:#D42F52;--e:cubic-bezier(.3,.7,.2,1);--m:'IBM Plex Mono',ui-monospace,monospace}
 *{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--tx);font:400 14px/1.5 Manrope,system-ui,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);overflow:hidden}
 button,input{font:inherit;color:inherit}button{background:none;border:0;cursor:pointer}:focus-visible{outline:2px solid var(--live);outline-offset:2px}
 .m{font-family:var(--m);font-size:12px}.t2{color:var(--t2)}.sm{font-size:12px}
@@ -1267,14 +1267,14 @@ function alertCheck(){
 }
 function setView(){
   const on=k=>k==='rm'?document.documentElement.classList.contains('rm'):k==='snd'?PREFS.snd:PREFS.aiflags;
-  const sw=k=>`<button class="sw" role="switch" aria-checked="${on(k)}" data-sw="${k}"></button>`;
+  const sw=(k,l)=>`<button class="sw" role="switch" aria-checked="${on(k)}" data-sw="${k}" aria-label="${l}"></button>`;
   const run=DB&&DB.sim_time?DB.sim_time:'—';
   return `<h2>Settings</h2><div class="sm t2 m" id="build">Build __BUILD_STAMP__</div>`
   +`<div class="sec"><h3>Run details</h3><div class="tg"><span>Simulation time</span><span class="m" id="set-simt">${run}</span></div><div class="tg"><span>Run id</span><span class="m" id="set-run">${RUNID||'—'}</span></div><div class="sm t2">Simulated time, as reported by the backend for this run.</div></div>`
   +`<div class="sec"><h3>Simulation speed</h3><div class="tb"><input type="range" id="speed" min="0.25" max="10" step="0.25" list="spd-ticks" value="${CTL?CTL.speed:1}" aria-label="Simulation speed"><datalist id="spd-ticks"><option value="0.25"></option><option value="0.5"></option><option value="1"></option><option value="2"></option><option value="4"></option><option value="8"></option><option value="10"></option></datalist><div class="spdstops" aria-hidden="true"><span style="left:0.00%">0.25×</span><span style="left:7.69%">1×</span><span style="left:17.95%">2×</span><span style="left:38.46%">4×</span><span style="left:79.49%">8×</span><span style="left:100.00%">10×</span></div><output id="speed-v" class="m spdv">${CTL?CTL.speed:1}×</output></div><div class="sm t2">Same control as the speed button in the top bar.</div></div>`
-  +`<div class="sec"><div class="tg"><span>Reduce motion<br><span class="sm t2">Stops pulses and transitions. Saved on this device.</span></span>${sw('rm')}</div>`
-  +`<div class="tg"><span>Alert sound<br><span class="sm t2">Off by default. Plays once when a tower newly reaches an alarm.</span></span><span class="tgr">${sw('snd')}<button type="button" class="btn" id="snd-test">Play test sound</button></span></div>`
-  +`<div class="tg"><span>Show AI model flags<br><span class="sm t2">Violet markers on the maps. Estimates, not measurements.</span></span>${sw('ai')}</div>`
+  +`<div class="sec"><div class="tg"><span>Reduce motion<br><span class="sm t2">Stops pulses and transitions. Saved on this device.</span></span>${sw('rm','Reduce motion')}</div>`
+  +`<div class="tg"><span>Alert sound<br><span class="sm t2">Off by default. Plays once when a tower newly reaches an alarm.</span></span><span class="tgr">${sw('snd','Alert sound')}<button type="button" class="btn" id="snd-test">Play test sound</button></span></div>`
+  +`<div class="tg"><span>Show AI model flags<br><span class="sm t2">Violet markers on the maps. Estimates, not measurements.</span></span>${sw('ai','Show AI model flags')}</div>`
   +`<div class="sm t2" style="margin-top:14px">Shortcuts: / search · [ sidebar · Esc close · Space pause or resume · . step · ] cycle speed</div></div>`
   +`<section class="sec"><h3>Scenarios <span class="src">simulated</span></h3><div class="sm t2">Each scenario asks for a second click before it runs. The backend confirms the result.</div><ul class="sclist">`
   +`<li class="scrow"><div><b>Fibre isolation</b><div class="sm t2">A double cut on one protected ring. The ring's sites are isolated. Rare in real life, so this demo triggers it on command.</div></div><button type="button" class="btn" data-scn="cut">Run</button></li>`
@@ -1313,8 +1313,8 @@ $('#morelist').innerHTML=TAB_MORE.map(([k,n])=>`<button type="button" data-v="${
 $('#tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='tab-more'){openMore();return}closeMore();$('#ap').classList.remove('open');go(b.dataset.v)};
 $('#morelist').onclick=e=>{const b=e.target.closest('button');if(!b)return;closeMore();if(b.dataset.v==='about'){openAbout();return}$('#ap').classList.remove('open');go(b.dataset.v)};
 $('#moreback').onclick=closeMore;
-function openMore(){const m=$('#more');m.hidden=false;$('#tab-more').setAttribute('aria-expanded','true');void 0}
-function closeMore(){const m=$('#more');if(!m||m.hidden)return;m.hidden=true;$('#tab-more').setAttribute('aria-expanded','false')}
+function openMore(){const m=$('#more');if(m.hidden)MODAL_OPENER=document.activeElement;m.hidden=false;$('#tab-more').setAttribute('aria-expanded','true');void 0}
+function closeMore(){const m=$('#more');if(!m||m.hidden)return;m.hidden=true;$('#tab-more').setAttribute('aria-expanded','false');restoreFocus()}
 function syncNav(){document.querySelectorAll('#side [data-v],#tabs [data-v]').forEach(b=>{const on=b.dataset.v===view;b.classList.toggle('on',on);on?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current')});$('#tab-more').classList.toggle('on',['towers','topo','ana','mnt','set'].includes(view))}
 
 $('#tg').onclick=()=>$('#app').classList.toggle('c');
@@ -1416,8 +1416,17 @@ function simStep(){act('step',()=>control('step'),()=>'Advanced one simulation t
 function simSetSpeed(v){v=Math.min(10,Math.max(0.25,v));WANT.speed=v;act('speed',()=>control('speed',{value:v}),()=>`Speed set to ${v}×`,()=>{WANT.speed=null;updateChrome()})}
 function cycleSpeed(){const c=WANT.speed??(CTL?CTL.speed:1);simSetSpeed(SPEEDS.find(s=>s>c+1e-9)??SPEEDS[0])}
 function setAi(want){const ai=$('#c-ai');act('ai',()=>control('ai',{enabled:want,auto_approve_seconds:(CTL&&CTL.auto_approve_seconds)||0}),()=>want?'AI enabled':'AI disabled',()=>updateChrome())}
-function openDlg(title,html){$('#dlgt').textContent=title;$('#dlgb').innerHTML=html;$('#dlg').hidden=false;$('#dlgx').focus()}
-function closeDlg(){$('#dlg').hidden=true}
+function openDlg(title,html){if($('#dlg').hidden)MODAL_OPENER=document.activeElement;$('#dlgt').textContent=title;$('#dlgb').innerHTML=html;$('#dlg').hidden=false;$('#dlgx').focus()}
+let MODAL_OPENER=null;
+function restoreFocus(){const o=MODAL_OPENER;MODAL_OPENER=null;if(o&&o.isConnected&&o.getClientRects().length&&o.focus)o.focus()}
+function closeDlg(){const d=$('#dlg');if(d.hidden)return;d.hidden=true;restoreFocus()}
+function topModal(){for(const id of ['#dlg','#anwin','#more']){const m=$(id);if(m&&!m.hidden)return m}return null}
+document.addEventListener('keydown',e=>{if(e.key!=='Tab')return;const m=topModal();if(!m)return;
+  const f=[...m.querySelectorAll('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.getClientRects().length);
+  if(!f.length)return;const i=f.indexOf(document.activeElement);
+  if(e.shiftKey){if(i<=0){e.preventDefault();f[f.length-1].focus()}}
+  else if(i===-1||i===f.length-1){e.preventDefault();f[0].focus()}
+});
 $('#dlgx').onclick=closeDlg;$('#dlg').addEventListener('click',e=>{if(e.target.id==='dlg')closeDlg()});
 $('#simctl').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
  if(b.id==='c-pause')simPause();else if(b.id==='c-step')simStep();else if(b.id==='c-speed')cycleSpeed();
