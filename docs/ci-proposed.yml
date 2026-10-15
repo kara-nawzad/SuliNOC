@@ -1,7 +1,6 @@
-# PROPOSED WORKFLOW — saved here because the GitHub connection lacks workflow-write permission.
-# This file is not active from the docs directory. To activate it, use the GitHub
-# web editor (or an authorized connection) to replace .github/workflows/ci.yml
-# with this content. The current active workflow remains deploy-only.
+# HISTORICAL PROPOSAL — activated on 2026-10-15 in .github/workflows/ci.yml
+# (merged with the deploy job's volume/machine-convergence steps and gated to
+# main pushes only). Kept for history; the live workflow is the source of truth.
 
 name: CI & Deploy
 

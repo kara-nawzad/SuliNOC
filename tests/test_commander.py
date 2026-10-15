@@ -116,6 +116,36 @@ def test_tier1_never_preempts_crew_worthy_fault():
         e.step()
     assert e.ledger.get(episode, {}).get("state") != "pre_empted", \
         "tier-1 must never pre-empt a crew-worthy fault"
+    # ...and the wasted attempt is CHARGED, not silently dropped. The old
+    # truth-gate peeked at the ledger and skipped the action entirely, which
+    # hid wrong-prediction costs from the panel and the M7 cost proxy.
+    assert e.stats["false_dispatch"] == 1, \
+        "a tier-1 action that cannot pre-empt must count as a false dispatch"
+    assert e.ai_payload()["false_dispatches"] == 1
+
+
+def test_tier1_false_positive_on_clean_node_is_charged():
+    """A tier-1 action on a node with nothing pending is a false action: the
+    controller committed on its verdict, so the action runs (reversibly) and
+    is charged once per verdict — never re-charged while the verdict is
+    stale, never silently skipped."""
+    e = NOCEngine(seed=42, ai_enabled=True, horizon=C.TICKS_PER_DAY * 8)
+    for _ in range(120):
+        e.step()
+    node = next(n for n in e.nodes
+                if n.status == C.STATUS_HEALTHY and n.episode_id < 0
+                and not n.is_gradual and not n.tech_dispatched)
+    e.ai_verdicts[node.node_id] = {
+        "p_fail": 0.94, "cls": C.STATUS_CONGESTION, "action": "throttle",
+        "tier": 1,
+    }
+    e.step()
+    assert node.throttle_pct > 0, "the committed action must actually run"
+    assert e.stats["false_dispatch"] == 1
+    for _ in range(20):
+        e.step()
+    assert e.stats["false_dispatch"] == 1, \
+        "a resolved verdict must not be re-charged on later ticks"
 
 
 def test_tier1_action_preempts_scheduled_fault():
@@ -299,6 +329,44 @@ def test_missing_models_degrade_to_rules(tmp_path, monkeypatch):
     b = serve.ModelBundle()
     assert b.complete is False
     assert b.mode == "rules"
+
+
+def test_live_scoring_falls_back_to_rules_when_models_missing(tmp_path, monkeypatch):
+    """The advertised rules fallback must be WIRED into the live scoring
+    path. Before this, a missing model bundle produced p_fail=0.0 verdicts
+    the Commander silently dropped while ai_mode claimed "rules" — the
+    dashboard never crashed, but no rules policy ever acted."""
+    import threading
+    from autonoc.ai import serve
+    from autonoc.ai import oracle as oracle_mod
+    monkeypatch.setattr(serve, "MODEL_DIR", pathlib.Path(tmp_path))
+    monkeypatch.setattr(oracle_mod, "MODEL_DIR", pathlib.Path(tmp_path))
+    e = NOCEngine(seed=5)
+    for _ in range(300):
+        e.step()
+
+    node = next(n for n in e.nodes
+                if n.status == C.STATUS_HEALTHY and len(n.hist_fine) >= 6)
+    # cook the B1 rising-temperature trend the rules policy must catch
+    for i, row in enumerate(node.hist_fine):
+        row["temperature"] = 30.0 + i * 1.0          # slope 1.0 > 0.30
+
+    empty = serve.ModelBundle()
+    assert serve.serving_mode(empty) == "rules"
+
+    verdicts = serve.score_engine(e, empty)
+    assert node.node_id in verdicts
+    assert verdicts[node.node_id]["cls"] == C.STATUS_OVERHEAT
+    assert verdicts[node.node_id]["p_fail"] > C.BREAK_EVEN_PRECISION
+
+    w = serve.InferenceWorker(e, threading.Lock(), bundle=empty)
+    try:
+        assert w._mode == "rules"
+        batch = w._score_batch()
+        assert node.node_id in batch, \
+            "the live worker path must consult rules_verdicts, not emit zeros"
+    finally:
+        w.stop()
 
 
 def test_worker_scores_batch_with_real_models():

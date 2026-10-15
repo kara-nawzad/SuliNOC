@@ -91,8 +91,8 @@ multipliers peak Mar–Jun (×2.2 in April), storm multipliers peak Dec–Feb
 
 | Persona | Technology | Job | Key published result |
 |---------|-----------|-----|----------------------|
-| **Doctor** | XGBoost, 71 features, 5 classes | Say what's *wrong now* from degraded telemetry | fault precision 0.995 / recall 1.000 / FPR 7e−5 (on already-broken nodes — easy) |
-| **Oracle** | GRU, 12×12 raw-telemetry windows | Say what will break **within 60 min** | AUC-PR 0.547 vs 0.501 for the best tabular baseline; recall 0.450, and that is the ceiling story |
+| **Doctor** | XGBoost, 71 features, 5 classes | Say what's *wrong now* from degraded telemetry | fault precision 0.987 / recall 0.999 / FPR 1.8e−4 (on already-broken nodes — easy) |
+| **Oracle** | GRU, 12×12 raw-telemetry windows | Say what will break **within 60 min** | AUC-PR 0.546 vs 0.502 for the best tabular baseline; recall 0.442, and that is the ceiling story |
 | **Commander** | Decision theory (no ML) | Turn probabilities into actions when expected value is positive | Act iff p > 0.4375 — *derived* from the cost model, never hard-coded |
 | **Study (M7)** | Counterfactual simulation | Prove the AI is worth it under identical exogenous schedules | Autonomous achieves ~62–63% of the clairvoyant planner's downtime reduction |
 
@@ -586,13 +586,13 @@ restore the natural prevalence**.
 
 | Metric | Value |
 |--------|-------|
-| Fault-level precision | **0.995** |
-| Fault-level recall | **1.000** |
-| False positive rate | **7.1 × 10⁻⁵** |
-| Brier (calibration of P(fault)) | 5.7 × 10⁻⁵ |
-| True test prevalence | 1.32% |
-| **B0 "always healthy" accuracy** | **98.68%** ← published deliberately |
-| B1 v1 thresholds (precision/recall) | 0.623 / 0.535 |
+| Fault-level precision | **0.987** |
+| Fault-level recall | **0.999** |
+| False positive rate | **1.8 × 10⁻⁴** |
+| Brier (calibration of P(fault)) | 1.4 × 10⁻⁴ |
+| True test prevalence | 1.36% |
+| **B0 "always healthy" accuracy** | **98.64%** ← published deliberately |
+| B1 v1 thresholds (precision/recall) | 0.635 / 0.516 |
 
 The B0 line is the cleanest demonstration that accuracy is a vanity metric at
 1–2% prevalence. **Honest caveat:** diagnosing an *already-broken* node is
@@ -606,26 +606,26 @@ shipping if it beats simpler alternatives on the same held-out data:
 
 | Model | What it is | AUC-PR | Precision | Recall | Net benefit |
 |-------|-----------|--------|-----------|--------|-------------|
-| B0 | always "no failure" | — | 0 | 0 | — (98.24% accuracy!) |
-| B1 | hand-tuned trend thresholds (what a competent engineer writes) | 0.030 | 0.040 | 0.550 | **−11.5 M tower-min** |
-| B2 | logistic regression on lag features | 0.487 | 0.899 | 0.373 | +400,025 |
-| B3 | XGBoost on lag features — the one to beat | 0.500 | 0.963 | 0.394 | +448,645 |
-| **M** | **GRU on raw contiguous sequences** | **0.547** | **0.974** | **0.450** | **+517,982** |
+| B0 | always "no failure" | — | 0 | 0 | — (98.23% accuracy!) |
+| B1 | hand-tuned trend thresholds (what a competent engineer writes) | 0.029 | 0.039 | 0.544 | **−11.6 M tower-min** |
+| B2 | logistic regression on lag features | 0.488 | 0.868 | 0.368 | +383,322 |
+| B3 | XGBoost on lag features — the one to beat | 0.502 | 0.974 | 0.385 | +445,077 |
+| **M** | **GRU on raw contiguous sequences** | **0.546** | **0.972** | **0.442** | **+509,613** |
 
 - **GRU:** 1 layer, 64 hidden, dropout 0.2, ~17,089 parameters. Trained 12
   epochs, Adam lr 2e−3, cosine schedule, batch 1024, gradient clip 1.0,
   pos-weight for imbalance, per-channel normalisation from **train
   statistics only**.
-- **AUC-PR lift from deep learning: +9.2%** over B3 → "the GRU earns its
+- **AUC-PR lift from deep learning: +8.9%** over B3 → "the GRU earns its
   place: raw sequence carries structure that hand-crafted lag features do not
   capture." (The script also encodes the honest opposite verdicts: if the
   lift were within ±5%, ship XGBoost; if negative, report that deep learning
   is not justified. Both are defensible results.)
 - **Operating point chosen by net benefit, not F1** — a missed failure costs
   90 tower-minutes, a pre-emption 45, a false dispatch 35 crew-minutes. The
-  GRU's best net-benefit threshold is 0.94.
-- **Recall 0.450 is the ceiling story:** with 25% of faults instant by
-  construction, the honest claim is "caught 45% of the 75% that were
+  GRU's best net-benefit threshold is 0.95.
+- **Recall 0.442 is the ceiling story:** with 25% of faults instant by
+  construction, the honest claim is "caught 44% of the 75% that were
   physically predictable."
 - **B1's net benefit is MINUS 11.5 million tower-minutes:** the
   hand-tuned-engineer baseline catches half of all failures and is *still
@@ -1045,11 +1045,11 @@ relative paths — work from any clone).
    **87** (invariants 11, regressions 20, telecom 17, AI 12, commander 14,
    counterfactual 7, polish 6) matching `pytest --collect-only`.
 4. ~~**README CI claim ("Linux and Windows") did not match a deploy-only
-   workflow.**~~ **MOSTLY RESOLVED:** README no longer overclaims, and a real
-   ubuntu test job (deploy `needs: test`) is committed at
-   `docs/ci-proposed.yml` — it cannot be moved into `.github/workflows/` from
-   this branch's app token (GitHub requires the `workflows` permission), so a
-   human commit finishes the swap.
+   workflow.**~~ **RESOLVED (2026-10-15):** `.github/workflows/ci.yml` now
+   runs the full test job (frontend build + Vitest, pytest, Playwright smoke)
+   and gates the Fly deploy, which fires only on pushes to `main`. The
+   earlier workflow-write permission blocker no longer applies; the
+   historical proposal remains at `docs/ci-proposed.yml`.
 5. ~~**README M7 table was from an older 8×5 run.**~~ **RESOLVED:** README
    now quotes the committed 30 seeds × 10 days summary (98.75 / 98.75 /
    98.88 / 98.96 availability; C saves 5,664 downtime tower-min and 18.6%
@@ -1074,6 +1074,39 @@ relative paths — work from any clone).
 11. ~~**`counterfactual.py` docstring said arm-B approval latency was "6 ticks
     = 30 min" while `APPROVE_LATENCY["B"] == 2`.**~~ **RESOLVED (v2.1):**
     docstring corrected to 2 ticks = 10 min, matching §32 and the code.
+
+### 29a. Correctness pass, 2026-10-15 (see docs/PROJECT_STUDY_2026-10-15.md)
+
+Changes applied after the whole-project audit, all covered by tests:
+
+- **NoisePool.uniformity fix.** `random()`/`uniform()` draw from a real
+  U(0,1) pool. The old gaussian squash made grid dropout/restoration coins
+  fire ~never, which froze the dashboard's "Site power & fleet" donut at
+  Grid: 300.
+- **Power state machine by architecture.** Type C (Goizha) is off-grid
+  Solar/Battery/GDG; Type A/B ride Grid -> Battery -> Generator, and the
+  Solar branch exists only where PV exists. The diesel plant latches
+  (`dg_running`, `GEN_STOP_BATTERY_PCT`) instead of flip-flopping around the
+  crank threshold and re-rolling the ATS coin every tick.
+- **Controller/physics separation (evaluation honesty).** Tier-1 actions are
+  committed on the Doctor's verdict alone; `PREEMPTABLE_BY_TIER1` is world
+  physics inside `mark_preempted`, and a wasted attempt is charged as a
+  false dispatch instead of being silently dropped on a peek at the ledger.
+- **Rules fallback wired.** With no models, the live scoring path calls
+  `rules_verdicts` (mode `rules`); one-sided bundles report `partial`.
+- **Oracle evaluation honesty.** Thresholds and Platt calibration come from
+  a chronological validation holdout of train; the seed-99 test split is
+  report-only. `load_oracle_artifacts` now returns the optional calibration
+  pair and the live Commander consumes calibrated probabilities when present.
+- **Exposure.** CORS is same-origin by default (`AUTONOC_ALLOWED_ORIGINS`
+  escape hatch); the legacy `web/app.js` FM feed renders messages as text.
+- **CI.** Test-gated deploy, main-push only (§29 item 4).
+
+**Artifact caveat:** the committed `models/` and `reports/` predate the
+noise/power and truth-gate semantics changes and the validation-split
+thresholds. They remain internally consistent for their generation code, but
+re-running `dataset -> train -> seqdata -> oracle -> counterfactual` is
+required before quoting live-study numbers against this engine.
 
 ### 30. File map
 

@@ -201,10 +201,13 @@ function feedItem(l, silent) {
   el.className = 'al ' + sev;
   el.innerHTML =
     `<div class="sic">${SEV_ICON[sev]}</div>` +
-    `<div class="tx"><div class="t1">${l.message}</div>` +
+    `<div class="tx"><div class="t1"></div>` +
     `<div class="t2">tick ${l.tick}</div>` +
     `<span class="sv">${sev}</span></div>` +
     `<div class="rt mono">${l.time}</div>`;
+  // untrusted text (operator-supplied cut causes, injected labels) is
+  // rendered as TEXT, never as HTML — the audit's source-to-sink finding
+  el.querySelector('.t1').textContent = l.message;
   /* FLIP: measure siblings once, then animate the displacement */
   const before = silent ? [] : [...feed.children].map(c => c.getBoundingClientRect().top);
   feed.prepend(el);

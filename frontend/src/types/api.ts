@@ -190,7 +190,7 @@ export interface PendingAction {
 }
 export interface AiState {
   ai_enabled: boolean;
-  ai_mode: "off" | "ml" | "rules";
+  ai_mode: "off" | "ml" | "partial" | "rules";
   ai_policy: "auto" | "advisory";
   pre_empted: number;
   acted_upon: number;

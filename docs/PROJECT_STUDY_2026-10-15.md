@@ -187,3 +187,26 @@ rather than editing claims along the way.
 - The Doctor's 71-feature order and Oracle's 12-channel order are versioned
   artifact contracts — physics changes require retraining and re-quoting, not
   silent reuse.
+
+## 7. Changes applied in this session (2026-10-15)
+
+| Item | Status | Notes |
+|---|---|---|
+| 1. Noise uniformity (P1) | **done** | true U(0,1) pool in `NoisePool`; statistical uniformity + dropout-rate tests in `tests/test_power_fleet.py` |
+| "Site power & fleet" donut (user-reported) | **done** | root cause was item 1 plus an architecture-blind power machine: Type C Goizha is now off-grid Solar/Battery/DG, A/B ride Grid→Battery→DG with Solar only where PV exists; the DG latches (`dg_running`) instead of re-rolling the ATS coin around the crank threshold; donut contract tests on both sides (`test_power_fleet.py`, `AnalyticsRow.test.tsx`) |
+| 2. Oracle thresholds/calibration (P1) | **code done** | chronological validation holdout picks thresholds; Platt calibration fitted there and consumed by the live Commander when present; artifacts need regeneration to carry it |
+| 3. Truth-gate (P1) | **done** | `PREEMPTABLE_BY_TIER1` is world physics in `mark_preempted`; the controller commits on its verdict and wasted attempts are charged as false dispatches; tests pin both directions |
+| 4. CI gate (P1) | **done** | `.github/workflows/ci.yml` = test job + main-only deploy (push accepted; the old workflow-write blocker is gone) |
+| 5. CORS/controls (P1) | **done** | same-origin default, `AUTONOC_ALLOWED_ORIGINS` escape hatch; per-session isolation already bounds control abuse |
+| 6. Legacy HTML sink (P1) | **done** | `web/app.js` FM feed renders messages with `textContent` |
+| 7. Rules fallback (P2) | **done** | live `_score_batch`/`score_engine` call `rules_verdicts` when both models are down; honest `ml/partial/rules` modes surfaced as `ai_mode` |
+| 8. Train/live windows (P2) | open | still two extraction paths (`seqdata` vs `serve._window`) |
+| 9. Provenance (P2) | **done** | `reports/manifest.json` written by `counterfactual.py` (git head, config hash, package versions, artifact hashes); `httpx` added to requirements |
+| 10-13. Hygiene (P3) | **done** | `PROJECT_NOTES` metrics tables now quote the committed artifacts; §29 CI item closed; PR #9 closed as superseded |
+
+**Still required: one regeneration pass.** The committed `models/` and
+`reports/` predate the noise/power semantics changes, the truth-gate removal
+and validation-split thresholds. Re-run
+`dataset → train → seqdata → oracle → counterfactual` and re-quote the README
+and `PROJECT_NOTES` headline numbers from the new artifacts before treating
+the M7 table as current for this engine.

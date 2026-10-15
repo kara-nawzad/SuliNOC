@@ -384,8 +384,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AutoNOC", version="3.0", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
-                   allow_headers=["*"])
+# Same-origin only by default: the dashboard is served by this app (and the
+# Vite dev server proxies /api), so cross-origin browser access is not a
+# supported surface. Cookies are session-scoped (samesite=lax); do not widen
+# this without also revisiting session/auth. AUTONOC_ALLOWED_ORIGINS is a
+# comma-separated escape hatch for deliberate cross-origin deployments.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in
+                   os.environ.get("AUTONOC_ALLOWED_ORIGINS", "").split(",")
+                   if o.strip()],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.middleware("http")

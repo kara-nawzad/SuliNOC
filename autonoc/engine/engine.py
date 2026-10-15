@@ -79,7 +79,7 @@ class NOCEngine:
                       "ats_failures": 0, "fuel_thefts": 0}
 
         # M6 — Commander state.
-        #   ai_mode      "off" | "ml" | "rules"  (set by the inference layer)
+        #   ai_mode      "off" | "ml" | "partial" | "rules"  (set by the inference layer)
         #   ai_policy    "auto" (tier-1 + tier-2) | "advisory" (tier-2 only,
         #                approvals by a human/driver) — used by the M7 study
         #   ai_verdicts  {node_id: {"p_fail", "cls", "action", "tier"}}
@@ -579,20 +579,24 @@ class NOCEngine:
             if CM.tier_for(action) == CM.TIER_AUTO:
                 if self.ai_policy == "advisory":
                     continue          # advisory: surface suggestions only
-                # A cheap tier-1 mitigation can only pre-empt a SOFT fault.
-                # If the Doctor misclassified a crew-worthy pending fault
-                # (RF / power) as congestion, throttling must NOT cancel it —
-                # the antenna is still broken, it will activate and need a
-                # real crew. Pre-emption is gated on the ACTUAL fault kind
-                # from the ledger, never on the classifier's guess.
-                entry = self.ledger.get(node.episode_id, {})
-                actual = entry.get("kind")
-                if actual not in (C.STATUS_CONGESTION, C.STATUS_OVERHEAT):
-                    continue
+                if verdict.get("_resolved"):
+                    continue          # this verdict already acted (or was charged)
+                verdict["_resolved"] = True
+                # Controller knowledge stops at its own verdict: the cheap
+                # reversible action is committed on the Doctor's guess alone.
+                # Whether that action CAN stop the pending fault is world
+                # physics (CM.mark_preempted refuses crew-worthy kinds), and
+                # a wasted attempt is charged as a false action — never
+                # silently dropped by peeking at the ledger's hidden truth.
                 did = CM.apply_tier1(self, node, action)
-                if did and node.episode_id >= 0 and node.is_gradual:
-                    if CM.mark_preempted(self, node):
-                        CM.reset_preempted_node(self, node)
+                if did and node.episode_id >= 0 and node.is_gradual \
+                        and CM.mark_preempted(self, node):
+                    CM.reset_preempted_node(self, node)
+                else:
+                    self.stats["false_dispatch"] += 1
+                    self.log(f"AI: tier-1 {action} on {node.node_id} did not "
+                             f"pre-empt anything (FALSE DISPATCH)", "WARNING",
+                             node.node_id)
             else:
                 # tier 2 — needs an operator; dedupe per node + cooldown so a
                 # persistent verdict cannot spam the approval queue
