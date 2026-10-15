@@ -93,7 +93,10 @@ function live(snap, cfg, ctx) {
     <span class="sm t2 legendline" style="margin-left:auto">${legendInline(cfg)}</span></div>
   <div class="mapbox live"><svg id="netmap" class="map" role="img" aria-label="Live network map"></svg>
     <div class="zc"><button class="btn" data-action="map-reset">Reset view</button></div>
-    <div class="crewlist">${snap.teams.map((t) => `<div class="m sm"><i class="dot2" style="background:${t.state === "IDLE" ? "#8BA3C7" : "#1479C4"}"></i>${esc(t.name)} · ${esc(t.state.toLowerCase().replace("_", " "))}${t.target ? ` → ${esc(t.target)}` : ""}</div>`).join("")}</div>
+    <details class="crewlist" open>
+      <summary>Fleet status · ${snap.teams.length} teams</summary>
+      <div class="crewbody">${snap.teams.map((t) => `<div class="m sm"><i class="dot2" style="background:${t.state === "IDLE" ? "#8BA3C7" : "#0284c7"}"></i>${esc(t.name)} · ${esc(t.state.toLowerCase().replace("_", " "))}${t.target ? ` → ${esc(t.target)}` : ""}</div>`).join("")}</div>
+    </details>
   </div>`;
 }
 

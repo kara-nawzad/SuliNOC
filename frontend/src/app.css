@@ -63,7 +63,12 @@
 .field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--t2)}
 .field select,.tb select,.tb input,select{background:var(--s1);border:1px solid var(--ln);padding:5px 8px;border-radius:4px;color:var(--tx)}
 .tb input[type=range]{width:220px;padding:0;border:0;background:none}
-.crewlist{position:absolute;right:12px;top:12px;background:#F3F8FEf2;border:1px solid var(--ln);border-radius:6px;padding:8px 10px;max-height:40%;overflow:auto;font-size:12px;z-index:4}
+.crewlist{position:absolute;right:12px;top:12px;z-index:4;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border:1px solid #bae6fd;border-radius:10px;box-shadow:0 4px 14px rgba(15,23,42,.10);font-size:12px;max-width:260px}
+.crewlist summary{cursor:pointer;list-style:none;padding:7px 12px;font:500 12px var(--m);color:#0c4a6e;user-select:none}
+.crewlist summary::-webkit-details-marker{display:none}
+.crewlist summary::after{content:' ▾';color:#0284c7}
+.crewlist[open] summary::after{content:' ▴'}
+.crewbody{padding:4px 12px 10px;max-height:40vh;overflow:auto}
 .mapbox.live{height:calc(100vh - 230px);min-height:420px;margin-top:10px}
 .mapbox.live svg.map{width:100%;height:100%}
 .road{fill:none;stroke:#A9C2E6;stroke-width:3;stroke-linecap:round;opacity:.8}
@@ -98,3 +103,35 @@
 .ap-close{float:right}
 .legend-wrap{display:flex;gap:12px;flex-wrap:wrap}
 #toast.err{border-color:var(--crit);color:var(--crit)}
+
+/* ---- light-mode markers: crisp white outlines and soft shadows ---- */
+.nd .halo{opacity:.10}
+.nd .dot{stroke:#ffffff;stroke-width:2;stroke-opacity:1;filter:drop-shadow(0 2px 4px rgba(15,23,42,.16))}
+.nd:hover .dot,.nd.sel .dot{stroke-width:3}
+.nd.sel .ring{stroke:#0284c7;stroke-width:2;opacity:1}
+.ring{stroke:#0284c7;stroke-width:2;opacity:.75}
+.ring.isolated{stroke:#ef4444;stroke-width:3;stroke-dasharray:6 8;animation:fibre-pulse 1.4s linear infinite}
+@keyframes fibre-pulse{to{stroke-dashoffset:-14}}
+.crew circle{fill:#ffffff;stroke:#0284c7;stroke-width:2;filter:drop-shadow(0 2px 4px rgba(15,23,42,.16))}
+.crew.EN_ROUTE circle,.crew.REPAIRING circle{fill:#ffffff;stroke:#0c4a6e}
+.crew-t{fill:#0c4a6e}
+
+/* ---- mobile (< 768px): keep controls, filters and fleet off the map ---- */
+@media (max-width:767px){
+  #bar{flex-wrap:wrap;gap:6px 10px;padding:6px 10px;height:auto;position:relative;z-index:10}
+  #bar>.sm{flex:1 1 100%}
+  #simctl{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px;scrollbar-width:none}
+  #simctl::-webkit-scrollbar{display:none}
+  #simctl .btn{flex:none}
+  #bar input#q{width:100%;order:9}
+  #bar #clk2{display:none}
+  #bar>span[style]{display:none}
+  .tb{flex-wrap:wrap;gap:6px 10px}
+  .tb select,.tb label{font-size:12px}
+  .mapbox.live{height:calc(100vh - 210px);min-height:340px}
+  .crewlist{top:auto;bottom:56px;right:auto;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);max-height:45%}
+  .crewlist[open]{width:min(92vw,320px)}
+  .crewlist summary{padding:8px 12px}
+  .zc{left:12px;bottom:12px;z-index:20}
+  .zc .btn{background:rgba(255,255,255,.95);box-shadow:0 2px 8px rgba(15,23,42,.12)}
+}
