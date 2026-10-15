@@ -50,7 +50,7 @@ function bootHero(cfg) {
   };
   $("#enter").onclick = enter;
   $("#skip").onclick = enter;
-  $("#hero-sub").textContent = `${cfg.num_nodes} sites · ${cfg.agg_sites.length} districts · live from the engine`;
+  $("#hero-sub").textContent = `${Math.min(36, cfg.num_nodes)} of ${cfg.num_nodes} sites shown · ${cfg.agg_sites.length} districts · schematic positions`;
 }
 
 // -------------------------------------------------------------------- shell
@@ -101,6 +101,18 @@ function paint(animate = false) {
   view.innerHTML = VIEWS[ctx.view](snap, cfg, ctx);
   $("#main").scrollTop = scroll;
   if (animate) { view.classList.remove("anim"); void view.offsetWidth; view.classList.add("anim"); }
+}
+
+// Intro readout, as in the design: simulated telemetry that advances with the engine ticks.
+function renderHeroStats(snap) {
+  const el = $("#hero-stats");
+  if (!el || !snap.kpis) return;
+  const k = snap.kpis;
+  const nodes = snap.nodes ?? [];
+  const gbps = nodes.reduce((a, n) => a + (Number(n.throughput) || 0), 0) / 1000;
+  const loss = nodes.length ? nodes.reduce((a, n) => a + (Number(n.loss) || 0), 0) / nodes.length : 0;
+  el.innerHTML = `<span class="tel-line"><i></i>Simulated telemetry ${esc(k.sim_time)} · tick ${esc(k.tick)}</span>
+    <span class="tel-sub">availability ${Number(k.availability).toFixed(2)} % · ${gbps.toFixed(1)} Gbps · drop ${loss.toFixed(2)} %</span>`;
 }
 
 function applyMapFilter(snap, cfg) {
@@ -316,6 +328,7 @@ function onStoreEvent(kind, st) {
   const ai = $("#simctl [data-sim=ai]");
   if (ai && document.activeElement !== ai) ai.checked = !!snap.ai?.ai_enabled;
   $("#clk").textContent = snap.kpis.sim_time;
+  renderHeroStats(snap);
   $("#clk2").textContent = snap.kpis.sim_time;
   paint();
   if (ctx.view === "ana") loadTelemetry();
