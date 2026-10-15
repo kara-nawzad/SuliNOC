@@ -185,7 +185,9 @@ body.stale #view{filter:grayscale(.6)}
 .gbar i{display:block;height:100%}
 .gs{font-size:12px;color:var(--t2)}
 .simrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
-.simrow select{min-height:44px;padding:0 8px;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:4px;max-width:100%}
+.simrow select{min-height:40px;padding:0 30px 0 10px;background:#F6FAFF url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2310265C' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 10px center;color:#10265C;border:1px solid #A9C2E6;border-radius:4px;max-width:100%;-webkit-appearance:none;appearance:none;font:inherit}
+select:focus-visible{outline:2px solid #1479C4;outline-offset:2px}
+#bar .simctl.open .ico .lbl{display:inline}
 .cta{min-height:44px;padding:0 16px;border:1px solid var(--tx);border-radius:4px;background:transparent;color:var(--tx);font:inherit;font-size:14px;cursor:pointer}
 .cta:hover{background:var(--s2)}
 .cta:disabled{opacity:.45;cursor:not-allowed}
@@ -255,7 +257,7 @@ body.sim-paused .bcn,html.rm .bcn{animation:none}
 .gbar{position:relative}
 .gbar .gband{position:absolute;top:0;bottom:0}
 .gbar>i:not(.gband){position:relative;z-index:1}
-.gbar .gmk{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--tx);border-radius:1px;z-index:2}
+.gbar .gmk{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--tx);border-radius:1px;z-index:2}
 /* phone: opaque sheet, sheet clears the tab bar, tab bar above the sheet */
 @media(max-width:899px){
  body.ws #tabs{z-index:46}
