@@ -43,7 +43,7 @@ let heroMap = null;
 // -------------------------------------------------------------------- hero
 function bootHero(cfg) {
   const hm = $("#hm");
-  heroMap = new NetworkMap(hm, { interactive: false });
+  heroMap = new NetworkMap(hm, { interactive: false, hero: true });
   const enter = () => {
     $("#hero").classList.add("off");
     setTimeout(() => ($("#hero").hidden = true), 400);
@@ -76,6 +76,7 @@ function paint(animate = false) {
   const st = getState();
   const snap = st.snap, cfg = st.config;
   if (!snap || !cfg) return;
+  if (heroMap && !$("#hero").hidden) heroMap.update(snap, cfg);
   const view = $("#view");
   if (ctx.view === "live") {
     // The live map is persistent; it updates in place so pan and zoom survive.

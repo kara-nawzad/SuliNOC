@@ -24,9 +24,14 @@ export function projector(bounds) {
 const pts = (list, p) => list.map((c) => p(c).map((v) => v.toFixed(1)).join(",")).join(" ");
 
 export class NetworkMap {
-  constructor(svg, { interactive = true, onSelect = () => {}, onHover = () => {} } = {}) {
+  constructor(svg, { interactive = true, onSelect = () => {}, onHover = () => {}, hero = false } = {}) {
     this.svg = svg;
     this.interactive = interactive;
+    this.hero = hero;
+    this.heroLinks = null;   // [siteIdA, siteIdB] pairs (design: L)
+    this.heroPos = new Map(); // site id -> [x, y] in the schematic viewBox
+    this.heroPulses = [];    // travelling pulse dots riding the links (design: PL)
+    this.heroRaf = 0;
     this.onSelect = onSelect;
     this.onHover = onHover;
     this.view = { x: 0, y: 0, w: W, h: H };
@@ -123,10 +128,65 @@ export class NetworkMap {
     return g;
   }
 
+  // Hero intro: the design's link network, travelling pulses and the AI flag.
+  drawHero(snap) {
+    const p = this.project;
+    if (!this.heroLinks) {
+      this.heroPos = new Map(snap.nodes.map((n) => [n.id, p([n.lat, n.lon])]));
+      const seen = new Set();
+      this.heroLinks = [];
+      for (const a of snap.nodes) {
+        const near = snap.nodes.filter((b) => b.id !== a.id)
+          .map((b) => [b.id, (a.lat - b.lat) ** 2 + (a.lon - b.lon) ** 2])
+          .sort((x, y) => x[1] - y[1]).slice(0, 2);
+        for (const [bid] of near) {
+          const key = [a.id, bid].sort().join("|");
+          if (!seen.has(key)) { seen.add(key); this.heroLinks.push([a.id, bid]); }
+        }
+      }
+      const pos = (id) => this.heroPos.get(id);
+      this.layer("hlinks").innerHTML = this.heroLinks.map(([a, b], k) => {
+        const A = pos(a), B = pos(b);
+        return `<line class="lk" pathLength="1" x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" style="--d:${900 + k * 14}ms"/>`;
+      }).join("");
+      const picks = [3, 11, 18, 25, 31, 40].filter((i) => this.heroLinks[i]);
+      this.heroPulses = picks.map((i, k) => ({ l: this.heroLinks[i], t: (k * 0.37) % 1 }));
+      this.layer("hpulses").innerHTML = this.heroPulses.map(() => '<circle class="pu" r="2.6"/>').join("");
+      // AI flag: dashed lines from the flagged site to its neighbours, and its label.
+      const flag = snap.nodes.find((n) => n.warn);
+      if (flag) {
+        const F = pos(flag.id);
+        const lines = this.heroLinks.filter((l) => l.includes(flag.id)).map((l) => {
+          const O = pos(l[0] === flag.id ? l[1] : l[0]);
+          return `<line x1="${F[0]}" y1="${F[1]}" x2="${O[0]}" y2="${O[1]}" stroke="#A88BFA" stroke-width="1.4" stroke-dasharray="5 4" opacity=".85"/>`;
+        }).join("");
+        this.layer("haip").innerHTML = lines + `<text class="lbl" x="${F[0] + 14}" y="${F[1] + 4}">${flag.id} · model flag</text>`;
+      }
+      if (!this.heroRaf && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const tick = (now) => {
+          if (!document.hidden) {
+            const els = this.layer("hpulses").children;
+            this.heroPulses.forEach((pu, i) => {
+              const el = els[i]; if (!el) return;
+              const t = ((now / 3200) + pu.t) % 1;
+              const a = this.heroPos.get(pu.l[0]), b = this.heroPos.get(pu.l[1]);
+              el.setAttribute("cx", a[0] + (b[0] - a[0]) * t);
+              el.setAttribute("cy", a[1] + (b[1] - a[1]) * t);
+              el.setAttribute("opacity", Math.sin(t * Math.PI));
+            });
+          }
+          this.heroRaf = requestAnimationFrame(tick);
+        };
+        this.heroRaf = requestAnimationFrame(tick);
+      }
+    }
+  }
+
   // Dynamic layer: sites, fibre rings, crews. Called once per snapshot.
   update(snap, cfg) {
     if (!this.project) this.drawStatic(cfg);
     const p = this.project;
+    if (this.hero) this.drawHero(snap);
     const colors = cfg.status_colors ?? {};
     const offline = new Set(cfg.presentation?.offline_statuses ?? []);
     const healthy = cfg.presentation?.healthy_status ?? 0;
