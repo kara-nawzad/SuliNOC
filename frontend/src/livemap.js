@@ -60,6 +60,11 @@ export class LiveMap {
     this.siteRings = new Map(); // site id -> ring (pulses on faults, dashed for AI warnings)
     this.vanPos = new Map();  // crew name -> [lat, lon] on the drawn route
     this.progress = new Map(); // crew name -> fraction of the route driven (0..1)
+    this.links = [];          // [siteIdA, siteIdB] pairs: each site to its two nearest neighbours (as the design)
+    this.linksBuilt = false;
+    this.pulses = [];         // travelling dots riding the links (design .pu)
+    this.raf = 0;
+    this.reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     this.hud = document.createElement("div");
     this.hud.className = "hud";
     this.hud.hidden = true;
@@ -74,9 +79,12 @@ export class LiveMap {
 
     // Panes keep the layering explicit: geography < fibre < sites < vans.
     map.createPane("fibre").style.zIndex = 430;
+    map.createPane("links").style.zIndex = 420;
+    map.createPane("pulses").style.zIndex = 615;
     map.createPane("sites").style.zIndex = 620;
     map.createPane("vans").style.zIndex = 640;
     this.static = L.layerGroup().addTo(map);
+    this.linkLayer = L.layerGroup().addTo(map);
     this.fibre = L.layerGroup().addTo(map);
     this.siteLayer = L.layerGroup().addTo(map);
     this.vanLayer = L.layerGroup().addTo(map);
@@ -85,9 +93,58 @@ export class LiveMap {
     this.resizeObs = new ResizeObserver(() => map.invalidateSize());
     this.resizeObs.observe(el);
     setTimeout(() => map.invalidateSize(), 0);
+    if (!this.reduce) this.raf = requestAnimationFrame(this.tick);
+  }
+
+  // Each pulse travels its link over 3.2 s and fades in and out at the ends, as in the design.
+  tick = (now) => {
+    if (document.hidden) { this.raf = requestAnimationFrame(this.tick); return; }
+    for (const p of this.pulses) {
+      const t = ((now / 3200) + p.t) % 1;
+      const a = this.linkEnds(p.l[0]), b = this.linkEnds(p.l[1]);
+      if (!a || !b) continue;
+      p.m.setLatLng([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+      p.m.setStyle({ opacity: Math.sin(t * Math.PI), fillOpacity: Math.sin(t * Math.PI) * 0.95 });
+    }
+    this.raf = requestAnimationFrame(this.tick);
+  };
+
+  linkEnds(id) {
+    const m = this.nodes.get(id);
+    return m ? [m.getLatLng().lat, m.getLatLng().lng] : null;
+  }
+
+  // Build the link network once, from the site positions.
+  buildLinks(snap) {
+    const pts = snap.nodes;
+    const seen = new Set();
+    for (const a of pts) {
+      const near = pts.filter((b) => b.id !== a.id)
+        .map((b) => [b.id, (a.lat - b.lat) ** 2 + (a.lon - b.lon) ** 2])
+        .sort((p, q) => p[1] - q[1]).slice(0, 2);
+      for (const [bid] of near) {
+        const key = [a.id, bid].sort().join("|");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        this.links.push([a.id, bid]);
+      }
+    }
+    for (const [aid, bid] of this.links) {
+      const a = snap.nodes.find((n) => n.id === aid), b = snap.nodes.find((n) => n.id === bid);
+      L.polyline([[a.lat, a.lon], [b.lat, b.lon]], { pane: "links", className: "lk", color: "#3768F5", weight: 1, opacity: 0.6, interactive: false }).addTo(this.linkLayer);
+    }
+    // Six pulses spread over the links, as in the design.
+    const picks = [3, 11, 18, 25, 31, 40].filter((i) => this.links[i]);
+    this.pulses = picks.map((i, k) => {
+      const m = L.circleMarker([0, 0], { pane: "pulses", radius: 2.6, color: "transparent", fillColor: "#1479C4", fillOpacity: 0.9, interactive: false });
+      m.addTo(this.siteLayer);
+      return { l: this.links[i], t: (k * 0.37) % 1, m };
+    });
+    this.linksBuilt = true;
   }
 
   destroy() {
+    cancelAnimationFrame(this.raf);
     this.resizeObs.disconnect();
     this.hud.remove();
     this.map.remove();
@@ -252,6 +309,7 @@ export class LiveMap {
       m.setRadius(n.critical ? 7 : 6);
       m.setTooltipContent(`${esc(n.id)} · ${esc(cfg.status_names?.[n.status] ?? "")}`);
     }
+    if (!this.linksBuilt && snap.nodes.length) this.buildLinks(snap);
     this.styleSites();
     if (this.selected) this.setSelected(this.selected);
 
