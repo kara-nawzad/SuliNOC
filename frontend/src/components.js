@@ -34,14 +34,14 @@ export function legendRows(slices) {
     <b class="m">${num(s.value)}</b><span class="t2 m">${((s.value / total) * 100).toFixed(0)}%</span></div>`).join("");
 }
 
-export function gaugeBar(value, spec, label) {
+export function gaugeBar(value, spec, label, unit = "", scale = 1) {
   const { lo, hi, warn, bad, lower_bad: lowerBad = false } = spec;
   const p = Math.max(0, Math.min(1, (value - lo) / (hi - lo || 1)));
   const isBad = lowerBad ? value <= bad : value >= bad;
   const isWarn = lowerBad ? value <= warn : value >= warn;
   const cls = isBad ? "crit" : isWarn ? "warn" : "ok";
   const mark = (v) => `<i class="tick" style="left:${(((v - lo) / (hi - lo || 1)) * 100).toFixed(1)}%"></i>`;
-  return `<div class="gauge ${cls}"><div class="gh"><span>${esc(label)}</span><b class="m">${num(value, Math.abs(hi) < 10 ? 2 : 1)}</b></div>
+  return `<div class="gauge ${cls}"><div class="gh"><span>${esc(label)}</span><b class="m">${num(value * scale, Math.abs(hi * scale) < 10 ? 2 : 1)}${unit ? ` <small class="u">${esc(unit)}</small>` : ""}</b></div>
     <div class="gt"><i style="width:${(p * 100).toFixed(1)}%"></i>${mark(warn)}${mark(bad)}</div></div>`;
 }
 

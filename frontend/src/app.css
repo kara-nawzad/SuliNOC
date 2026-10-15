@@ -180,3 +180,5 @@
 .hud .bar{height:3px;background:#bae6fd;margin:6px 0}
 .hud .bar i{display:block;height:100%;background:#0C9C83;transition:width .6s linear}
 @media (max-width:767px){.mapbox>.hud{max-width:200px;font-size:11px}}
+
+.gauge small.u{font-size:10px;color:var(--t2);font-weight:400}

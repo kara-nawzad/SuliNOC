@@ -31,6 +31,13 @@ window.addEventListener("keydown", (e) => {
 const GENERATION = ["Legacy", "Standard", "Modernised"];
 
 // Each section lists the readings it owns, in the order the old console showed them.
+// Unit shown after each reading, and the factor that turns the stored value into it.
+const UNITS = {
+  rsrp: ["dBm"], sinr: ["dB"], cqi: ["/ 15"], vswr: [": 1"], prb: ["%"], throughput: ["Mbps"],
+  loss: ["%"], latency: ["ms"], temp: ["°C"], cpu: ["%"], dust: ["%", 100], jitter: ["ms"], s11: ["dB"],
+  voltage: ["V"], battery: ["%"], fuel: ["%"],
+};
+
 const SECTIONS = [
   ["Radio · 3GPP PM counters", ["rsrp", "sinr", "cqi", "vswr", "prb", "throughput", "loss", "latency"]],
   ["Hardware", ["temp", "cpu", "dust", "jitter", "s11"]],
@@ -46,7 +53,11 @@ export function openInspector(id) {
   const statusName = cfg.status_names[n.status] ?? "Unknown";
   const color = cfg.status_colors[n.status] ?? "#4B6192";
   const label = (k) => cfg.metric_labels?.[k] ?? k;
-  const gauge = (k) => (Number.isFinite(n[k]) && cfg.gauges?.[k] ? gaugeBar(n[k], cfg.gauges[k], label(k)) : "");
+  const gauge = (k) => {
+    if (!Number.isFinite(n[k]) || !cfg.gauges?.[k]) return "";
+    const [unit = "", scale = 1] = UNITS[k] ?? [];
+    return gaugeBar(n[k], cfg.gauges[k], label(k), unit, scale);
+  };
   const sections = SECTIONS.map(([title, keys]) =>
     `<div class="sec"><h3>${esc(title)}</h3><div class="gauges">${keys.map(gauge).join("")}</div></div>`).join("");
   const pwrType = n.pwr ?? "";
