@@ -6,8 +6,11 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { esc } from "./util.js";
 
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-const ATTRIBUTION = '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+// CARTO requires a free basemap key for raster tiles. It is read at build time
+// from VITE_CARTO_KEY so it never lives in the source tree.
+const CARTO_KEY = import.meta.env.VITE_CARTO_KEY ?? "";
+const TILE_URL = `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png${CARTO_KEY ? `?key=${encodeURIComponent(CARTO_KEY)}` : ""}`;
+const ATTRIBUTION = '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const START = { center: [35.5558, 45.4351], zoom: 12 };
 const ROAD = "#A9C2E6", LINK = "#0284c7", CUT = "#ef4444", WHITE = "#ffffff";
 
