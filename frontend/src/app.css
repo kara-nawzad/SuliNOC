@@ -164,3 +164,8 @@
 .tw i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--c);opacity:0;animation:tw-ping 2.2s ease-out infinite}
 .tw.warn i{animation-duration:3s;border-style:dashed}
 @keyframes tw-ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(3.2);opacity:0}}
+
+/* ---- design motion: site rings and crew route ---- */
+.ring-crit{animation:ring-pulse 2s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes ring-pulse{from{transform:scale(1);opacity:.9}to{transform:scale(2.4);opacity:0}}
+.route-ants{animation:fibre-pulse 1s linear infinite}
