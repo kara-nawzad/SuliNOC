@@ -6,6 +6,7 @@ import { api } from "./api.js";
 import { getState, subscribe, loadConfig, startPolling, refreshNow } from "./store.js";
 import { $, $$, esc, num, toast, reduceMotion } from "./util.js";
 import { NetworkMap } from "./map.js";
+import { LiveMap } from "./livemap.js";
 import { VIEWS, nodeCounts, OFFLINE, districtName } from "./views.js";
 import { openInspector, closeInspector, openScenario, openCounterfactual, openHistory, openAbout, closeModal } from "./panels.js";
 
@@ -79,9 +80,10 @@ function paint(animate = false) {
   if (ctx.view === "live") {
     // The live map is persistent; it updates in place so pan and zoom survive.
     if (!view.querySelector("#netmap")) {
+      map?.destroy();
       view.innerHTML = VIEWS.live(snap, cfg, ctx);
       view.classList.toggle("anim", animate);
-      map = new NetworkMap($("#netmap"), {
+      map = new LiveMap($("#netmap"), {
         onSelect: (id) => selectNode(id),
         onHover: (id, e) => showTip(id, e),
       });
@@ -91,6 +93,7 @@ function paint(animate = false) {
     applyMapFilter(snap, cfg);
     return;
   }
+  map?.destroy();
   map = null;
   // Other views re-render from the snapshot; keep scroll position stable.
   const scroll = $("#main").scrollTop;
@@ -109,10 +112,7 @@ function applyMapFilter(snap, cfg) {
     if (ctx.status === "ai") return n.warn;
     return true;
   };
-  for (const el of $$("#netmap .nd")) {
-    const n = getState().nodeById.get(el.dataset.id);
-    el.classList.toggle("fade", !!n && !show(n));
-  }
+  map?.applyFilter((n) => show(n));
 }
 
 function showTip(id, e) {

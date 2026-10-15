@@ -134,3 +134,21 @@
   .zc{left:12px;bottom:12px;z-index:20}
   .zc .btn{background:rgba(255,255,255,.95);box-shadow:0 2px 8px rgba(15,23,42,.12)}
 }
+
+/* ---- Leaflet live map (CARTO Voyager) ---- */
+.mapbox.live{background:#E3EEFB}
+.leafmap{position:absolute;inset:0;z-index:0;border-radius:inherit;overflow:hidden}
+.leafmap .leaflet-container{font:12px var(--m);background:#E3EEFB}
+.leafmap .leaflet-control-attribution{font-size:10px;background:rgba(255,255,255,.8)}
+.leafmap .leaflet-control-zoom a{color:#0c4a6e}
+.tower{filter:drop-shadow(0 2px 4px rgba(15,23,42,.16))}
+.fibre.iso{animation:fibre-pulse 1.4s linear infinite}
+.map-label{font:500 11px var(--m);color:#334155;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff;pointer-events:none;transform:translate(-50%,-150%)}
+.map-label-epc{transform:translate(10px,-50%)}
+.map-label-agg{transform:translate(-50%,-190%);font-weight:600}
+.epc-icon{width:14px;height:14px;background:#10265C;border-radius:3px;box-shadow:0 1px 3px rgba(15,23,42,.3);border:2px solid #fff;box-sizing:border-box}
+.van-icon{background:none;border:0}
+.van-icon svg{display:block;filter:drop-shadow(0 2px 4px rgba(15,23,42,.16))}
+@media (max-width:767px){
+  .leafmap .leaflet-bottom.leaflet-right{top:10px;bottom:auto}
+}

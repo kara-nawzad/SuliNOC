@@ -91,7 +91,7 @@ function live(snap, cfg, ctx) {
     <label class="sm t2">District <select data-filter="district"><option value="">All districts</option>${districts}</select></label>
     <label class="sm t2">Show <select data-filter="status">${opts}</select></label>
     <span class="sm t2 legendline" style="margin-left:auto">${legendInline(cfg)}</span></div>
-  <div class="mapbox live"><svg id="netmap" class="map" role="img" aria-label="Live network map"></svg>
+  <div class="mapbox live"><div id="netmap" class="leafmap" role="region" aria-label="Live network map"></div>
     <div class="zc"><button class="btn" data-action="map-reset">Reset view</button></div>
     <details class="crewlist" open>
       <summary>Fleet status · ${snap.teams.length} teams</summary>
