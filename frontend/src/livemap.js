@@ -12,7 +12,7 @@ const CARTO_KEY = import.meta.env.VITE_CARTO_KEY ?? "";
 const TILE_URL = `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png${CARTO_KEY ? `?key=${encodeURIComponent(CARTO_KEY)}` : ""}`;
 const ATTRIBUTION = '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const START = { center: [35.5558, 45.4351], zoom: 12 };
-const ROAD = "#A9C2E6", LINK = "#0284c7", CUT = "#ef4444", WHITE = "#ffffff";
+const ROAD = "#A9C2E6", LINK = "#0284c7", CUT = "#ef4444", WHITE = "#ffffff", DOT_EDGE = "#06223a";
 
 // Crisp white maintenance-van badge (same design as the SVG crew marker).
 const VAN_HTML = `<svg viewBox="-13 -11 26 22" width="26" height="22" aria-hidden="true">
@@ -88,7 +88,7 @@ export class LiveMap {
     this.fibre = L.layerGroup().addTo(map);
     this.siteLayer = L.layerGroup().addTo(map);
     this.vanLayer = L.layerGroup().addTo(map);
-    this.selRing = L.circleMarker([0, 0], { pane: "sites", radius: 11, color: LINK, weight: 2, fill: false, interactive: false });
+    this.selRing = L.circleMarker([0, 0], { pane: "sites", radius: 13, color: "#10265C", weight: 2, fill: false, interactive: false });
 
     this.resizeObs = new ResizeObserver(() => map.invalidateSize());
     this.resizeObs.observe(el);
@@ -221,8 +221,8 @@ export class LiveMap {
         fillColor: colors[n.status] ?? "#4DDB9B",
         fillOpacity: on ? 0.95 : 0.14,
         opacity: on ? 1 : 0.14,
-        color: WHITE,
-        weight: id === this.selected ? 3 : 2,
+        color: DOT_EDGE,
+        weight: 1,
       });
     }
   }
@@ -297,40 +297,21 @@ export class LiveMap {
         ring.addTo(this.siteLayer);
         this.halos.set(n.id, halo);
         this.siteRings.set(n.id, ring);
-        m = L.circleMarker([n.lat, n.lon], { pane: "sites", radius: 6, className: "tower", color: WHITE, weight: 2, fillOpacity: 0.95 });
+        m = L.circleMarker([n.lat, n.lon], { pane: "sites", radius: 4.5, color: DOT_EDGE, weight: 1, fillOpacity: 0.95 });
         m.on("click", () => this.onSelect(n.id));
-        m.on("mouseover", (e) => { m.setStyle({ weight: 3 }); this.onHover(n.id, e.originalEvent); });
-        m.on("mouseout", () => { m.setStyle({ weight: n.id === this.selected ? 3 : 2 }); this.onHover(null); });
+        m.on("mouseover", (e) => { m.setStyle({ radius: 6 }); this.onHover(n.id, e.originalEvent); });
+        m.on("mouseout", () => { m.setStyle({ radius: n.critical ? 6 : 4.5 }); this.onHover(null); });
         m.bindTooltip("", { direction: "top", offset: [0, -8] });
         m.addTo(this.siteLayer);
         this.nodes.set(n.id, m);
       }
       m.setLatLng([n.lat, n.lon]);
-      m.setRadius(n.critical ? 7 : 6);
+      m.setRadius(n.critical ? 6 : 4.5);
       m.setTooltipContent(`${esc(n.id)} · ${esc(cfg.status_names?.[n.status] ?? "")}`);
     }
     if (!this.linksBuilt && snap.nodes.length) this.buildLinks(snap);
     this.styleSites();
     if (this.selected) this.setSelected(this.selected);
-
-    // Ripples as in the old console: a radar ripple for a faulted site, a sonar ping for an AI warning.
-    const healthy = cfg.presentation?.healthy_status ?? 0;
-    for (const n of snap.nodes) {
-      const key = n.status !== healthy ? "fault" : n.warn ? "warn" : null;
-      const cur = this.rips.get(n.id);
-      if (cur?.key === key) continue;
-      if (cur) { cur.marker.remove(); this.rips.delete(n.id); }
-      if (key) {
-        const marker = L.marker([n.lat, n.lon], {
-          pane: "sites", interactive: false, keyboard: false, zIndexOffset: key === "fault" ? 400 : 350,
-          icon: L.divIcon({ className: "tw-icon", iconSize: [12, 12], iconAnchor: [6, 6],
-            html: `<div class="tw ${key}" style="--c:${colors[n.status] ?? "#4DDB9B"}"><i></i></div>` }),
-        }).addTo(this.siteLayer);
-        this.rips.set(n.id, { key, marker });
-      }
-    }
-
-    this.renderHud(snap);
 
     // Maintenance vans: one marker per crew, moved along the real streets.
     const seen = new Set();

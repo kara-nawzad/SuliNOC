@@ -7,6 +7,40 @@ import { esc } from "./util.js";
 const NS = "http://www.w3.org/2000/svg";
 const W = 1000, H = 600;
 
+
+// The design's intro layout: 36 towers in seven clusters, the same links and the
+// same pulse timings, reproduced from the design's seeded generator.
+export function designGraph() {
+  let sd = 7;
+  const R = (n) => {
+    let a = n += 0x6D2B79F5;
+    a = Math.imul(a ^ a >>> 15, a | 1);
+    a ^= a + Math.imul(a ^ a >>> 7, a | 61);
+    return ((a ^ a >>> 14) >>> 0) / 4294967296;
+  };
+  const rnd = () => R(sd++);
+  const CC = [[470, 290], [640, 240], [330, 350], [560, 430], [250, 190], [770, 390], [420, 160]];
+  const T = [];
+  for (let i = 0; i < 36; i++) {
+    const c = CC[i % 7], g = () => (rnd() + rnd() + rnd() - 1.5) * 110;
+    rnd();                                  // site name
+    const x = Math.round(c[0] + g());
+    const y = Math.round(c[1] + g() * 0.7);
+    for (let k = 0; k < 6; k++) rnd();      // rsrp, sinr, prb, drop, temp, batt
+    T.push({ id: i, x, y });
+  }
+  const L = [];
+  T.forEach((a) => {
+    T.map((b) => [b.id, (a.x - b.x) ** 2 + (a.y - b.y) ** 2])
+      .filter((o) => o[0] != a.id).sort((p, q) => p[1] - q[1]).slice(0, 2)
+      .forEach((o) => {
+        if (!L.some((l) => (l[0] == o[0] && l[1] == a.id) || (l[0] == a.id && l[1] == o[0]))) L.push([a.id, o[0]]);
+      });
+  });
+  const picks = [3, 11, 18, 25, 31, 40].filter((i) => L[i]).map((i) => ({ l: L[i], t: rnd() }));
+  return { pos: T.map((t) => [t.x, t.y]), links: L, picks };
+}
+
 export function projector(bounds) {
   const latMid = (bounds.lat_min + bounds.lat_max) / 2;
   const kx = Math.cos((latMid * Math.PI) / 180);
@@ -145,57 +179,47 @@ export class NetworkMap {
     return chosen;
   }
 
-  // Hero intro: the design's link network, travelling pulses and the AI flag.
+  // Hero intro: the design's layout, links, pulses and AI flag.
   drawHero(snap) {
-    const p = this.project;
-    if (!this.heroLinks) {
-      this.heroPos = new Map(snap.nodes.map((n) => [n.id, p([n.lat, n.lon])]));
-      const seen = new Set();
-      this.heroLinks = [];
-      for (const a of snap.nodes) {
-        const near = snap.nodes.filter((b) => b.id !== a.id)
-          .map((b) => [b.id, (a.lat - b.lat) ** 2 + (a.lon - b.lon) ** 2])
-          .sort((x, y) => x[1] - y[1]).slice(0, 2);
-        for (const [bid] of near) {
-          const key = [a.id, bid].sort().join("|");
-          if (!seen.has(key)) { seen.add(key); this.heroLinks.push([a.id, bid]); }
-        }
-      }
-      const pos = (id) => this.heroPos.get(id);
-      this.layer("hlinks").innerHTML = this.heroLinks.map(([a, b], k) => {
-        const A = pos(a), B = pos(b);
-        return `<line class="lk" pathLength="1" x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" style="--d:${900 + k * 14}ms"/>`;
+    if (this.heroLinks) return;
+    const D = designGraph();
+    const sample = [...snap.nodes].sort((a, b) => String(a.id).localeCompare(String(b.id))).slice(0, D.pos.length);
+    this.heroPos = new Map(sample.map((n, i) => [n.id, D.pos[i]]));
+    this.heroXY = new Map(sample.map((n, i) => [`${n.lat},${n.lon}`, D.pos[i]]));
+    this.heroLinks = D.links.map(([i, j]) => [sample[i].id, sample[j].id]);
+    this.heroPulses = D.picks.map((p) => ({ l: [sample[p.l[0]].id, sample[p.l[1]].id], t: p.t }));
+    const pos = (id) => this.heroPos.get(id);
+    this.layer("hlinks").innerHTML = this.heroLinks.map(([a, b], k) => {
+      const A = pos(a), B = pos(b);
+      return `<line class="lk" pathLength="1" x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" style="--d:${900 + k * 14}ms"/>`;
+    }).join("");
+    this.layer("hpulses").innerHTML = this.heroPulses.map(() => '<circle class="pu" r="2.6"/>').join("");
+    // AI flag: dashed lines from the flagged site to its neighbours, and its label.
+    const flag = sample.find((n) => n.warn);
+    if (flag) {
+      const F = pos(flag.id);
+      const lines = this.heroLinks.filter((l) => l.includes(flag.id)).map((l) => {
+        const O = pos(l[0] === flag.id ? l[1] : l[0]);
+        return `<line x1="${F[0]}" y1="${F[1]}" x2="${O[0]}" y2="${O[1]}" stroke="#A88BFA" stroke-width="1.4" stroke-dasharray="5 4" opacity=".85"/>`;
       }).join("");
-      const picks = [3, 11, 18, 25, 31, 40].filter((i) => this.heroLinks[i]);
-      this.heroPulses = picks.map((i, k) => ({ l: this.heroLinks[i], t: (k * 0.37) % 1 }));
-      this.layer("hpulses").innerHTML = this.heroPulses.map(() => '<circle class="pu" r="2.6"/>').join("");
-      // AI flag: dashed lines from the flagged site to its neighbours, and its label.
-      const flag = snap.nodes.find((n) => n.warn);
-      if (flag) {
-        const F = pos(flag.id);
-        const lines = this.heroLinks.filter((l) => l.includes(flag.id)).map((l) => {
-          const O = pos(l[0] === flag.id ? l[1] : l[0]);
-          return `<line x1="${F[0]}" y1="${F[1]}" x2="${O[0]}" y2="${O[1]}" stroke="#A88BFA" stroke-width="1.4" stroke-dasharray="5 4" opacity=".85"/>`;
-        }).join("");
-        this.layer("haip").innerHTML = lines + `<text class="lbl" x="${F[0] + 14}" y="${F[1] + 4}">${flag.id} · model flag</text>`;
-      }
-      if (!this.heroRaf && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        const tick = (now) => {
-          if (!document.hidden) {
-            const els = this.layer("hpulses").children;
-            this.heroPulses.forEach((pu, i) => {
-              const el = els[i]; if (!el) return;
-              const t = ((now / 3200) + pu.t) % 1;
-              const a = this.heroPos.get(pu.l[0]), b = this.heroPos.get(pu.l[1]);
-              el.setAttribute("cx", a[0] + (b[0] - a[0]) * t);
-              el.setAttribute("cy", a[1] + (b[1] - a[1]) * t);
-              el.setAttribute("opacity", Math.sin(t * Math.PI));
-            });
-          }
-          this.heroRaf = requestAnimationFrame(tick);
-        };
+      this.layer("haip").innerHTML = lines + `<text class="lbl" x="${F[0] + 14}" y="${F[1] + 4}">${flag.id} · model flag</text>`;
+    }
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const tick = (now) => {
+        if (!document.hidden) {
+          const els = this.layer("hpulses").children;
+          this.heroPulses.forEach((pu, i) => {
+            const el = els[i]; if (!el) return;
+            const t = ((now / 3200) + pu.t) % 1;
+            const a = this.heroPos.get(pu.l[0]), b = this.heroPos.get(pu.l[1]);
+            el.setAttribute("cx", a[0] + (b[0] - a[0]) * t);
+            el.setAttribute("cy", a[1] + (b[1] - a[1]) * t);
+            el.setAttribute("opacity", Math.sin(t * Math.PI));
+          });
+        }
         this.heroRaf = requestAnimationFrame(tick);
-      }
+      };
+      this.heroRaf = requestAnimationFrame(tick);
     }
   }
 
@@ -207,6 +231,12 @@ export class NetworkMap {
       if (!this.heroIds) this.heroIds = new Set(this.heroSample(snap.nodes).map((n) => n.id));
       snap = { ...snap, nodes: snap.nodes.filter((n) => this.heroIds.has(n.id)), rings: [], teams: [] };
       this.drawHero(snap);
+      if (!this.heroWrapped && this.heroXY) {
+        // Site positions on the intro come from the design layout; everything else keeps the projection.
+        const base = this.project;
+        this.project = (c) => this.heroXY.get(`${c[0]},${c[1]}`) ?? base(c);
+        this.heroWrapped = true;
+      }
     }
     const colors = cfg.status_colors ?? {};
     const offline = new Set(cfg.presentation?.offline_statuses ?? []);
@@ -240,7 +270,7 @@ export class NetworkMap {
     }).join("");
     this.layer("crews").innerHTML = teams;
 
-    const nodes = snap.nodes.map((n) => {
+    const nodes = snap.nodes.map((n, k) => {
       const [x, y] = p([n.lat, n.lon]);
       const off = offline.has(n.status);
       const fault = n.status !== healthy;
@@ -248,8 +278,8 @@ export class NetworkMap {
         n.warn ? "ai" : "", n.dispatched ? "dispatched" : "", n.repairing ? "repairing" : ""]
         .filter(Boolean).join(" ");
       const fill = colors[n.status] ?? "#4DDB9B";
-      return `<g class="${cls}" data-id="${esc(n.id)}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">
-        <circle class="halo" r="11"/><circle class="ring" r="8"/>
+      return `<g class="${cls}" data-id="${esc(n.id)}" style="--d:${this.hero ? 1500 + (k % 6) * 140 + Math.floor(k / 6) * 40 : 0}ms" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">
+        <circle class="halo" r="11"/><circle class="ring" r="13"/>
         <circle class="dot" r="${n.id === this.selected ? 6.5 : 4.5}" style="fill:${esc(fill)}"/></g>`;
     }).join("");
     this.layer("nodes").innerHTML = nodes;

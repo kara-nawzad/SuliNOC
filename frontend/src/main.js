@@ -56,7 +56,7 @@ function bootHero(cfg) {
 
 // -------------------------------------------------------------------- shell
 function buildNav() {
-  $("#side").innerHTML = `<div class="wm"><img class="logo" src="/assets/suli-noc-logo.png" alt="SuliNOC"></div>` +
+  $("#side").innerHTML = `<div class="wm"><img class="logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC"></div>` +
     NAV.map(([k, label, d]) => `<button data-view="${k}" title="${label}"><svg viewBox="0 0 24 24"><path d="${d}"/></svg><span>${label}</span></button>`).join("");
   $("#side").addEventListener("click", (e) => {
     const b = e.target.closest("[data-view]");
