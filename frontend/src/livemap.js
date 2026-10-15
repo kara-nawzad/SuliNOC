@@ -59,6 +59,11 @@ export class LiveMap {
     this.halos = new Map();   // site id -> soft status halo (design: .halo)
     this.siteRings = new Map(); // site id -> ring (pulses on faults, dashed for AI warnings)
     this.vanPos = new Map();  // crew name -> [lat, lon] on the drawn route
+    this.progress = new Map(); // crew name -> fraction of the route driven (0..1)
+    this.hud = document.createElement("div");
+    this.hud.className = "hud";
+    this.hud.hidden = true;
+    el.parentNode?.appendChild(this.hud);
     this.rips = new Map();    // site id -> pulsing ripple marker (fault or AI warning)
     this.latest = null;
 
@@ -84,6 +89,7 @@ export class LiveMap {
 
   destroy() {
     this.resizeObs.disconnect();
+    this.hud.remove();
     this.map.remove();
   }
 
@@ -164,6 +170,27 @@ export class LiveMap {
     }
   }
 
+  // Crew HUD, as in the design: each crew on a job, its steps, progress and ETA.
+  renderHud(snap) {
+    const STEPS = ["En route", "On site", "Restoring", "Done"];
+    const jobs = (snap.teams ?? []).filter((t) => t.state === "EN_ROUTE" || t.state === "REPAIRING");
+    this.hud.hidden = jobs.length === 0;
+    if (!jobs.length) { this.hud.innerHTML = ""; return; }
+    this.hud.innerHTML = jobs.map((t) => {
+      const repairing = t.state === "REPAIRING";
+      const f = this.progress.get(t.name) ?? 0;
+      const onSite = !repairing && f >= 0.98;
+      const step = repairing ? 2 : onSite ? 1 : 0;
+      const p = repairing ? 100 : Math.round(f * 100);
+      const status = repairing ? "Restoring the site" : onSite ? "On site, diagnosing" : `Driving · ${p}%`;
+      return `<div class="hud-job">
+        <div><b>${esc(t.name)}</b> <span class="t2">→</span> <span class="m">${esc(t.target ?? "")}</span></div>
+        <div class="stp">${STEPS.map((x, j) => `<i class="${j <= step ? "on" : ""}">${x}</i>`).join("")}</div>
+        <div class="bar"><i style="width:${p}%"></i></div>
+        <div class="m t2">${esc(status)}${!repairing && t.eta != null ? ` · ETA ${esc(t.eta)} ticks` : ""}</div></div>`;
+    }).join("");
+  }
+
   // Dynamic layer: called once per snapshot.
   update(snap, cfg) {
     this.drawStatic(cfg);
@@ -196,6 +223,7 @@ export class LiveMap {
         if (d < best) { best = d; idx = i; }
       });
       this.vanPos.set(t.name, pts[idx]);
+      this.progress.set(t.name, idx / (pts.length - 1));
       L.polyline(pts, { pane: "fibre", color: WHITE, weight: 9, opacity: 0.85, interactive: false }).addTo(this.fibre);
       L.polyline(pts, { pane: "fibre", color: "#B7CDEB", weight: 5, interactive: false }).addTo(this.fibre);
       L.polyline(pts, { pane: "fibre", className: "route-ants", color: WHITE, weight: 1.6, dashArray: "6 8", interactive: false }).addTo(this.fibre);
@@ -243,6 +271,8 @@ export class LiveMap {
         this.rips.set(n.id, { key, marker });
       }
     }
+
+    this.renderHud(snap);
 
     // Maintenance vans: one marker per crew, moved along the real streets.
     const seen = new Set();
