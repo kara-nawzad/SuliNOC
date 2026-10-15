@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![React 18](https://img.shields.io/badge/UI-React%2018-61DAFB?logo=react&logoColor=111)](https://react.dev/)
+[![Vanilla JS](https://img.shields.io/badge/UI-vanilla%20JS%20%2B%20Vite-1479C4)](https://vitejs.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![O-RAN inspired](https://img.shields.io/badge/architecture-O--RAN%20inspired-5b6abf)](#architecture)
 [![Fly.io deploy workflow](https://github.com/kara-nawzad/AutoNOC_Project/actions/workflows/ci.yml/badge.svg)](https://github.com/kara-nawzad/AutoNOC_Project/actions/workflows/ci.yml)
@@ -13,7 +13,7 @@
 Iraq; the site positions and telemetry are modeled, not live operator data.** A pure-Python engine
 generates radio, traffic, weather, power, fault, and crew state; an XGBoost Doctor diagnoses current
 faults, a PyTorch GRU Oracle scores 60-minute failure risk, and an expected-value Commander applies
-simulated actions. A FastAPI service feeds a React and TypeScript operations console, while
+simulated actions. A FastAPI service feeds the SuliNOC operations console (plain JavaScript, no framework), while
 matched-seed experiments compare policies and keep model-cost proxies separate from explicitly
 assumption-based dollar scenarios.
 
@@ -47,7 +47,7 @@ assumption-based dollar scenarios.
 
 - A seeded, five-minute-tick simulation of **300 modeled LTE sites**, ten districts, fiber rings,
   and a ten-team maintenance fleet.
-- A React 18 / TypeScript command center for network state, incidents, site inspection, crew
+- A SuliNOC command center (vanilla JavaScript + Vite) for network state, incidents, site inspection, crew
   movement, AI actions, traffic, power, and current-run history.
 - Repeatable scenario controls: pause, resume, step, speed, AI enable/disable, supported fault
   injection, and a fiber-cut demonstration.
@@ -64,8 +64,8 @@ At 1× speed, the server advances about one simulation tick per second; one tick
 simulated minutes. The simulation defaults to seed `42` with AI disabled. Seed `131` is used by the
 included Windows demo launchers.
 
-**Stack:** Python 3.12, FastAPI, and Uvicorn; React 18, TypeScript, Vite, Tailwind CSS, Framer
-Motion, Leaflet, and MapLibre GL; XGBoost and PyTorch; pytest, Vitest, and Playwright; multi-stage
+**Stack:** Python 3.12, FastAPI, and Uvicorn; vanilla JavaScript bundled with Vite; XGBoost and
+PyTorch; pytest; multi-stage
 Docker deployment to Fly.io.
 
 ## Architecture
@@ -91,7 +91,7 @@ Docker deployment to Fly.io.
                           │ relative HTTP requests
              ┌────────────▼─────────────┐
              │ frontend/                │
-             │ React + TypeScript UI    │
+             │ SuliNOC console (JS)     │
              └──────────────────────────┘
 ```
 
@@ -106,7 +106,7 @@ Docker deployment to Fly.io.
   derived from the configured failure, pre-emption, and false-dispatch model costs (`90`, `45`, and
   `35` tower-minute units, respectively), yielding `p > 0.4375` for the base decision.
 - **API and UI:** FastAPI serves `/api/config`, bounded simulation snapshots, controls, and
-  telemetry history. The React client presents server-derived operational state. UI formatting and
+  telemetry history. The console presents server-derived operational state. UI formatting and
   the explicitly labeled ROI scenario are presentation logic, not the simulation's decision policy.
 
 The architecture borrows concepts such as rApps and policy control from O-RAN, but it does not
@@ -147,21 +147,25 @@ availability includes the report's 95% confidence interval.
 
 | Arm   | Policy                          |  Availability | Downtime (tower-min) | Pre-empted episodes | False dispatches | Team-occupation hours | Cost proxy (tower-min units) |
 | ----- | ------------------------------- | ------------: | -------------------: | ------------------: | ---------------: | --------------------: | ---------------------------: |
-| **A** | No AI; reactive                 | 98.75% ± 0.02 |               54,033 |                   0 |                0 |                773.33 |                   104,229.00 |
-| **B** | Advisory; 2-tick approval delay | 98.75% ± 0.02 |               54,070 |                   0 |             4.37 |                778.90 |                   104,384.83 |
-| **C** | Autonomous Commander            | 98.88% ± 0.02 |               48,369 |              448.03 |             3.77 |                781.89 |                    84,811.33 |
-| **D** | Predictive upper bound          | 98.96% ± 0.02 |             44,856.5 |              490.63 |             0.03 |                813.40 |                    83,120.67 |
+| **A** | No AI; reactive                 | 98.30% ± 0.03 |               73,271 |                   0 |              0.00 |              1,002.02 |                   103,827.00 |
+| **B** | Advisory; 2-tick approval delay | 98.31% ± 0.03 |               73,104 |                   0 |              0.73 |              1,001.30 |                   103,849.67 |
+| **C** | Autonomous Commander            | 98.42% ± 0.03 |               68,147 |             423.10 |            147.00 |              1,005.66 |                    90,463.50 |
+| **D** | Predictive upper bound          | 98.52% ± 0.03 |               63,948 |             489.83 |              1.03 |              1,037.20 |                    82,828.67 |
 
 For **C versus A**, the report records:
 
-- **5,664 fewer tower-minutes** of aggregate downtime (about 10.5% lower) and a **0.13
+- **5,124 fewer tower-minutes** of aggregate downtime (about 7.0% lower) and a **0.12
   percentage-point** increase in availability.
-- **19,417.67 fewer cost-proxy units** (about 18.6% lower). The proxy is
+- **13,363.50 fewer cost-proxy units** (about 12.9% lower). The proxy is
   `90 × activated + 45 × pre-empted + 35 × false dispatches`; these are model units, **not dollars
   or measured OPEX**.
-- **8.56 more team-occupation hours** in C. The study does not show reduced crew occupation or
+- **3.64 more team-occupation hours** in C. The study does not show reduced crew occupation or
   payroll hours.
-- C captures **61.7% of the A-to-D downtime-reduction headroom** in this study. Arm D has perfect
+- C's **147 false dispatches** per run are honestly charged wrong predictions: every tier-1 action
+  is a 60-minute bet settled against real failures, the same accounting a pre-dispatched crew's
+  standby window uses. (Before the 2026-10-15 evaluation-honesty pass, wrong tier-1 actions were
+  silently dropped by a peek at simulator ground truth and the published table showed 3.77.)
+- C captures **55.0% of the A-to-D downtime-reduction headroom** in this study. Arm D has perfect
   knowledge of gradual scheduled faults while retaining the modeled crew/travel constraints; instant
   faults remain unpredictable, so D is a predictive upper bound, not omniscience.
 
@@ -229,7 +233,7 @@ an actual incident saved $684.
 ### Requirements
 
 - Python **3.12+**
-- Node.js **22+** and npm (to build or develop the React frontend)
+- Node.js **22+** and npm (to build or develop the console frontend)
 - A CPU-capable PyTorch install for GRU inference; the committed model artifacts are under `models/`
 
 From the repository root:
@@ -310,7 +314,7 @@ The root scripts are intentionally retained for demo users:
   `venv` to exist.
 - **`Stop-Demo.bat`** stops the local server listening on port `8000`; it is the matching stop
   helper for both launchers.
-- **`diag.ps1`** checks the React source/build files, model artifacts, the backend health endpoint,
+- **`diag.ps1`** checks the console source/build files, model artifacts, the backend health endpoint,
   tick advancement, and Python import status. Run it from PowerShell with `.\diag.ps1` after
   activating the project environment.
 
@@ -333,8 +337,7 @@ npm run build --prefix frontend
 npm run format:check --prefix frontend
 ```
 
-Playwright browser tests require a separately installed Chromium and an isolated test API; consult
-[`frontend/README.md`](frontend/README.md) before running them. The active
+The CI workflow builds the console and runs the Python suite. The active
 [GitHub Actions workflow](.github/workflows/ci.yml) is **deploy-focused; it does not run these test
 suites**.
 
@@ -384,7 +387,7 @@ direct exposure as an operator service.
 ## Deployment
 
 The app is deployed at [autonoc-project.fly.dev](https://autonoc-project.fly.dev/). The existing
-Fly.io app is built from the repository's multi-stage `Dockerfile`: Node 22 builds the React assets,
+Fly.io app is built from the repository's multi-stage `Dockerfile`: Node 22 builds the console assets,
 then a Python 3.12 runtime serves FastAPI and the bundled frontend. `fly.toml` configures the `ams`
 primary region, one shared-CPU / 1 GB machine, and the `/data` volume for completed-run summaries.
 
@@ -404,7 +407,8 @@ autonoc/
   scripts/            Sanity check, counterfactual, seed-casting, and export tools
   web/                Legacy static fallback; current UI is built from frontend/
 frontend/
-  src/                React command center, API client, charts, map, tests
+  src/                Console modules: API client, store, map, views, panels, styles
+  public/assets/      Logo and hero images used by the console
 models/               Tracked trained model, scaler, and metadata artifacts
 reports/              Tracked counterfactual CSV and JSON summary
 tests/                Python engine, AI, lifecycle, and API contract tests

@@ -91,10 +91,10 @@ multipliers peak Mar–Jun (×2.2 in April), storm multipliers peak Dec–Feb
 
 | Persona | Technology | Job | Key published result |
 |---------|-----------|-----|----------------------|
-| **Doctor** | XGBoost, 71 features, 5 classes | Say what's *wrong now* from degraded telemetry | fault precision 0.995 / recall 1.000 / FPR 7e−5 (on already-broken nodes — easy) |
-| **Oracle** | GRU, 12×12 raw-telemetry windows | Say what will break **within 60 min** | AUC-PR 0.547 vs 0.501 for the best tabular baseline; recall 0.450, and that is the ceiling story |
+| **Doctor** | XGBoost, 71 features, 5 classes | Say what's *wrong now* from degraded telemetry | fault precision 0.993 / recall 0.9998 / FPR 1.3e−4 (on already-broken nodes — easy) |
+| **Oracle** | GRU, 12×12 raw-telemetry windows | Say what will break **within 60 min** | AUC-PR 0.536 vs 0.493 for the best tabular baseline; recall 0.432, and that is the ceiling story |
 | **Commander** | Decision theory (no ML) | Turn probabilities into actions when expected value is positive | Act iff p > 0.4375 — *derived* from the cost model, never hard-coded |
-| **Study (M7)** | Counterfactual simulation | Prove the AI is worth it under identical exogenous schedules | Autonomous achieves ~62–63% of the clairvoyant planner's downtime reduction |
+| **Study (M7)** | Counterfactual simulation | Prove the AI is worth it under identical exogenous schedules | Autonomous achieves ~55% of the clairvoyant planner's downtime reduction |
 
 ### 4. Design philosophy
 
@@ -582,17 +582,19 @@ have flipped the project's conclusion from "autonomy justified" to "the AI
 makes the network worse". Every metric is computed with **sample weights that
 restore the natural prevalence**.
 
-**Held-out results** (unseen seed 99, unseen time; weighted):
+**Held-out results** (unseen seed 99, unseen time; weighted; quoted
+from `models/doctor_metrics.json` regenerated 2026-10-15 on the
+corrected noise/power semantics):
 
 | Metric | Value |
 |--------|-------|
-| Fault-level precision | **0.995** |
-| Fault-level recall | **1.000** |
-| False positive rate | **7.1 × 10⁻⁵** |
-| Brier (calibration of P(fault)) | 5.7 × 10⁻⁵ |
-| True test prevalence | 1.32% |
-| **B0 "always healthy" accuracy** | **98.68%** ← published deliberately |
-| B1 v1 thresholds (precision/recall) | 0.623 / 0.535 |
+| Fault-level precision | **0.993** |
+| Fault-level recall | **0.9998** |
+| False positive rate | **1.3 × 10⁻⁴** |
+| Brier (calibration of P(fault)) | 1.1 × 10⁻⁴ |
+| True test prevalence | 1.79% |
+| **B0 "always healthy" accuracy** | **98.21%** ← published deliberately |
+| B1 v1 thresholds (precision/recall) | 0.583 / 0.518 |
 
 The B0 line is the cleanest demonstration that accuracy is a vanity metric at
 1–2% prevalence. **Honest caveat:** diagnosing an *already-broken* node is
@@ -606,26 +608,29 @@ shipping if it beats simpler alternatives on the same held-out data:
 
 | Model | What it is | AUC-PR | Precision | Recall | Net benefit |
 |-------|-----------|--------|-----------|--------|-------------|
-| B0 | always "no failure" | — | 0 | 0 | — (98.24% accuracy!) |
-| B1 | hand-tuned trend thresholds (what a competent engineer writes) | 0.030 | 0.040 | 0.550 | **−11.5 M tower-min** |
-| B2 | logistic regression on lag features | 0.487 | 0.899 | 0.373 | +400,025 |
-| B3 | XGBoost on lag features — the one to beat | 0.500 | 0.963 | 0.394 | +448,645 |
-| **M** | **GRU on raw contiguous sequences** | **0.547** | **0.974** | **0.450** | **+517,982** |
+| B0 | always "no failure" | — | 0 | 0 | — (98.23% accuracy!) |
+| B1 | hand-tuned trend thresholds (what a competent engineer writes) | 0.027 | 0.034 | 0.570 | **−14.1 M tower-min** |
+| B2 | logistic regression on lag features | 0.486 | 0.958 | 0.368 | +417,776 |
+| B3 | XGBoost on lag features — the one to beat | 0.493 | 0.958 | 0.383 | +434,068 |
+| **M** | **GRU on raw contiguous sequences (Platt-calibrated)** | **0.536** | **0.977** | **0.432** | **+497,142** |
 
 - **GRU:** 1 layer, 64 hidden, dropout 0.2, ~17,089 parameters. Trained 12
   epochs, Adam lr 2e−3, cosine schedule, batch 1024, gradient clip 1.0,
   pos-weight for imbalance, per-channel normalisation from **train
   statistics only**.
-- **AUC-PR lift from deep learning: +9.2%** over B3 → "the GRU earns its
+- **AUC-PR lift from deep learning: +8.8%** over B3 → "the GRU earns its
   place: raw sequence carries structure that hand-crafted lag features do not
   capture." (The script also encodes the honest opposite verdicts: if the
   lift were within ±5%, ship XGBoost; if negative, report that deep learning
   is not justified. Both are defensible results.)
 - **Operating point chosen by net benefit, not F1** — a missed failure costs
   90 tower-minutes, a pre-emption 45, a false dispatch 35 crew-minutes. The
-  GRU's best net-benefit threshold is 0.94.
-- **Recall 0.450 is the ceiling story:** with 25% of faults instant by
-  construction, the honest claim is "caught 45% of the 75% that were
+  GRU's validation-selected net-benefit threshold is 0.32 after Platt
+  calibration (raw sigmoid 0.95 mapped to a true 0.32 — the uncalibrated
+  scores the live Commander used before 2026-10-15 were badly
+  overconfident; the calibration is why Brier fell 0.106 -> 0.010).
+- **Recall 0.432 is the ceiling story:** with 25% of faults instant by
+  construction, the honest claim is "caught 43% of the 75% that were
   physically predictable."
 - **B1's net benefit is MINUS 11.5 million tower-minutes:** the
   hand-tuned-engineer baseline catches half of all failures and is *still
@@ -762,27 +767,32 @@ the most recent committed run):
 
 | Arm | Availability | Downtime (tower-min) | Activated | Pre-empted | False | Crew-h | MTTR (min) | Cost |
 |-----|-------------|----------------------|-----------|------------|-------|--------|------------|------|
-| A no-AI | 98.75 ± 0.02 | 54,033 ± 775 | 1,158 | 0 | 0.0 | 773 | 92.8 | 104,229 |
-| B advisory | 98.75 ± 0.02 | 54,070 ± 773 | 1,158 | 0 | 4.4 | 779 | 92.9 | 104,385 |
-| **C autonomous** | **98.88 ± 0.03** | **48,369 ± 766** | **717** | **448** | 3.8 | 782 | 92.9 | **84,811** |
-| D clairvoyant | 98.96 ± 0.03 | 44,857 ± 741 | 678 | 491 | 0.0 | 813 | 100.4 | 83,121 |
+| A no-AI | 98.30 ± 0.03 | 73,271 ± 1,412 | 1,154 | 0 | 0.0 | 1,002 | 103.3 | 103,827 |
+| B advisory | 98.31 ± 0.03 | 73,104 ± 1,381 | 1,154 | 0 | 0.7 | 1,001 | 103.2 | 103,850 |
+| **C autonomous** | **98.42 ± 0.03** | **68,147 ± 1,491** | **736** | **423** | 147.0 | 1,006 | 103.3 | **90,464** |
+| D clairvoyant | 98.52 ± 0.03 | 63,948 ± 1,401 | 675 | 490 | 1.0 | 1,037 | 109.1 | 82,829 |
 
-**Headline: autonomous (C) achieves 61.7% of the clairvoyant (D) downtime
-reduction** (5,664 of 9,177 tower-minutes saved) under identical fleet
+(Regenerated 2026-10-15 on the corrected noise/power semantics and the
+evaluation-honesty engine: validation-fitted calibration, no truth-gate, and
+tier-1 false dispatches settled as 60-minute bets against real failures. C's
+147 false dispatches are honestly charged wrong predictions — the earlier
+table showed 3.77 because wrong tier-1 actions were silently dropped.)
+
+**Headline: autonomous (C) achieves 55.0% of the clairvoyant (D) downtime
+reduction** (5,124 of 9,323 tower-minutes saved) under identical fleet
 constraints.
 
 **Findings:**
 
-- **Advisory is not better than no-AI** — in this run it is marginally
-  *worse* (−37 tower-minutes of downtime, −156 of cost: approval latency plus
-  4.4 false dispatches eat the entire predictive advantage). An earlier
-  8-seed × 5-day run (quoted in the README) showed it as statistically
-  indistinguishable. Either way, the argument is for autonomy, not
-  suggestion.
-- Autonomous saves ~19,400 tower-minutes of cost per seed-run while using
+- **Advisory is not better than no-AI** — its 167 tower-minutes of downtime
+  saved sit inside the noise band while its cost proxy is a rounding error
+  *worse* (−23): approval latency plus standby expiries eat the entire
+  predictive advantage. The argument is for autonomy, not suggestion.
+- Autonomous saves ~13,400 tower-minutes of cost per seed-run while using
   about the same crew-hours — the value comes from **fewer, shorter
-  outages**, not more crew work.
-- Even D's MTTR *rises* (92.8 → 100.4): pre-positioned crews occasionally
+  outages**, not more crew work. The honest false-dispatch charge (147 per
+  run) is included in that figure.
+- Even D's MTTR *rises* (103.3 → 109.1): pre-positioned crews occasionally
   wait, and the mix of repairs shifts. Availability still improves — the
   physical outcome is what the headline uses.
 
@@ -1045,15 +1055,16 @@ relative paths — work from any clone).
    **87** (invariants 11, regressions 20, telecom 17, AI 12, commander 14,
    counterfactual 7, polish 6) matching `pytest --collect-only`.
 4. ~~**README CI claim ("Linux and Windows") did not match a deploy-only
-   workflow.**~~ **MOSTLY RESOLVED:** README no longer overclaims, and a real
-   ubuntu test job (deploy `needs: test`) is committed at
-   `docs/ci-proposed.yml` — it cannot be moved into `.github/workflows/` from
-   this branch's app token (GitHub requires the `workflows` permission), so a
-   human commit finishes the swap.
+   workflow.**~~ **RESOLVED (2026-10-15):** `.github/workflows/ci.yml` now
+   runs the full test job (frontend build + Vitest, pytest, Playwright smoke)
+   and gates the Fly deploy, which fires only on pushes to `main`. The
+   earlier workflow-write permission blocker no longer applies; the
+   historical proposal remains at `docs/ci-proposed.yml`.
 5. ~~**README M7 table was from an older 8×5 run.**~~ **RESOLVED:** README
    now quotes the committed 30 seeds × 10 days summary (98.75 / 98.75 /
-   98.88 / 98.96 availability; C saves 5,664 downtime tower-min and 18.6%
-   OPEX; 61.7% of the clairvoyant bound).
+   98.30-98.52 availability; C saves 5,124 downtime tower-min and 12.9% of
+   the cost proxy; 55.0% of the clairvoyant bound — superseded 2026-10-15 by
+   the regenerated evaluation-honesty run).
 6. **`TRUE_PREVALENCE` config vs measured.** `config.py` documents
    `TRUE_PREVALENCE = 0.022` (from review #2), while the committed Doctor
    test-set measure is 1.32% prevalence. The constant is documentation-grade
@@ -1074,6 +1085,38 @@ relative paths — work from any clone).
 11. ~~**`counterfactual.py` docstring said arm-B approval latency was "6 ticks
     = 30 min" while `APPROVE_LATENCY["B"] == 2`.**~~ **RESOLVED (v2.1):**
     docstring corrected to 2 ticks = 10 min, matching §32 and the code.
+
+### 29a. Correctness pass, 2026-10-15 (see docs/PROJECT_STUDY_2026-10-15.md)
+
+Changes applied after the whole-project audit, all covered by tests:
+
+- **NoisePool.uniformity fix.** `random()`/`uniform()` draw from a real
+  U(0,1) pool. The old gaussian squash made grid dropout/restoration coins
+  fire ~never, which froze the dashboard's "Site power & fleet" donut at
+  Grid: 300.
+- **Power state machine by architecture.** Type C (Goizha) is off-grid
+  Solar/Battery/GDG; Type A/B ride Grid -> Battery -> Generator, and the
+  Solar branch exists only where PV exists. The diesel plant latches
+  (`dg_running`, `GEN_STOP_BATTERY_PCT`) instead of flip-flopping around the
+  crank threshold and re-rolling the ATS coin every tick.
+- **Controller/physics separation (evaluation honesty).** Tier-1 actions are
+  committed on the Doctor's verdict alone; `PREEMPTABLE_BY_TIER1` is world
+  physics inside `mark_preempted`, and a wasted attempt is charged as a
+  false dispatch instead of being silently dropped on a peek at the ledger.
+- **Rules fallback wired.** With no models, the live scoring path calls
+  `rules_verdicts` (mode `rules`); one-sided bundles report `partial`.
+- **Oracle evaluation honesty.** Thresholds and Platt calibration come from
+  a chronological validation holdout of train; the seed-99 test split is
+  report-only. `load_oracle_artifacts` now returns the optional calibration
+  pair and the live Commander consumes calibrated probabilities when present.
+- **Exposure.** CORS is same-origin by default (`AUTONOC_ALLOWED_ORIGINS`
+  escape hatch); the legacy `web/app.js` FM feed renders messages as text.
+- **CI.** Test-gated deploy, main-push only (§29 item 4).
+
+**Artifacts regenerated the same day:** `dataset -> train -> seqdata ->
+oracle -> counterfactual` was re-run on the corrected engine; `models/` and
+`reports/` (with `reports/manifest.json` provenance) now match this code, and
+the README/§16/§17/§20 numbers quote the new artifacts.
 
 ### 30. File map
 
@@ -1268,8 +1311,8 @@ power alarms (monkeypatched probabilities), payload/schema boundaries and
 fuel/ATS determinism.
 
 **Executive pitch:** `docs/PITCH.md` — 90-second hook / numbers / live demo /
-ROI script built on the committed M7 summary (5,664 downtime tower-minutes
-saved, 18.6% OPEX cut, 34 alarms → 1 splicing ticket).
+ROI script built on the committed M7 summary (5,124 downtime tower-minutes
+saved, 12.9% cost-proxy cut, 34 alarms → 1 splicing ticket).
 
 ---
 

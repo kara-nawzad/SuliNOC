@@ -172,22 +172,27 @@ SOLAR_END_TICK: Final = 240         # 20:00
 SOLAR_CHARGE_PCT: Final = 0.5
 GRID_CHARGE_PCT: Final = 0.5
 GEN_START_BATTERY_PCT: Final = 10.0
+# fuel-saving cycling: the latched DG runs until the bank is topped to this
+# level, then stops; the bank carries the site until GEN_START again.
+GEN_STOP_BATTERY_PCT: Final = 60.0
 
 VOLTAGE_GRID: Final = 12.0
 VOLTAGE_BATT_FULL: Final = 12.5
 VOLTAGE_BATT_EMPTY: Final = 11.0
 VOLTAGE_NOISE: Final = 0.05
 
-# Two distinct weak-grid mechanisms, deliberately:
+# Two distinct weak-grid stories, deliberately:
 #   Bakrajo — mains instability, repeated cycling, capacity fade -> PREDICTABLE
-#   Goizha  — lightning/wind snaps the line                      -> UNPREDICTABLE
-# Same symptom class, opposite precursors. This is where the 75/25
-# gradual/instant split comes from physically rather than by decree.
+#   Goizha  — off-grid ridge plant: weather (storm damage, dust-blinded PV,
+#             dark winter days) drives the backup chain -> UNPREDICTABLE
+# Same symptom class, opposite precursors — the narrative behind the 75/25
+# gradual/instant split (faults.py rolls it globally from GRADUAL_FRACTION).
 GRID_TIER: Final = {
     0: "EXPOSED", 1: "STRONG", 2: "STRONGEST", 3: "STRONG", 4: "MEDIUM",
     5: "UNSTABLE", 6: "MEDIUM", 7: "MEDIUM", 8: "STRONG", 9: "MEDIUM",
 }
 GRID_DROPOUT_CHANCE: Final = {
+    # EXPOSED (Goizha) is off-grid Type C — no mains coin is drawn for it.
     "STRONGEST": 0.0002, "STRONG": 0.0005, "MEDIUM": 0.0010,
     "UNSTABLE": 0.0045, "EXPOSED": 0.0018,
 }
@@ -412,17 +417,18 @@ GAUGE_SPECS: Final = {
 # Telecom site power architecture. In Iraq, site power is the #1 OPEX line:
 # diesel, battery banks and grid instability cost operators more than the
 # radio gear itself. Every district's grid tier maps to one of the three
-# standard configurations operators deploy — this is a LABEL derived from the
-# existing (unchanged) power physics, not a new dynamic:
+# standard configurations operators deploy. The architecture now shapes the
+# physics.update_power state machine — which source a site can run on is a
+# function of its plant, not just a label:
 #   Type A  Grid + standby diesel generator (DG). Urban sites on a reliable
 #           mains; the DG only cranks during outages. (Salim St, University…)
 #   Type B  Hybrid DG + deep-cycle VRLA battery bank. Bad-grid areas: the
 #           plant cycles between battery and DG to save fuel — the battery-
 #           first discharge chain below GEN_START_BATTERY_PCT IS that
 #           cycling. (Bakrajo — UNSTABLE mains.)
-#   Type C  Off-grid Solar PV + LFP bank + DG backup. Remote/exposed sites
-#           where the mains snaps in storms and solar carries daylight load.
-#           (Goizha ridge — EXPOSED.)
+#   Type C  Off-grid Solar PV + LFP bank + DG backup. No mains line at all:
+#           solar carries daylight load, the bank bridges the night, the DG
+#           covers extended darkness or heavy soiling. (Goizha ridge.)
 POWER_CONFIG_BY_TIER: Final = {
     "STRONGEST": "A", "STRONG": "A", "MEDIUM": "A",
     "UNSTABLE": "B", "EXPOSED": "C",

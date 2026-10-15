@@ -135,8 +135,23 @@ def _reset_soft_state(node) -> None:
 
 
 # ------------------------------------------------------------------ bookkeeping
+# World physics, NOT policy: a cheap tier-1 mitigation (throttle / shed /
+# reboot / switch_power) can only stop a SOFT degradation (congestion or
+# thermal). A crew-worthy fault (RF / power / backhaul) is physically
+# unaffected: it will activate and need a real crew. The Commander never
+# consults this map - it commits the action on its own verdict - and the
+# engine settles each attempt as a 60-minute bet against real failures
+# instead of silently dropping it on a peek at the ledger's hidden truth
+# (audit P1, 2026-10-15).
+PREEMPTABLE_BY_TIER1 = frozenset({C.STATUS_CONGESTION, C.STATUS_OVERHEAT})
+
+
 def mark_preempted(engine, node) -> bool:
     """Record that node's pending episode was stopped before it activated.
+
+    Returns False when the attempt cannot physically pre-empt this episode
+    (see PREEMPTABLE_BY_TIER1) - the caller then registers a 60-minute bet
+    so the WORLD settles the attempt's value, not the controller.
 
     The ledger transition is injected -> pre_empted: the schedule event still
     exists (I10), it just never became a real fault in this arm. Both
@@ -147,6 +162,8 @@ def mark_preempted(engine, node) -> bool:
         return False
     entry = engine.ledger.get(node.episode_id)
     if entry is None or entry.get("state") != "injected":
+        return False
+    if entry.get("kind") not in PREEMPTABLE_BY_TIER1:
         return False
     entry["state"] = "pre_empted"
     entry["pre_empted_at"] = engine.tick

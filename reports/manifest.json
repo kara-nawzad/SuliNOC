@@ -1,0 +1,59 @@
+{
+  "git_head": "7e62724adb6b5d0465652db4851d9cd541e8a9ce",
+  "python": "3.11.2",
+  "platform": "linux",
+  "packages": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "sklearn": "1.9.1",
+    "xgboost": "3.2.0",
+    "torch": "2.14.1+cu130",
+    "fastapi": "0.143.1"
+  },
+  "config_sha256": "4c995942c44e529c",
+  "model_artifacts_sha256": {
+    "doctor_metrics.json": "67cc934e4dd46bda",
+    "doctor_scaler.npz": "46af7f3d785c6469",
+    "doctor_xgb.json": "29cdb18d3c53e708",
+    "feature_order.json": "3ffbc964e31c94c5",
+    "oracle_gru.pt": "798fcd4c5ae4cead",
+    "oracle_metrics.json": "37861aaef45ab556",
+    "oracle_stats.npz": "96d825b9e3881885"
+  },
+  "study": {
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30
+    ],
+    "days": 10,
+    "models": "on"
+  }
+}

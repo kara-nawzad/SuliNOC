@@ -104,6 +104,7 @@ class ModelBundle:
         self.oracle = None
         self.oracle_mu = None
         self.oracle_sd = None
+        self.oracle_calib = None      # Platt (a, b) from the validation split
         self.oracle_seq_len = 12
         self.channels: list[str] = []
         self.mode = "rules"          # upgraded to "ml" only if EVERYTHING loads
@@ -136,10 +137,11 @@ class ModelBundle:
             return
         try:
             from .oracle import load_oracle_artifacts
-            net, mu, sd, seq_len, channels = load_oracle_artifacts()
+            net, mu, sd, seq_len, channels, calib = load_oracle_artifacts()
             self.oracle = net
             self.oracle_mu = mu.astype(np.float32)
             self.oracle_sd = sd.astype(np.float32)
+            self.oracle_calib = calib
             self.oracle_seq_len = seq_len
             self.channels = list(channels)
         except Exception as exc:
@@ -148,6 +150,21 @@ class ModelBundle:
     @property
     def complete(self) -> bool:
         return (self.doctor is not None and self.oracle is not None)
+
+
+def serving_mode(bundle: ModelBundle) -> str:
+    """The honest serving state, surfaced to the dashboard as ai_mode.
+
+    ml       both models loaded and scoring
+    partial  one model loaded; the missing half degrades (rules policy
+             replaces a dead bundle, _combine substitutes a one-sided score)
+    rules    no models at all - the B1 rules policy is actually consulted
+    """
+    if bundle.complete:
+        return "ml"
+    if bundle.doctor is not None or bundle.oracle is not None:
+        return "partial"
+    return "rules"
 
 
 # ------------------------------------------------------------------ worker
@@ -171,7 +188,7 @@ class InferenceWorker(threading.Thread):
         self._last_error: str | None = None
         # loads happen here so a missing file degrades once, quietly
         self.bundle = bundle if bundle is not None else ModelBundle()
-        self._mode = "ml" if self.bundle.complete else "rules"
+        self._mode = serving_mode(self.bundle)
 
     # ------------------------------------------------------------ lifecycle
     def stop(self) -> None:
@@ -264,6 +281,11 @@ class InferenceWorker(threading.Thread):
         ids, feats, windows, statuses, crit = snapshot
         p_fault = _doctor_scores(ids, feats, self.bundle)
         p_fail = _oracle_scores(ids, windows, self.bundle)
+        if p_fault is None and p_fail is None:
+            # Nothing scored (no models, or both inferences failed): the
+            # advertised B1 rules fallback must ACT, not emit silent
+            # zero-probability verdicts the Commander drops.
+            return rules_verdicts(source)
         return _combine(ids, statuses, crit, p_fault, p_fail)
 
 
@@ -314,6 +336,11 @@ def _oracle_scores(ids, windows, bundle):
         with torch.no_grad():
             out = torch.sigmoid(
                 oracle(torch.from_numpy(Xn))).numpy().reshape(-1)
+        if bundle.oracle_calib is not None:
+            # calibrated probabilities: the Commander's break-even threshold
+            # is only meaningful against calibrated scores
+            from .oracle import platt_apply
+            out = platt_apply(out, bundle.oracle_calib)
         scores: dict[str, float] = {}
         j = 0
         for i, nid in enumerate(ids):
@@ -363,4 +390,6 @@ def score_engine(engine, bundle) -> dict[str, dict]:
     ids, feats, windows, statuses, crit = _collect_inputs(engine, bundle)
     p_fault = _doctor_scores(ids, feats, bundle)
     p_fail = _oracle_scores(ids, windows, bundle)
+    if p_fault is None and p_fail is None:
+        return rules_verdicts(engine)
     return _combine(ids, statuses, crit, p_fault, p_fail)

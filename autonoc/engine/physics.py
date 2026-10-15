@@ -134,12 +134,30 @@ def update_dust(node, weather_type: str, rain_mm_h: float) -> None:
 
 
 def update_power(node, tick: int, rng) -> None:
-    """Grid -> Solar -> Battery -> Generator, with capacity fade."""
+    """Power-source state machine by site architecture.
+
+    Type A (grid + standby DG) — STRONG/STRONGEST/MEDIUM districts:
+        Grid while mains is up; outages ride Battery then crank the Generator.
+    Type B (hybrid DG + VRLA, unstable mains) — Bakrajo/UNSTABLE:
+        same chain, but the mains cycles often, so sites naturally rotate
+        Grid -> Battery -> Diesel DG.
+    Type C (off-grid solar PV + LFP + DG) — Goizha/EXPOSED:
+        no mains line at all: Solar carries daylight load, Battery bridges the
+        night, the Generator covers extended darkness or poor sun.
+
+    Solar exists only where PV exists (Type C). Capacity fade, battery drain
+    and the generator crank gate are shared. Grid coins are drawn only for
+    on-grid architectures; the Type C branch is coin-free, keeping the fixed
+    draw order (I9).
+    """
     tod = tick % C.TICKS_PER_DAY
     solar_window = C.SOLAR_START_TICK <= tod <= C.SOLAR_END_TICK
     tier = node.grid_tier
+    arch = C.POWER_CONFIG_BY_TIER[tier]
 
-    if node.grid_available:
+    if arch == "C":
+        node.grid_available = False           # off-grid: no line to drop/restore
+    elif node.grid_available:
         if rng.random() < C.GRID_DROPOUT_CHANCE[tier]:
             node.grid_available = False
             node.battery_cycles += 0.4          # a shallow cycle begins
@@ -158,31 +176,43 @@ def update_power(node, tick: int, rng) -> None:
 
     if node.grid_available:
         node.power_source = "Grid"
+        node.dg_running = False
         node.battery_pct = min(node.battery_capacity,
                                node.battery_pct + C.GRID_CHARGE_PCT)
         node.generator_fuel_pct = min(100.0, node.generator_fuel_pct + 0.3)
         node.voltage = C.VOLTAGE_GRID + rng.gauss(0.0, C.VOLTAGE_NOISE)
         return
 
-    if solar_window and node.battery_pct < node.battery_capacity:
+    if node.dg_running:
+        # Latched plant: cranked at the start threshold, runs until the bank
+        # tops up (fuel-saving cycling) or the tank runs dry. Never
+        # flip-flops around GEN_START_BATTERY_PCT.
+        if node.generator_fuel_pct > 0.0 and not node.ats_failed:
+            node.power_source = "Generator"
+            node.generator_fuel_pct = max(
+                0.0, node.generator_fuel_pct - (100.0 / C.GENERATOR_TICKS))
+            node.battery_pct = max(0.0, min(node.battery_capacity,
+                                            node.battery_pct + 1.0))
+            if node.battery_pct >= C.GEN_STOP_BATTERY_PCT:
+                node.dg_running = False
+        else:
+            node.dg_running = False       # dry tank or jammed switch stops it
+            node.power_source = "Battery"
+            node.battery_pct = max(0.0, node.battery_pct - drain)
+    elif arch == "C" and solar_window:
         node.power_source = "Solar"
         soiling = 1.0 - node.dust_accum * C.DUST_SOLAR_PENALTY
         charge = C.SOLAR_CHARGE_PCT * soiling * (1.0 + rng.uniform(-0.2, 0.2))
-        node.battery_pct = min(node.battery_capacity,
-                               node.battery_pct + charge - drain)
+        node.battery_pct = max(0.0, min(node.battery_capacity,
+                                        node.battery_pct + charge - drain))
     elif node.battery_pct > C.GEN_START_BATTERY_PCT:
         node.power_source = "Battery"
         node.battery_pct = max(0.0, node.battery_pct - drain)
-    elif node.generator_fuel_pct > 0.0 and not node.ats_failed:
-        node.power_source = "Generator"
-        node.generator_fuel_pct = max(
-            0.0, node.generator_fuel_pct - (100.0 / C.GENERATOR_TICKS))
-        node.battery_pct = min(node.battery_capacity, node.battery_pct + 1.0)
     else:
-        # No usable source: either the tank is dry, or the ATS failed to
-        # crank the DG (site-power alarm raised by the engine). The battery
-        # bank keeps draining toward a site-down POWER failure. No RNG draws
-        # happen on this path, so the jam changes no draw order (I9).
+        # At/below the crank threshold with no running DG: _power_events has
+        # rolled the transfer switch (or found it jammed — site-power alarm).
+        # The bank keeps draining toward a site-down POWER failure. No RNG
+        # draws happen on this path, so the jam changes no draw order (I9).
         node.power_source = "Battery"
         node.battery_pct = max(0.0, node.battery_pct - drain)
 

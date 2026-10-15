@@ -58,6 +58,51 @@ from autonoc.engine.geo import haversine_km
 ARMS = ("A", "B", "C", "D")
 
 REPORTS = pathlib.Path("reports")
+MODELS = pathlib.Path("models")
+
+
+def _provenance(seeds, days: int, use_models: bool) -> dict:
+    """Machine-readable run provenance (audit P2, 2026-10-15).
+
+    Reports without provenance cannot be reproduced or honestly compared
+    against a later engine. Hashes pin the exact artifacts and config the
+    numbers were produced with.
+    """
+    import hashlib
+    import platform
+    import subprocess
+    import sys
+
+    def _sha256(path: pathlib.Path) -> str:
+        h = hashlib.sha256()
+        with path.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(65536), b""):
+                h.update(chunk)
+        return h.hexdigest()[:16]
+
+    try:
+        git = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
+                             text=True, timeout=5).stdout.strip() or "unknown"
+    except Exception:
+        git = "unknown"
+    pkgs = {}
+    for name in ("numpy", "pandas", "sklearn", "xgboost", "torch", "fastapi"):
+        try:
+            pkgs[name] = getattr(__import__(name), "__version__", "unknown")
+        except Exception:
+            pkgs[name] = "absent"
+    artifacts = {f.name: _sha256(f) for f in sorted(MODELS.glob("*"))
+                 if f.is_file()}
+    return {
+        "git_head": git,
+        "python": platform.python_version(),
+        "platform": sys.platform,
+        "packages": pkgs,
+        "config_sha256": _sha256(pathlib.Path(C.__file__)),
+        "model_artifacts_sha256": artifacts,
+        "study": {"seeds": list(seeds), "days": days,
+                  "models": "on" if use_models else "off (rules)"},
+    }
 
 # Approve latency per arm, in ticks (1 tick = 5 sim minutes).
 #   B: 10 min  — an operator reviewing suggestions
@@ -340,9 +385,14 @@ def main() -> None:
     json_path = REPORTS / "counterfactual_summary.json"
     json_path.write_text(json.dumps(summary, indent=2))
 
+    manifest_path = REPORTS / "manifest.json"
+    manifest_path.write_text(json.dumps(_provenance(seeds, days, use_models),
+                                        indent=2))
+
     print_table(results, days, seeds)
     print(f"\n  wrote {csv_path}")
     print(f"  wrote {json_path}")
+    print(f"  wrote {manifest_path}")
 
 
 if __name__ == "__main__":

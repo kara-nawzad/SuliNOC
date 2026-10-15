@@ -214,3 +214,59 @@ def test_oracle_precision_clears_break_even():
         f"precision {best['precision']:.3f} is below break-even "
         f"{C.BREAK_EVEN_PRECISION:.3f}"
     )
+
+
+# -------------------------------------------------- evaluation honesty (P1)
+def test_split_validation_is_chronological():
+    """The threshold/calibration holdout is the TIME-FORWARD tail of train:
+    models never see it during fit, and the seed-99 test split stays pure."""
+    from autonoc.ai.oracle import split_validation
+
+    X = np.arange(100, dtype=np.float32).reshape(100, 1)
+    y = np.zeros(100, dtype=np.int64)
+    (Xf, yf, _), (Xv, yv, _) = split_validation(X, y, 0.06, val_frac=0.2)
+    assert len(Xf) == 80 and len(Xv) == 20
+    assert Xf[-1, 0] < Xv[0, 0], "validation must come AFTER the fit window"
+    assert set(yf.tolist()) | set(yv.tolist()) <= {0}
+
+
+def test_platt_calibration_roundtrip():
+    """A Platt pair fitted on validation scores must be monotonic and must
+    land calibrated probabilities near the empirical rate."""
+    from autonoc.ai.oracle import platt_apply, platt_fit
+
+    rng = np.random.RandomState(0)
+    raw = rng.uniform(0.01, 0.99, size=4000)
+    # ground truth: raw scores are twice as sharp as reality
+    y = (rng.uniform(0, 1, 4000) < np.clip(raw * 0.5 + 0.1, 0, 1)).astype(int)
+    w = np.ones(4000)
+    a, b = platt_fit(raw, y, w)
+    cal = platt_apply(raw, (a, b))
+    assert np.all((cal >= 0) & (cal <= 1))
+    assert np.all(np.diff(cal[np.argsort(raw)]) >= -1e-9), \
+        "calibration must not reorder scores"
+    # naive raw scores are miscalibrated; calibrated ones track the truth
+    err_raw = abs(raw.mean() - y.mean())
+    err_cal = abs(cal.mean() - y.mean())
+    assert err_cal <= err_raw + 0.05
+
+
+def test_platt_none_passes_raw_scores_through():
+    from autonoc.ai.oracle import platt_apply
+
+    s = np.array([0.1, 0.5, 0.9])
+    assert platt_apply(s, None) is s
+
+
+def test_live_oracle_loader_carries_optional_calibration():
+    """Old artifacts (no calib keys) must still load as calib=None; new ones
+    carry the validation-fitted Platt pair into the live Commander."""
+    from autonoc.ai.oracle import load_oracle_artifacts
+
+    if not (MODELS / "oracle_gru.pt").exists():
+        pytest.skip("run autonoc.ai.oracle first")
+    out = load_oracle_artifacts()
+    assert len(out) == 6
+    net, mu, sd, seq_len, channels, calib = out
+    assert seq_len == 12 and len(channels) == 12
+    assert calib is None or (len(calib) == 2 and all(np.isfinite(calib)))

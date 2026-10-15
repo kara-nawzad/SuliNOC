@@ -79,7 +79,7 @@ class NOCEngine:
                       "ats_failures": 0, "fuel_thefts": 0}
 
         # M6 — Commander state.
-        #   ai_mode      "off" | "ml" | "rules"  (set by the inference layer)
+        #   ai_mode      "off" | "ml" | "partial" | "rules"  (set by the inference layer)
         #   ai_policy    "auto" (tier-1 + tier-2) | "advisory" (tier-2 only,
         #                approvals by a human/driver) — used by the M7 study
         #   ai_verdicts  {node_id: {"p_fail", "cls", "action", "tier"}}
@@ -93,6 +93,10 @@ class NOCEngine:
         self.pending_actions: list[dict] = []
         self._next_action_id: int = 1
         self._tier2_cooldown: dict[str, int] = {}
+        # tier-1 action bets: [due_tick, node_id, bet_tick, seen_faulty].
+        # One bet per committed tier-1 attempt; settled against the world at
+        # the Oracle horizon (see _settle_action_bets).
+        self._action_bets: list[list] = []
 
     # ------------------------------------------------------------ helpers
     @property
@@ -156,6 +160,37 @@ class NOCEngine:
         self._dispatch()
         self._advance_teams()
         self._watchdog()
+        self._settle_action_bets()
+
+    def _settle_action_bets(self) -> None:
+        """Settle tier-1 action bets against the world, one tick at a time.
+
+        The M7 cost proxy charges 35 for a FALSE DISPATCH — a wrong
+        prediction acted on — not for a right prediction whose mitigation
+        could not stop the fault (that episode pays its activation cost).
+        So each committed tier-1 attempt is a bet on "this node fails within
+        the Oracle horizon" (STANDBY_HORIZON_TICKS, the same window a
+        pre-dispatched crew stands by). A fault touching the node inside the
+        window settles the bet as a true positive; an uneventful expiry
+        charges it exactly like an expired standby. This is the tier-2
+        accounting symmetry, settled by world events, never by peeking at
+        the ledger from the controller path (audit P1, 2026-10-15).
+        """
+        if not self._action_bets:
+            return
+        keep = []
+        for due, nid, bet_tick, seen in self._action_bets:
+            node = self.net.by_id.get(nid)
+            if node is not None and (node.is_faulty or node.under_repair):
+                seen = True                       # a failure came: true bet
+            if not seen and self.tick >= due:
+                self.stats["false_dispatch"] += 1
+                self.log(f"AI: tier-1 action on {nid} — no failure within "
+                         f"{C.STANDBY_HORIZON_TICKS * C.TICK_MINUTES} min "
+                         f"(FALSE DISPATCH)", "WARNING", nid)
+            elif not seen:
+                keep.append([due, nid, bet_tick, seen])
+        self._action_bets = keep
 
     # ------------------------------------------------------------ faults
     def _start_scheduled_faults(self) -> None:
@@ -285,24 +320,32 @@ class NOCEngine:
         """
         # ---- ATS (Automatic Transfer Switch) ----
         if node.grid_available:
-            if node.ats_failed:
-                node.ats_failed = False   # mains back: ATS resets with the plant
+            if node.ats_failed or node.dg_running:
+                # mains back: the plant returns to normal service
+                node.ats_failed = False
+                node.dg_running = False
         elif node.ats_failed:
             # jammed: retry the crank every tick until the switch recovers
             if self.rng_ops.random() < C.ATS_RECOVER_CHANCE:
                 node.ats_failed = False
-                self.log(f"{node.node_id} ATS recovered — DG cranked, "
-                         f"plant back on generator", "CLEARED", node.node_id)
-        elif (node.battery_pct <= C.GEN_START_BATTERY_PCT
+                self.log(f"{node.node_id} ATS recovered — transfer switch "
+                         f"free, DG will crank at the start threshold",
+                         "CLEARED", node.node_id)
+        elif (not node.dg_running
+              and node.battery_pct <= C.GEN_START_BATTERY_PCT
               and node.generator_fuel_pct > 0.0):
             # a crank is being requested RIGHT NOW (battery at the generator
-            # start level, fuel in the tank) — roll the transfer switch
+            # start level, fuel in the tank) — roll the transfer switch once.
+            # The plant latches on success; it does NOT re-roll every tick
+            # around the threshold.
             if self.rng_ops.random() < C.ATS_CRANK_FAIL_CHANCE:
                 node.ats_failed = True
                 self.stats["ats_failures"] += 1
                 self.log(f"{node.node_id} ATS FAILURE TO CRANK — mains down, "
                          f"battery {node.battery_pct:.0f}%, DG did NOT start",
                          "CRITICAL", node.node_id)
+            else:
+                node.dg_running = True
 
         # ---- fuel theft / abnormal fuel drop ----
         # The DG is OFF but the tank lost 15-25% in one telemetry interval —
@@ -355,6 +398,7 @@ class NOCEngine:
         node.assigned_team = None
         node.fault_started_tick = -1
         node.ats_failed = False          # a service visit resets the ATS
+        node.dg_running = False
         node.last_changed_tick = self.tick
         node.s11 += (-22.0 - node.s11) * 0.8
         node.packet_loss *= 0.2
@@ -516,6 +560,7 @@ class NOCEngine:
                         n.generator_fuel_pct = 100.0   # tank refuelled on visit
                         n.battery_pct = max(n.battery_pct, 50.0)
                         n.ats_failed = False           # ATS serviced
+                        n.dg_running = False
                     n.dust_accum = 0.0        # service cleans filters
                     self._heal(n, f"repaired by {team.name}")
             mttr = (self.tick - team.mission_start_tick) * C.TICK_MINUTES
@@ -569,20 +614,36 @@ class NOCEngine:
             if CM.tier_for(action) == CM.TIER_AUTO:
                 if self.ai_policy == "advisory":
                     continue          # advisory: surface suggestions only
-                # A cheap tier-1 mitigation can only pre-empt a SOFT fault.
-                # If the Doctor misclassified a crew-worthy pending fault
-                # (RF / power) as congestion, throttling must NOT cancel it —
-                # the antenna is still broken, it will activate and need a
-                # real crew. Pre-emption is gated on the ACTUAL fault kind
-                # from the ledger, never on the classifier's guess.
-                entry = self.ledger.get(node.episode_id, {})
-                actual = entry.get("kind")
-                if actual not in (C.STATUS_CONGESTION, C.STATUS_OVERHEAT):
-                    continue
+                if verdict.get("_resolved"):
+                    continue          # this verdict already acted (or was charged)
+                verdict["_resolved"] = True
+                # Controller knowledge stops at its own verdict: the cheap
+                # reversible action is committed on the Doctor's guess alone.
+                # Whether that action CAN stop the pending fault is world
+                # physics (CM.mark_preempted refuses crew-worthy kinds), and
+                # a wasted attempt is charged as a false action — never
+                # silently dropped by peeking at the ledger's hidden truth.
                 did = CM.apply_tier1(self, node, action)
-                if did and node.episode_id >= 0 and node.is_gradual:
-                    if CM.mark_preempted(self, node):
-                        CM.reset_preempted_node(self, node)
+                if did and node.episode_id >= 0 and node.is_gradual \
+                        and CM.mark_preempted(self, node):
+                    CM.reset_preempted_node(self, node)
+                    # pre-empted = a failure was really coming: settle any
+                    # open bets on this node as true positives
+                    self._action_bets = [b for b in self._action_bets
+                                         if b[1] != node_id]
+                else:
+                    # The action is committed; its falseness is settled by
+                    # the WORLD, never guessed here: one bet per attempt,
+                    # expiring at the Oracle horizon (STANDBY_HORIZON_TICKS).
+                    # A failure inside the window (activated or pre-empted)
+                    # makes it a true positive; an uneventful window makes it
+                    # a false dispatch, charged exactly like an expired
+                    # standby. The old ledger peek dropped wrong actions
+                    # silently; charging their MECHANICS over-charged right
+                    # predictions an action could not stop.
+                    self._action_bets.append(
+                        [self.tick + C.STANDBY_HORIZON_TICKS, node_id,
+                         self.tick, False])
             else:
                 # tier 2 — needs an operator; dedupe per node + cooldown so a
                 # persistent verdict cannot spam the approval queue

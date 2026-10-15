@@ -1,18 +1,55 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#070b12" />
-    <meta
-      name="description"
-      content="AutoNOC predictive network operations. A live LTE simulation of Sulaymaniyah."
-    />
-    <title>AutoNOC · Network Command</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>SuliNOC</title>
+  <link rel="icon" href="/assets/suli-noc-logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@300;400;500;700;800&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+</head>
+<body>
+<section id="hero" aria-label="SuliNOC network command center entry">
+  <img class="hl" id="bgp" alt="" aria-hidden="true" src="/assets/hero-city-sunset.jpg">
+  <div id="amb"></div>
+  <svg class="map" id="hm" role="img" aria-label="Schematic LTE topology of Sulaymaniyah, live site positions"></svg>
+  <img class="hl" id="fgp" alt="Slemani's landmark tower at sunset" src="/assets/hero-tower-cutout.webp">
+  <div id="top">
+    <span class="wm" aria-label="SuliNOC"><img class="logo" src="/assets/suli-noc-logo.png" alt="SuliNOC"></span>
+    <span class="live m"><i></i>Live from the engine <span id="clk"></span></span>
+  </div>
+  <div class="ann" style="left:32px;top:84px" id="hero-sub">Connecting…</div>
+  <div id="copy">
+    <h1>Looking after Slemani's signal.</h1>
+    <p class="t2" style="margin:0 0 20px;max-width:440px">A calmer way to watch the towers, and to notice the one that is about to struggle.</p>
+    <button class="cta" id="enter">Open operations workspace</button>
+    <button class="ghost" id="skip">Skip intro</button>
+  </div>
+</section>
+
+<div id="app">
+  <nav id="side" aria-label="Main"></nav>
+  <header id="bar">
+    <button id="tg" aria-label="Collapse sidebar (key: [)" class="btn">☰</button>
+    <span class="sm"><span class="m">Sulaymaniyah</span> · LTE · <span id="stat"></span></span>
+    <span id="pausechip" class="m">running</span>
+    <div id="simctl">
+      <button class="btn" data-sim="pause">❚❚ Pause</button>
+      <button class="btn" data-sim="step" title="Advance one tick (pause first)">Step</button>
+      <button class="btn" data-sim="speed" title="Cycle simulation speed">1×</button>
+      <button class="btn" data-sim="cut" title="Fibre isolation scenario">Cut fibre</button>
+      <button class="btn" data-sim="inject" title="Inject a site fault">Inject fault</button>
+      <label class="switch" title="Enable the AI Commander"><input type="checkbox" data-sim="ai"><span>AI</span></label>
+    </div>
+    <span style="flex:1"></span>
+    <input id="q" placeholder="Find a tower  ( / )" aria-label="Find a tower">
+    <span class="m t2" id="clk2"></span>
+  </header>
+  <main id="main"><div id="view"></div><aside class="panel" id="ap" style="position:fixed;top:48px"></aside></main>
+</div>
+<div id="modal" class="modal-root" hidden></div>
+<div id="offline" role="status" hidden></div>
+<div id="tip"></div>
+<div id="toast" role="status"></div>
+<script type="module" src="/src/main.js"></script>
+</body>
 </html>

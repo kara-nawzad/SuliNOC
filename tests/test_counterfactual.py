@@ -190,3 +190,18 @@ def test_study_arm_a_matches_baseline_engine():
     assert r["pre_empted"] == 0
     assert r["false_dispatches"] == 0
     assert r["activated"] > 0, "arm A must actually experience faults"
+
+
+def test_provenance_manifest_is_machine_readable():
+    """Reports without provenance cannot be reproduced. The manifest pins the
+    git head, config hash, package versions and model artifact hashes."""
+    from autonoc.scripts.counterfactual import _provenance
+
+    man = _provenance([1, 2], days=3, use_models=False)
+    assert man["git_head"] and isinstance(man["git_head"], str)
+    assert man["config_sha256"]
+    assert man["packages"]["numpy"] != "absent"
+    assert man["study"] == {"seeds": [1, 2], "days": 3,
+                            "models": "off (rules)"}
+    for key in ("python", "platform", "model_artifacts_sha256"):
+        assert key in man

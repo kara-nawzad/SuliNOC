@@ -77,7 +77,12 @@ else:
 
 
 def load_oracle_artifacts() -> tuple:
-    """Return (model, mu, sd, seq_len, channels) for live inference.
+    """Return (model, mu, sd, seq_len, channels, calib) for live inference.
+
+    ``calib`` is None or a (a, b) Platt pair fitted on the validation split:
+    calibrated = sigmoid(a * logit(raw) + b). Artifacts written before the
+    2026-10-15 evaluation-honesty pass carry no calibration keys and load as
+    calib=None (raw scores, documented).
 
     Raises FileNotFoundError if anything is missing; the serving layer turns
     that into rules-mode fallback.
@@ -88,17 +93,53 @@ def load_oracle_artifacts() -> tuple:
     stats = np.load(MODEL_DIR / "oracle_stats.npz")
     mu = stats["mu"]
     sd = stats["sd"]
+    calib = None
+    if "calib_a" in stats and "calib_b" in stats:
+        calib = (float(stats["calib_a"]), float(stats["calib_b"]))
     net = GRUNet(len(CHANNELS))
     net.load_state_dict(torch.load(MODEL_DIR / "oracle_gru.pt",
                                    map_location="cpu", weights_only=True))
     net.eval()
-    return net, mu, sd, SEQ_LEN, CHANNELS
+    return net, mu, sd, SEQ_LEN, CHANNELS, calib
 
 
 # --------------------------------------------------------------------------
 def load(split: str):
     d = np.load(DATA_DIR / f"seq_{split}.npz", allow_pickle=True)
     return d["X"], d["y"].astype(np.int64), float(d["neg_keep"])
+
+
+def split_validation(X, y, nk, val_frac: float = 0.2):
+    """Chronological train/validation split: (Xfit, yfit, nk), (Xval, yval, nk).
+
+    Windows are generated in deterministic rollout order, so the tail of the
+    train split is a time-forward holdout — the closest honest analogue of
+    "validate on the future". Threshold selection and Platt calibration run
+    on the holdout; the seed-99 test split stays a pure final report.
+    """
+    n = len(X)
+    cut = int(n * (1.0 - val_frac))
+    return (X[:cut], y[:cut], nk), (X[cut:], y[cut:], nk)
+
+
+def platt_fit(score_val, y_val, w_val):
+    """Fit p = sigmoid(a * logit(s) + b) on validation scores -> (a, b)."""
+    from sklearn.linear_model import LogisticRegression
+    s = np.clip(np.asarray(score_val, dtype=np.float64), 1e-6, 1.0 - 1e-6)
+    logit = np.log(s / (1.0 - s)).reshape(-1, 1)
+    lr = LogisticRegression(max_iter=1000)
+    lr.fit(logit, y_val, sample_weight=w_val)
+    return float(lr.coef_[0][0]), float(lr.intercept_[0])
+
+
+def platt_apply(score, calib):
+    """Apply a fitted Platt pair; None passes raw scores through."""
+    if calib is None:
+        return score
+    a, b = calib
+    s = np.clip(np.asarray(score, dtype=np.float64), 1e-6, 1.0 - 1e-6)
+    logit = np.log(s / (1.0 - s))
+    return 1.0 / (1.0 + np.exp(-(a * logit + b)))
 
 
 def weights_for(y: np.ndarray, neg_keep: float) -> np.ndarray:
@@ -143,6 +184,11 @@ def best_threshold(y, score, w) -> dict:
 
     A missed failure costs 90 tower-minutes, a pre-emption 45, a false
     dispatch 35 minutes of crew time. F1 would ignore that asymmetry.
+
+    PASS VALIDATION LABELS ONLY. Calling this on test labels selects the
+    threshold with the answer key (the 2026-10-15 audit P1); the reported
+    test metrics must come from metrics_at() at a threshold this function
+    returned on a split the model never trained on.
     """
     best = None
     for t in np.arange(0.05, 0.96, 0.01):
@@ -170,22 +216,31 @@ def main() -> None:
     print("  THE ORACLE — will this node fail within 60 minutes?")
     print("=" * 70)
 
-    Xtr, ytr, nk_tr = load("train")
+    Xall, yall, nk_tr = load("train")
     Xte, yte, nk_te = load("test")
     wte = weights_for(yte, nk_te)
+    # evaluation honesty (audit P1, 2026-10-15): a chronological holdout of
+    # train picks every operating threshold and the Platt calibration. The
+    # seed-99 test labels never touch a decision again.
+    (Xtr, ytr, _), (Xva, yva, _) = split_validation(Xall, yall, nk_tr)
+    wva = weights_for(yva, nk_tr)
 
     prev = float((yte == 1) @ wte / wte.sum())
-    print(f"\n  train {len(Xtr):>7,} windows, {ytr.sum():>6,} positive")
-    print(f"  test  {len(Xte):>7,} windows, {yte.sum():>6,} positive")
+    print(f"\n  train {len(Xtr):>7,} windows, {ytr.sum():>6,} positive "
+          f"(fit, chronological head)")
+    print(f"  val   {len(Xva):>7,} windows, {yva.sum():>6,} positive "
+          f"(holdout: thresholds + calibration only)")
+    print(f"  test  {len(Xte):>7,} windows, {yte.sum():>6,} positive "
+          f"(report only, never consulted for thresholds)")
     print(f"  window: {SEQ_LEN} contiguous ticks = "
           f"{SEQ_LEN * C.TICK_MINUTES} simulated minutes")
     print(f"  channels: {len(CHANNELS)} raw telemetry, no engine features")
     print("  seeds: train 42, test 99")
     print(f"  natural prevalence after reweighting: {prev:.3%}")
 
-    Ftr, Fte = flatten_lags(Xtr), flatten_lags(Xte)
+    Ftr, Fva, Fte = flatten_lags(Xtr), flatten_lags(Xva), flatten_lags(Xte)
     sc = StandardScaler().fit(Ftr)
-    Ftr_s, Fte_s = sc.transform(Ftr), sc.transform(Fte)
+    Ftr_s, Fva_s, Fte_s = sc.transform(Ftr), sc.transform(Fva), sc.transform(Fte)
 
     results: dict = {}
 
@@ -217,8 +272,14 @@ def main() -> None:
     # ---------------------------------------------------------- B2
     lr = LogisticRegression(max_iter=1500, class_weight="balanced")
     lr.fit(Ftr_s, ytr)
+    s2v = lr.predict_proba(Fva_s)[:, 1]
     s2 = lr.predict_proba(Fte_s)[:, 1]
-    m2 = best_threshold(yte, s2, wte)
+    t2 = best_threshold(yva, s2v, wva)["threshold"]
+    m2 = metrics_at(yte, s2, wte, t2)
+    m2["net_benefit_min"] = (
+        m2["tp"] * (C.COST_FAILURE_MIN - C.COST_PREEMPT_MIN)
+        - m2["fp"] * C.COST_FALSE_DISPATCH_MIN)
+    m2["threshold_selected_on"] = "validation"
     auc2 = float(average_precision_score(yte, s2, sample_weight=wte))
     report("B2  logistic regression on lag features", m2, auc2)
     results["B2"] = {**m2, "auc_pr": auc2}
@@ -231,8 +292,14 @@ def main() -> None:
                         eval_metric="aucpr", tree_method="hist",
                         random_state=42, n_jobs=-1)
     xgb.fit(Ftr_s, ytr, verbose=False)
+    s3v = xgb.predict_proba(Fva_s)[:, 1]
     s3 = xgb.predict_proba(Fte_s)[:, 1]
-    m3 = best_threshold(yte, s3, wte)
+    t3 = best_threshold(yva, s3v, wva)["threshold"]
+    m3 = metrics_at(yte, s3, wte, t3)
+    m3["net_benefit_min"] = (
+        m3["tp"] * (C.COST_FAILURE_MIN - C.COST_PREEMPT_MIN)
+        - m3["fp"] * C.COST_FALSE_DISPATCH_MIN)
+    m3["threshold_selected_on"] = "validation"
     auc3 = float(average_precision_score(yte, s3, sample_weight=wte))
     report("B3  XGBoost on lag features  <-- the one to beat", m3, auc3)
     results["B3"] = {**m3, "auc_pr": auc3,
@@ -257,6 +324,7 @@ def main() -> None:
     mu = Xtr.reshape(-1, Xtr.shape[2]).mean(0)
     sd = Xtr.reshape(-1, Xtr.shape[2]).std(0) + 1e-6
     Xtr_n = ((Xtr - mu) / sd).astype(np.float32)
+    Xva_n = ((Xva - mu) / sd).astype(np.float32)
     Xte_n = ((Xte - mu) / sd).astype(np.float32)
 
     dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -291,21 +359,39 @@ def main() -> None:
             print(f"    epoch {epoch:2}  loss {tot / len(idx):.4f}")
 
     net.eval()
-    outs = []
-    with torch.no_grad():
-        for k in range(0, len(Xte_n), 8192):
-            xb = torch.from_numpy(Xte_n[k:k + 8192]).to(dev)
-            outs.append(torch.sigmoid(net(xb)).cpu().numpy())
-    sg = np.concatenate(outs)
 
-    mg = best_threshold(yte, sg, wte)
+    def _batched(xn):
+        outs = []
+        with torch.no_grad():
+            for k in range(0, len(xn), 8192):
+                xb = torch.from_numpy(xn[k:k + 8192]).to(dev)
+                outs.append(torch.sigmoid(net(xb)).cpu().numpy())
+        return np.concatenate(outs)
+
+    sgv = _batched(Xva_n)
+    sg_raw = _batched(Xte_n)
+
+    # Platt calibration on the validation holdout: the live Commander
+    # compares these probabilities to the cost-derived break-even, so the
+    # scores it sees must be calibrated, not raw sigmoid output.
+    calib = platt_fit(sgv, yva, wva)
+    sgv_c = platt_apply(sgv, calib)
+    sg = platt_apply(sg_raw, calib)
+
+    tg = best_threshold(yva, sgv_c, wva)["threshold"]
+    mg = metrics_at(yte, sg, wte, tg)
+    mg["net_benefit_min"] = (
+        mg["tp"] * (C.COST_FAILURE_MIN - C.COST_PREEMPT_MIN)
+        - mg["fp"] * C.COST_FALSE_DISPATCH_MIN)
+    mg["threshold_selected_on"] = "validation"
+    mg["calibration"] = {"type": "platt", "a": calib[0], "b": calib[1]}
     aucg = float(average_precision_score(yte, sg, sample_weight=wte))
-    report("M   GRU on raw contiguous sequences", mg, aucg)
+    report("M   GRU on raw contiguous sequences (calibrated)", mg, aucg)
     results["M_gru"] = {**mg, "auc_pr": aucg, "parameters": npar,
                         "brier": float(brier_score_loss(yte, sg, sample_weight=wte))}
 
     _verdict(results["B3"], results["M_gru"])
-    _save(results, net if aucg > auc3 else None, mu, sd)
+    _save(results, net if aucg > auc3 else None, mu, sd, calib)
 
 
 def _verdict(b3: dict, gru: dict) -> None:
@@ -335,7 +421,7 @@ def _verdict(b3: dict, gru: dict) -> None:
         print("     failure — and it is the honest one.")
 
 
-def _save(results: dict, net, mu=None, sd=None) -> None:
+def _save(results: dict, net, mu=None, sd=None, calib=None) -> None:
     (MODEL_DIR / "oracle_metrics.json").write_text(
         json.dumps({"horizon_min": 60, "seq_len": SEQ_LEN,
                     "channels": list(CHANNELS),
@@ -346,7 +432,9 @@ def _save(results: dict, net, mu=None, sd=None) -> None:
         torch.save(net.state_dict(), MODEL_DIR / "oracle_gru.pt")
         # per-channel normalisation statistics from TRAIN ONLY — the live
         # serving layer needs exactly the same transform the model saw
-        np.savez(MODEL_DIR / "oracle_stats.npz", mu=mu, sd=sd)
+        extra = {} if calib is None else {
+            "calib_a": float(calib[0]), "calib_b": float(calib[1])}
+        np.savez(MODEL_DIR / "oracle_stats.npz", mu=mu, sd=sd, **extra)
         print(f"\n  saved -> {MODEL_DIR}/oracle_gru.pt")
         print(f"  saved -> {MODEL_DIR}/oracle_stats.npz (train mu/sd)")
     print(f"  saved -> {MODEL_DIR}/oracle_metrics.json")

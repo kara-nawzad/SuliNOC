@@ -54,6 +54,12 @@ class ENodeB:
     battery_cycles: float = 0.0
     generator_fuel_pct: float = 100.0
     grid_available: bool = True
+    # Latched diesel plant: cranked once when the bank reaches
+    # GEN_START_BATTERY_PCT during an outage, runs (charging the bank) until
+    # GEN_STOP_BATTERY_PCT, then stops — fuel-saving cycling. Without this
+    # latch the plant flip-flops around the start threshold and re-rolls the
+    # ATS crank coin every tick.
+    dg_running: bool = False
     # Site-power alarms (ITU-T X.733 CRITICAL class). ats_failed jams the
     # Automatic Transfer Switch: the DG will not crank when the battery bank
     # hits the generator-start level, and the site drains toward site-down.
