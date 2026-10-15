@@ -246,7 +246,7 @@ body.sim-paused .bcn,html.rm .bcn{animation:none}
 .map:not(#hm).ringsel .lk.rs{opacity:1;stroke-width:2}
 .map:not(#hm).ringsel .nd:not(.rn){opacity:.35}
 .map:not(#hm) .nl{display:none;font:600 7.5px var(--m);fill:var(--tx);stroke:#fff;stroke-width:2.2;paint-order:stroke;pointer-events:none}
-.map:not(#hm).zm .nd.sel .nl,.map:not(#hm).zm .nd:hover .nl,.map:not(#hm).zm .nd.warn .nl,.map:not(#hm).zm .nd.crit .nl,.map:not(#hm).zm .nd.ai .nl{display:block}
+.map:not(#hm).zm .nd.lshow .nl{display:block}
 .map:not(#hm) .nd .halo{animation:none!important}
 .map:not(#hm) .nd.warn .halo,.map:not(#hm) .nd.crit .halo,.map:not(#hm) .nd.ai .halo,.map:not(#hm) .nd.sel .halo,.map:not(#hm) .nd:hover .halo{animation:hb 3.4s ease-in-out infinite!important}
 .leg{display:flex;flex-wrap:wrap;gap:4px 14px;max-width:100%}
@@ -678,4 +678,23 @@ $('#view').addEventListener('click',e=>{const s=e.target.closest('[data-rsel]');
 
 
 console.log('SuliNOC console build', '__BUILD_STAMP__');
+
+/* tower labels: at most 40, priority order, no overlaps; never on mini-maps */
+function labelPass(svg){
+  const nodes=[...svg.querySelectorAll('.nd')];
+  nodes.forEach(n=>n.classList.remove('lshow'));
+  if(!svg.classList.contains('zm')||svg.closest('.mapbox.sm2'))return;
+  const rank=n=>n.classList.contains('sel')?0:n.matches(':hover')?1:n.classList.contains('crit')?2:n.classList.contains('warn')?3:n.classList.contains('ai')?4:-1;
+  const cand=nodes.map(n=>[n,rank(n)]).filter(x=>x[1]>=0).sort((a,b)=>a[1]-b[1]);
+  const placed=[];let count=0;
+  for(const [n] of cand){
+    if(count>=40)break;
+    const dot=n.querySelector('.dot');const t=n.querySelector('.nl');if(!dot||!t)continue;
+    const r=dot.getBoundingClientRect();if(!r.width)continue;
+    const w=(t.textContent||'').length*6.2,box={x:r.right+3,y:r.top-11,w,h:12};
+    if(placed.some(p=>box.x<p.x+p.w&&p.x<box.x+box.w&&box.y<p.y+p.h&&p.y<box.y+box.h))continue;
+    placed.push(box);n.classList.add('lshow');count++;
+  }
+}
+setInterval(()=>document.querySelectorAll('svg.map:not(#hm)').forEach(labelPass),500);
 </script></body></html>
