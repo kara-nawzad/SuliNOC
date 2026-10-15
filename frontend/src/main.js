@@ -323,12 +323,6 @@ function onStoreEvent(kind, st) {
   }
 }
 
-function startClock() {
-  const tick = () => { $("#clk2").textContent = new Date().toLocaleTimeString("en-GB"); };
-  tick();
-  setInterval(tick, 1000);
-}
-
 // -------------------------------------------------------------------- boot
 async function boot() {
   $("#view").innerHTML = `<div class="boot"><div class="spinner"></div><span class="t2">Connecting to the engine…</span></div>`;
@@ -346,7 +340,6 @@ async function boot() {
   bindBar();
   bindDelegation();
   bootHero(cfg);
-  startClock();
   $("#app").classList.toggle("c", matchMedia("(max-width: 900px)").matches);
   if (reduceMotion()) document.documentElement.classList.add("rm");
   subscribe(onStoreEvent);
