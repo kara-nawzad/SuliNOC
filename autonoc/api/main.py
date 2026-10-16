@@ -111,6 +111,10 @@ _summary_store = RunSummaryStore()
 # time while rendering, so the legacy API implementation remains small while
 # each session retains its own engine, lock, history, controls and worker.
 _dispatch_lock = threading.RLock()
+# Serialises every activation of a session. A threading lock is re-entrant on the
+# event-loop thread, so two tasks could interleave across awaits and read or step
+# each other's engine. This asyncio lock is held across the awaits instead.
+_gate = asyncio.Lock()
 _registry: SessionRegistry | None = None
 _shared_bundle = None
 
@@ -312,48 +316,60 @@ def _step_locked(automatic: bool = True, expected_run_id: str | None = None) -> 
 
 
 async def simulation_loop() -> None:
-    """Advance every active browser session without sharing simulation state.
+    """Advance every active browser session on its own clock.
 
-    Pacing is deadline-based. ``engine.step()`` costs ~2 ms at 300 nodes, so
-    stepping every session back-to-back and sleeping a *full* tick afterwards
-    would still hand each dashboard exactly one simulated minute per second.
-    Waiting a whole tick per session instead would silently stretch the clock
-    on a busy demo, so the next cycle is scheduled one tick after the previous
-    cycle began rather than after it ended.
+    Each session keeps its own deadline, set from its own speed, so one visitor
+    at 10x does not speed up another visitor's simulation. A session that falls
+    behind is stepped once and rescheduled from now rather than replaying missed
+    ticks, so the clock never bursts. A single short poll keeps the loop cheap
+    with many sessions; a session is only stepped when its own deadline has passed.
     """
-    next_at = time.monotonic()
-    interval = BASE_TICK_SECONDS
+    due: dict[str, float] = {}
+    poll = 0.02
     while True:
         try:
             with _dispatch_lock:
                 sessions = list(_registry._sessions.values()) if _registry else []
-                speed = max((s.speed for s in sessions), default=_speed)
-                interval = BASE_TICK_SECONDS / max(speed, 0.1)
-            if sessions:
-                for session in sessions:
-                    if _registry is not None and not _registry.holds(session):
-                        continue        # reclaimed while this cycle was running
-                    with _dispatch_lock:
-                        _activate(session)
-                        try:
-                            await asyncio.to_thread(_step_locked, True)
-                        finally:
-                            _deactivate(session)
-            else:
+            now = time.monotonic()
+            live = set()
+            for session in sessions:
+                live.add(session.token)
+                deadline = due.get(session.token, now)
+                if now < deadline:
+                    continue
+                if _registry is not None and not _registry.holds(session):
+                    continue        # reclaimed while this cycle was running
+                interval = BASE_TICK_SECONDS / max(session.speed, 0.1)
+                async with _gate:
+                    _activate(session)
+                    try:
+                        await asyncio.to_thread(_step_locked, True)
+                    finally:
+                        _deactivate(session)
+                # Normally the next deadline is one interval after this one. If the
+                # session fell behind by more than that, restart its cadence a full
+                # interval from now instead of stepping again straight away.
+                next_due = deadline + interval
+                after = time.monotonic()
+                due[session.token] = next_due if next_due > after else after + interval
+            if not sessions:
                 # No registry (unit tests, teardown): legacy single-engine clock.
-                with _dispatch_lock:
-                    await asyncio.to_thread(_step_locked, True)
+                deadline = due.get("__legacy__", now)
+                if now >= deadline:
+                    async with _gate:
+                        await asyncio.to_thread(_step_locked, True)
+                    legacy_interval = BASE_TICK_SECONDS / max(_speed, 0.1)
+                    next_due = deadline + legacy_interval
+                    after = time.monotonic()
+                    due["__legacy__"] = next_due if next_due > after else after + legacy_interval
+            for token in list(due):
+                if token not in live and token != "__legacy__":
+                    del due[token]
         except asyncio.CancelledError:
             raise
         except Exception:
             import traceback; traceback.print_exc()
-        next_at += interval
-        delay = next_at - time.monotonic()
-        if delay <= 0:
-            # A cycle that overran its budget must not bank debt and busy-spin.
-            next_at = time.monotonic()
-            delay = 0.0
-        await asyncio.sleep(delay)
+        await asyncio.sleep(poll)
 
 
 @asynccontextmanager
@@ -436,7 +452,7 @@ async def browser_session(request: Request, call_next):
         return await call_next(request)
 
     if not requires_session(request.url.path):
-        with _dispatch_lock:                    # re-entrant: held across render
+        async with _gate:                       # one session active at a time
             session = _shared_session()
             _activate(session)
             try:
@@ -468,7 +484,7 @@ async def browser_session(request: Request, call_next):
                 "Cache-Control": "no-store",
             },
         )
-    with _dispatch_lock:
+    async with _gate:
         _activate(session)
         try:
             response = await call_next(request)
