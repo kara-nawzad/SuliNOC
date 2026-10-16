@@ -577,7 +577,7 @@ let vis=true;(function loop(n){if(vis&&!document.hidden&&!reduce()&&!(CTL&&CTL.p
 const sp=(a,w=60,h=18)=>{const mx=Math.max(...a),mn=Math.min(...a);return`<svg width="${w}" height="${h}"><polyline fill="none" stroke="currentColor" stroke-width="1.2" points="${a.map((v,i)=>(i/(a.length-1)*w)+','+(h-(v-mn)/(mx-mn||1)*h)).join(' ')}"/></svg>`};
 let INS={key:null,busy:false,msg:'',err:false,kind:1,armed:0,timer:null,parts:{}};
 const GU={rsrp:['dBm'],sinr:['dB'],cqi:['/ 15'],vswr:[': 1'],prb:['%'],throughput:['Mbps'],loss:['%'],latency:['ms'],temp:['°C'],cpu:['%'],dust:['%',100],jitter:['ms'],s11:['dB'],voltage:['V'],battery:['%'],fuel:['%']};
-const GSEC=[['Radio · 3GPP PM counters',['rsrp','sinr','cqi','vswr','prb','throughput','loss','latency']],['Hardware',['temp','cpu','dust','jitter','s11']]];
+const GSEC=[['Telecom',['rsrp','sinr','cqi','prb','throughput','latency','loss','jitter']],['Antenna & feeder',['vswr','s11']],['Equipment',['cpu','temp','dust']]];
 const HX={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 const hx=s=>String(s??'').replace(/[&<>"']/g,c=>HX[c]);
 const GCOL={ok:'#0C9C83',warn:'#C27400',bad:'#D42F52'},GWORD={ok:'Good',warn:'Warning',bad:'Failing'};
@@ -593,10 +593,10 @@ function inspectorParts(t){
  const head=`<div class="grab" aria-hidden="true"></div>
  <div class="ph"><div><h3 class="m">${hx(n.id)}</h3><div class="sm t2">${hx(district)} · ${n.ring>=0?'fibre ring '+n.ring:'unprotected'} · ${hx(gen)}</div></div><button class="btn" data-x aria-label="Close inspector">✕</button></div>
  <div style="margin-top:10px"><span class="tag" style="--c:${scol}"><b>${hx(sname)}</b></span>${tags}</div>`;
- const sections=GSEC.map(([title,keys])=>`<div class="sec"><h3>${hx(title)}</h3><div class="gauges">${keys.map(k=>gauge(n,k)).join('')}</div></div>`).join('');
- const power=`<div class="sec"><h3>Site power${pname?' · '+hx(pname):''}</h3><div class="gauges"><div class="gauge"><div class="gh"><span>${hx(CFG.metric_labels.power)}</span><b class="gv">${hx(n.power??'—')}</b></div></div>${['voltage','battery','fuel'].map(k=>gauge(n,k)).join('')}</div>${n.ats?'<div class="sm" style="color:#D42F52;margin-top:8px">ATS: fails to crank</div>':''}</div>`;
+ const secs=GSEC.map(([title,keys])=>`<div class="sec"><h3>${hx(title)}</h3><div class="gauges">${keys.map(k=>gauge(n,k)).join('')}</div></div>`);
+ const power=`<div class="sec"><h3>Power${pname?' · '+hx(pname):''}</h3><div class="gauges"><div class="gauge"><div class="gh"><span>${hx(CFG.metric_labels.power)}</span><b class="gv">${hx(n.power??'—')}</b></div></div>${['voltage','battery','fuel'].map(k=>gauge(n,k)).join('')}</div>${n.ats?'<div class="sm" style="color:#D42F52;margin-top:8px">ATS: fails to crank</div>':''}</div>`;
  const ai=n.warn?'<div class="sec"><h3>AI estimate</h3><div class="sm t2">Flagged by the AI model in this run. This is an estimate, not a measurement. The readings above are backend values.</div></div>':'';
- const body=`<div class="kvs" style="margin-top:12px"><div><span class="t2 sm">District</span><b>${hx(district)}</b></div><div><span class="t2 sm">Generation</span><b>${hx(gen)}</b></div><div><span class="t2 sm">Fibre ring</span><b>${n.ring>=0?'Ring '+n.ring:'Unprotected'}</b></div><div><span class="t2 sm">Power type</span><b>${hx(n.pwr||'—')}${pname?' · '+hx(pname):''}</b></div></div>${sections}${power}${ai}`;
+ const body=`<div class="kvs" style="margin-top:12px"><div><span class="t2 sm">District</span><b>${hx(district)}</b></div><div><span class="t2 sm">Generation</span><b>${hx(gen)}</b></div><div><span class="t2 sm">Fibre ring</span><b>${n.ring>=0?'Ring '+n.ring:'Unprotected'}</b></div><div><span class="t2 sm">Power type</span><b>${hx(n.pwr||'—')}${pname?' · '+hx(pname):''}</b></div></div>${secs[0]}${power}${secs.slice(1).join('')}${ai}`;
  const busy=INS.busy,armed=INS.armed>Date.now();
  const kinds=pres.fault_options.map(o=>`<option value="${o.value}"${o.value===INS.kind?' selected':''}>${hx(o.label)}</option>`).join('');
  const ctl=`<div class="sec"><h3>Simulate a fault</h3>
@@ -730,13 +730,37 @@ function ovAlerts(){
   return rows.map(l=>{const isNew=LSEEN&&!LSEEN.has(logKey(l));const t=T.find(x=>x.n===l.node_id);
     return `<div class="ovrow${isNew?' new':''}"><span class="sev ${LSEV[l.severity]||'warn'}"></span><span class="mono t2">${l.time}</span><span>${LVL[l.severity]||l.severity}: ${l.message}${t?` · <button class="linkq" data-t="${t.id}">${t.n}</button>`:''}</span></div>`}).join('');
 }
+// Crew vans glide from their last position to the new one. The time window is the time
+// between the two updates, so the glide keeps pace with the simulation speed.
+const VANPOS=new Map();
+function easeVans(root){
+  const now=performance.now();
+  root.querySelectorAll('g[data-team]').forEach(g=>{
+    const n=g.dataset.team,x=+g.dataset.x,y=+g.dataset.y,s=g.dataset.s;
+    const pv=VANPOS.get(n);
+    if(pv&&pv.x===x&&pv.y===y)return;
+    VANPOS.set(n,{x,y,t:now});
+    if(!pv)return;
+    const dur=Math.min(1500,Math.max(200,now-pv.t));
+    g.animate([{transform:`translate(${pv.x}px,${pv.y}px) scale(${s})`},{transform:`translate(${x}px,${y}px) scale(${s})`}],{duration:dur,easing:'linear'});
+  });
+}
+function easeLeaflet(mk,t){
+  const now=performance.now(),k='L'+t.name,pv=VANPOS.get(k),el=mk.getElement&&mk.getElement();
+  if(pv&&pv.lat===t.lat&&pv.lon===t.lon)return;
+  VANPOS.set(k,{lat:t.lat,lon:t.lon,t:now});
+  if(!pv||!el||!LNMAP||!el.firstElementChild)return;
+  const a=LNMAP.latLngToContainerPoint([pv.lat,pv.lon]),b=LNMAP.latLngToContainerPoint([t.lat,t.lon]);
+  const dur=Math.min(1500,Math.max(200,now-pv.t));
+  el.firstElementChild.animate([{transform:`translate(${a.x-b.x}px,${a.y-b.y}px)`},{transform:'translate(0px,0px)'}],{duration:dur,easing:'linear'});
+}
 function ovMini(){
   const m=$('#ovm');if(!m)return;
   const key=RINGS.map(r=>r.id+':'+r.isolated).join()+'|'+TEAMS.map(t=>t.name+t.state+Math.round(t.p.x)+','+Math.round(t.p.y)+Math.round(t.hd||0)).join('|');
   if(m.dataset.k===key)return;m.dataset.k=key;
   const rings=RINGS.map(r=>`<polygon class="ring" points="${r.path.map(([la,lo])=>{const p=PROJ(la,lo);return p.x.toFixed(0)+','+p.y.toFixed(0)}).join(' ')}"/>`).join('');
-  const vans=TEAMS.map(t=>`<g transform="translate(${t.p.x.toFixed(0)} ${t.p.y.toFixed(0)}) scale(.5)">${VAN(t.hd||0,!(t.state=='EN_ROUTE'||t.state=='RETURNING'))}</g>`).join('');
-  m.innerHTML=`<g>${rings}</g>${vans}`;
+  const vans=TEAMS.map(t=>`<g data-team="${t.name}" data-x="${t.p.x.toFixed(0)}" data-y="${t.p.y.toFixed(0)}" data-s=".5" transform="translate(${t.p.x.toFixed(0)} ${t.p.y.toFixed(0)}) scale(.5)">${VAN(t.hd||0,!(t.state=='EN_ROUTE'||t.state=='RETURNING'))}</g>`).join('');
+  m.innerHTML=`<g>${rings}</g>${vans}`;easeVans(m);
 }
 async function loadAvail(){
   if(!RUNID){drawAvail();return}
@@ -928,8 +952,8 @@ function mntMap(){
   if(m.dataset.k===key)return;m.dataset.k=key;
   const rings=RINGS.map(r=>`<polygon class="ring" points="${r.path.map(([la,lo])=>{const p=PROJ(la,lo);return p.x.toFixed(0)+','+p.y.toFixed(0)}).join(' ')}"/>`).join('');
   const targets=queueRows().filter(r=>r.site).map(r=>`<rect class="tgt" x="${r.site.x-4}" y="${r.site.y-4}" width="8" height="8"/>`).join('');
-  const vans=TEAMS.map(t=>`<g transform="translate(${t.p.x.toFixed(0)} ${t.p.y.toFixed(0)}) scale(.6)">${VAN(t.hd||0,!(t.state=='EN_ROUTE'||t.state=='RETURNING'))}</g>`).join('');
-  m.innerHTML=`<g>${rings}</g>${targets}<g class="depot"><rect x="${DEPOT.x-14}" y="${DEPOT.y-4}" width="28" height="8" fill="#10265C"/><text x="${DEPOT.x+20}" y="${DEPOT.y+4}" class="dlbl">Depot (schematic)</text></g>${vans}`;
+  const vans=TEAMS.map(t=>`<g data-team="${t.name}" data-x="${t.p.x.toFixed(0)}" data-y="${t.p.y.toFixed(0)}" data-s=".6" transform="translate(${t.p.x.toFixed(0)} ${t.p.y.toFixed(0)}) scale(.6)">${VAN(t.hd||0,!(t.state=='EN_ROUTE'||t.state=='RETURNING'))}</g>`).join('');
+  m.innerHTML=`<g>${rings}</g>${targets}<g class="depot"><rect x="${DEPOT.x-14}" y="${DEPOT.y-4}" width="28" height="8" fill="#10265C"/><text x="${DEPOT.x+20}" y="${DEPOT.y+4}" class="dlbl">Depot (schematic)</text></g>${vans}`;easeVans(m);
 }
 function mntView(){return `<h2>Maintenance</h2>
 <div class="sm t2">Crew movements are simulated. Nothing is dispatched.</div>
@@ -1027,7 +1051,8 @@ function lnVans(){
     const moving=t.state==='EN_ROUTE'||t.state==='RETURNING';
     const hd=t.hd||0;
     const html='<svg width="160" height="160" viewBox="-80 -80 160 160" style="pointer-events:none;overflow:visible" aria-hidden="true">'+VAN(hd,!moving)+'</svg>';
-    L.marker([t.lat,t.lon],{icon:L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}),interactive:false,keyboard:false,title:t.name+' · '+t.state}).addTo(LNVANL);
+    const mk=L.marker([t.lat,t.lon],{icon:L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}),interactive:false,keyboard:false,title:t.name+' · '+t.state}).addTo(LNVANL);
+    easeLeaflet(mk,t);
     if(moving&&t.target_lat!=null){
       const a=[t.lat,t.lon],b=[t.target_lat,t.target_lon];
       L.polyline([a,b],{color:'#D42F52',weight:3,dashArray:'6 5',opacity:.8,interactive:false}).addTo(LNVANL);

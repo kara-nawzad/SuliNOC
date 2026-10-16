@@ -353,11 +353,11 @@ RIPPLE_PACKET_LOSS: Final = (0.2, 0.8)
 RIPPLE_CPU_LOAD: Final = (2.0, 5.0)
 
 # ---------------------------------------------------------------- teams
-# 28 km/h, not 40. Sulaymaniyah is compact: at 40 km/h most trips finished in
-# 1-3 real seconds and the vehicle animation was effectively invisible. 28 km/h
-# is the honest door-to-door urban average including traffic and junctions —
-# the realistic number is also the better-looking one.
-TEAM_SPEED_KMH: Final = 28.0
+# 10 km/h for the on-screen crew speed. At 28 km/h a typical trip (about 3.6 km
+# from the depot) took 1-2 ticks, so at 1x speed crews reached the site in about
+# a second. At 10 km/h the same trip takes about 4 ticks, so the vehicle is
+# visible on its way. Dispatch ETAs and repair timing scale with this value.
+TEAM_SPEED_KMH: Final = 10.0
 TEAM_STEP_M: Final = TEAM_SPEED_KMH * (TICK_MINUTES / 60.0) * 1000.0
 
 # ---------------------------------------------------------------- detection
