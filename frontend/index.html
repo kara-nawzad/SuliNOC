@@ -309,10 +309,10 @@ input[type=checkbox]:focus-visible{outline:2px solid #10265C;outline-offset:2px}
 .mapbox.sm2 .cone{display:none}
 
 /* ===== Group 5: overview layout ===== */
-.ovg{display:grid;gap:26px 32px;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);grid-template-areas:"sent sent" "avail open" "strip strip" "chart attn" "map alerts" "power links";align-items:start}
+.ovg{display:grid;gap:26px 32px;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);grid-template-areas:"sent sent" "avail open" "strip strip" "chart attn" "alerts alerts" "power links";align-items:start}
 .ovg>*{min-width:0}
 .ov-sent{grid-area:sent}.ov-avail{grid-area:avail}.ov-open{grid-area:open}.ov-strip{grid-area:strip}
-.ov-attn{grid-area:attn}.ov-map{grid-area:map}.ov-chart{grid-area:chart}.ov-power{grid-area:power}.ov-alerts{grid-area:alerts}.ov-links{grid-area:links}
+.ov-attn{grid-area:attn}.ov-chart{grid-area:chart}.ov-power{grid-area:power}.ov-alerts{grid-area:alerts}.ov-links{grid-area:links}
 .ov-sent .lede{margin:6px 0 0}
 .ov-avail .big,.ov-open .big{font-size:64px;line-height:1;margin-top:4px;font-variant-numeric:tabular-nums}
 .ov-open .big{font-size:48px}
@@ -338,8 +338,6 @@ input[type=checkbox]:focus-visible{outline:2px solid #10265C;outline-offset:2px}
 .ovrow .sev{align-self:stretch}
 .ovrow.new{animation:ovflash 1.2s var(--e) both}
 @keyframes ovflash{from{background:#36DFFF33}to{background:transparent}}
-.ovm{width:100%;height:auto;aspect-ratio:5/3;display:block}
-.ovm .ring{fill:none;stroke:#36DFFF;stroke-opacity:.22;stroke-width:1.2}
 .ovchart{position:relative;min-height:200px}
 .ovchart svg{display:block;overflow:visible}
 .ovchart .ax{font:500 10px var(--m);fill:var(--t2)}
@@ -353,7 +351,7 @@ input[type=checkbox]:focus-visible{outline:2px solid #10265C;outline-offset:2px}
   .ovg{grid-template-columns:minmax(0,1fr);grid-template-areas:none;gap:22px}
   .ovg>*{grid-area:auto}
   .ov-sent{order:1}.ov-avail{order:2}.ov-open{order:3}.ov-strip{order:4}.ov-attn{order:5}
-  .ov-map{order:6}.ov-chart{order:7}.ov-power{order:8}.ov-alerts{order:9}.ov-links{order:10}
+  .ov-chart{order:7}.ov-power{order:8}.ov-alerts{order:9}.ov-links{order:10}
   .ov-avail .big{font-size:52px}.ov-open .big{font-size:40px}
   .ovstrip{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .ovt{padding:12px 10px;min-height:44px;border-left:0;padding-left:0;border-bottom:1px solid var(--ln)}
@@ -754,14 +752,6 @@ function easeLeaflet(mk,t){
   const dur=Math.min(1500,Math.max(200,now-pv.t));
   el.firstElementChild.animate([{transform:`translate(${a.x-b.x}px,${a.y-b.y}px)`},{transform:'translate(0px,0px)'}],{duration:dur,easing:'linear'});
 }
-function ovMini(){
-  const m=$('#ovm');if(!m)return;
-  const key=RINGS.map(r=>r.id+':'+r.isolated).join()+'|'+TEAMS.map(t=>t.name+t.state+Math.round(t.p.x)+','+Math.round(t.p.y)+Math.round(t.hd||0)).join('|');
-  if(m.dataset.k===key)return;m.dataset.k=key;
-  const rings=RINGS.map(r=>`<polygon class="ring" points="${r.path.map(([la,lo])=>{const p=PROJ(la,lo);return p.x.toFixed(0)+','+p.y.toFixed(0)}).join(' ')}"/>`).join('');
-  const vans=TEAMS.map(t=>`<g data-team="${t.name}" data-x="${t.p.x.toFixed(0)}" data-y="${t.p.y.toFixed(0)}" data-s=".5" transform="translate(${t.p.x.toFixed(0)} ${t.p.y.toFixed(0)}) scale(.5)">${VAN(t.hd||0,!(t.state=='EN_ROUTE'||t.state=='RETURNING'))}</g>`).join('');
-  m.innerHTML=`<g>${rings}</g>${vans}`;easeVans(m);
-}
 async function loadAvail(){
   if(!RUNID){drawAvail();return}
   AVT=Date.now();
@@ -791,7 +781,7 @@ function drawAvail(){
     tip.hidden=false;tip.textContent=`${s.sim_time} · ${s.availability.toFixed(2)} % · simulated`;tip.style.left=Math.max(0,Math.min(r.width-190,x(i)/W*r.width-95))+'px'});
   svg.addEventListener('pointerleave',()=>{xh.setAttribute('visibility','hidden');xd.setAttribute('visibility','hidden');tip.hidden=true});
 }
-function ovAfter(){ovMini();if(Date.now()-AVT>15000)loadAvail();else drawAvail()}
+function ovAfter(){if(Date.now()-AVT>15000)loadAvail();else drawAvail()}
 function ovView(){
   const B=DB||{},N=T.length,openN=inc.filter(i=>i.a!=2).length;
   return `<div class="ovg">
@@ -800,7 +790,7 @@ function ovView(){
 <div class="ov-open"><div class="sm t2">Open incidents <span class="src">simulated</span></div><div class="big">${openN}</div></div>
 <section class="ov-strip sec" aria-label="Key values"><h3>Key values <span class="src">simulated</span></h3><div class="ovstrip">${ovStrip(openN)}</div></section>
 <section class="ov-attn sec"><h3>Needs attention <span class="src">active incidents</span></h3>${ovAttn()}</section>
-<section class="ov-map sec"><h3>Crews on the map</h3><svg id="ovm" class="mapbox sm2 ovm" viewBox="0 0 1000 600" role="img" aria-label="Crew positions, simulated. Vans only."></svg></section>
+
 <section class="ov-chart sec"><h3>Availability · last 30 min <span class="src">simulated</span></h3><div id="ovchart" class="ovchart"></div></section>
 <section class="ov-power sec"><h3>Site power &amp; fleet <span class="src">simulated</span></h3>${ovPower()}<div class="ovcounts"><div><span class="t2 sm">Power alarms</span> <b class="mono">${numT(KPI&&KPI.power)}</b></div><div><span class="t2 sm">Towers in service</span> <b class="mono">${numT(B.online)}/${N||'…'}</b></div></div>${ovFleet()}</section>
 <section class="ov-alerts sec"><h3>Recent alerts <span class="src">event log</span></h3>${ovAlerts()}</section>
