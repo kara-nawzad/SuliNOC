@@ -115,6 +115,9 @@ _dispatch_lock = threading.RLock()
 # event-loop thread, so two tasks could interleave across awaits and read or step
 # each other's engine. This asyncio lock is held across the awaits instead.
 _gate = asyncio.Lock()
+# A simulation step takes ~2 ms. If one ever stalls, release the shared gate after this
+# long so every other request is not held behind it.
+STEP_TIMEOUT_S = 30.0
 _registry: SessionRegistry | None = None
 _shared_bundle = None
 
@@ -343,7 +346,7 @@ async def simulation_loop() -> None:
                 async with _gate:
                     _activate(session)
                     try:
-                        await asyncio.to_thread(_step_locked, True)
+                        await asyncio.wait_for(asyncio.to_thread(_step_locked, True), STEP_TIMEOUT_S)
                     finally:
                         _deactivate(session)
                 # Normally the next deadline is one interval after this one. If the
@@ -357,7 +360,7 @@ async def simulation_loop() -> None:
                 deadline = due.get("__legacy__", now)
                 if now >= deadline:
                     async with _gate:
-                        await asyncio.to_thread(_step_locked, True)
+                        await asyncio.wait_for(asyncio.to_thread(_step_locked, True), STEP_TIMEOUT_S)
                     legacy_interval = BASE_TICK_SECONDS / max(_speed, 0.1)
                     next_due = deadline + legacy_interval
                     after = time.monotonic()
@@ -376,7 +379,10 @@ async def simulation_loop() -> None:
 async def lifespan(app: FastAPI):
     global worker, _registry, _shared_bundle
     from autonoc.ai.serve import ModelBundle
-    _shared_bundle = ModelBundle()
+    # Models load in the background so the port opens at once. Sessions created
+    # before they finish share this object and pick the models up as they arrive.
+    _shared_bundle = ModelBundle(load=False)
+    threading.Thread(target=_shared_bundle.load, name="model-load", daemon=True).start()
     _registry = SessionRegistry(
         _make_session,
         max_sessions=max(1, _env_int("AUTONOC_MAX_SESSIONS", DEFAULT_MAX_SESSIONS)),

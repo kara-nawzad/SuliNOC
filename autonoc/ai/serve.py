@@ -96,7 +96,7 @@ def rules_verdicts(engine) -> dict[str, dict]:
 class ModelBundle:
     """Loads Doctor + Oracle once. Every missing piece degrades to rules."""
 
-    def __init__(self) -> None:
+    def __init__(self, load: bool = True) -> None:
         self.doctor = None
         self.scaler_mean = None
         self.scaler_scale = None
@@ -108,7 +108,12 @@ class ModelBundle:
         self.oracle_seq_len = 12
         self.channels: list[str] = []
         self.mode = "rules"          # upgraded to "ml" only if EVERYTHING loads
+        if load:
+            self.load()
 
+    def load(self) -> None:
+        """Load both models into this object. Safe to call from a background thread:
+        sessions that already hold this bundle see the models as they arrive."""
         self._load_doctor()
         self._load_oracle()
 
@@ -188,7 +193,11 @@ class InferenceWorker(threading.Thread):
         self._last_error: str | None = None
         # loads happen here so a missing file degrades once, quietly
         self.bundle = bundle if bundle is not None else ModelBundle()
-        self._mode = serving_mode(self.bundle)
+
+    @property
+    def _mode(self) -> str:
+        # Read from the bundle each time: a shared bundle may still be loading.
+        return serving_mode(self.bundle)
 
     # ------------------------------------------------------------ lifecycle
     def stop(self) -> None:
@@ -247,7 +256,7 @@ class InferenceWorker(threading.Thread):
                     or not source.ai_enabled):
                 return False
             source.ai_verdicts = verdicts
-            source.ai_mode = self._mode
+            source.ai_mode = serving_mode(self.bundle)
             self._track_pending()
             self._settle_auto_approve_locked()
         return True
