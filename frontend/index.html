@@ -577,7 +577,7 @@ let vis=true;(function loop(n){if(vis&&!document.hidden&&!reduce()&&!(CTL&&CTL.p
 const sp=(a,w=60,h=18)=>{const mx=Math.max(...a),mn=Math.min(...a);return`<svg width="${w}" height="${h}"><polyline fill="none" stroke="currentColor" stroke-width="1.2" points="${a.map((v,i)=>(i/(a.length-1)*w)+','+(h-(v-mn)/(mx-mn||1)*h)).join(' ')}"/></svg>`};
 let INS={key:null,busy:false,msg:'',err:false,kind:1,armed:0,timer:null,parts:{}};
 const GU={rsrp:['dBm'],sinr:['dB'],cqi:['/ 15'],vswr:[': 1'],prb:['%'],throughput:['Mbps'],loss:['%'],latency:['ms'],temp:['°C'],cpu:['%'],dust:['%',100],jitter:['ms'],s11:['dB'],voltage:['V'],battery:['%'],fuel:['%']};
-const GSEC=[['Radio · 3GPP PM counters',['rsrp','sinr','cqi','vswr','prb','throughput','loss','latency']],['Hardware',['temp','cpu','dust','jitter','s11']]];
+const GSEC=[['Telecom',['rsrp','sinr','cqi','prb','throughput','latency','loss','jitter']],['Antenna & feeder',['vswr','s11']],['Equipment',['cpu','temp','dust']]];
 const HX={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 const hx=s=>String(s??'').replace(/[&<>"']/g,c=>HX[c]);
 const GCOL={ok:'#0C9C83',warn:'#C27400',bad:'#D42F52'},GWORD={ok:'Good',warn:'Warning',bad:'Failing'};
@@ -593,10 +593,10 @@ function inspectorParts(t){
  const head=`<div class="grab" aria-hidden="true"></div>
  <div class="ph"><div><h3 class="m">${hx(n.id)}</h3><div class="sm t2">${hx(district)} · ${n.ring>=0?'fibre ring '+n.ring:'unprotected'} · ${hx(gen)}</div></div><button class="btn" data-x aria-label="Close inspector">✕</button></div>
  <div style="margin-top:10px"><span class="tag" style="--c:${scol}"><b>${hx(sname)}</b></span>${tags}</div>`;
- const sections=GSEC.map(([title,keys])=>`<div class="sec"><h3>${hx(title)}</h3><div class="gauges">${keys.map(k=>gauge(n,k)).join('')}</div></div>`).join('');
- const power=`<div class="sec"><h3>Site power${pname?' · '+hx(pname):''}</h3><div class="gauges"><div class="gauge"><div class="gh"><span>${hx(CFG.metric_labels.power)}</span><b class="gv">${hx(n.power??'—')}</b></div></div>${['voltage','battery','fuel'].map(k=>gauge(n,k)).join('')}</div>${n.ats?'<div class="sm" style="color:#D42F52;margin-top:8px">ATS: fails to crank</div>':''}</div>`;
+ const secs=GSEC.map(([title,keys])=>`<div class="sec"><h3>${hx(title)}</h3><div class="gauges">${keys.map(k=>gauge(n,k)).join('')}</div></div>`);
+ const power=`<div class="sec"><h3>Power${pname?' · '+hx(pname):''}</h3><div class="gauges"><div class="gauge"><div class="gh"><span>${hx(CFG.metric_labels.power)}</span><b class="gv">${hx(n.power??'—')}</b></div></div>${['voltage','battery','fuel'].map(k=>gauge(n,k)).join('')}</div>${n.ats?'<div class="sm" style="color:#D42F52;margin-top:8px">ATS: fails to crank</div>':''}</div>`;
  const ai=n.warn?'<div class="sec"><h3>AI estimate</h3><div class="sm t2">Flagged by the AI model in this run. This is an estimate, not a measurement. The readings above are backend values.</div></div>':'';
- const body=`<div class="kvs" style="margin-top:12px"><div><span class="t2 sm">District</span><b>${hx(district)}</b></div><div><span class="t2 sm">Generation</span><b>${hx(gen)}</b></div><div><span class="t2 sm">Fibre ring</span><b>${n.ring>=0?'Ring '+n.ring:'Unprotected'}</b></div><div><span class="t2 sm">Power type</span><b>${hx(n.pwr||'—')}${pname?' · '+hx(pname):''}</b></div></div>${sections}${power}${ai}`;
+ const body=`<div class="kvs" style="margin-top:12px"><div><span class="t2 sm">District</span><b>${hx(district)}</b></div><div><span class="t2 sm">Generation</span><b>${hx(gen)}</b></div><div><span class="t2 sm">Fibre ring</span><b>${n.ring>=0?'Ring '+n.ring:'Unprotected'}</b></div><div><span class="t2 sm">Power type</span><b>${hx(n.pwr||'—')}${pname?' · '+hx(pname):''}</b></div></div>${secs[0]}${power}${secs.slice(1).join('')}${ai}`;
  const busy=INS.busy,armed=INS.armed>Date.now();
  const kinds=pres.fault_options.map(o=>`<option value="${o.value}"${o.value===INS.kind?' selected':''}>${hx(o.label)}</option>`).join('');
  const ctl=`<div class="sec"><h3>Simulate a fault</h3>
