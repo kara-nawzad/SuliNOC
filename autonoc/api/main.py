@@ -346,15 +346,22 @@ async def simulation_loop() -> None:
                         await asyncio.to_thread(_step_locked, True)
                     finally:
                         _deactivate(session)
-                due[session.token] = max(deadline + interval, time.monotonic())
+                # Normally the next deadline is one interval after this one. If the
+                # session fell behind by more than that, restart its cadence a full
+                # interval from now instead of stepping again straight away.
+                next_due = deadline + interval
+                after = time.monotonic()
+                due[session.token] = next_due if next_due > after else after + interval
             if not sessions:
                 # No registry (unit tests, teardown): legacy single-engine clock.
                 deadline = due.get("__legacy__", now)
                 if now >= deadline:
                     async with _gate:
                         await asyncio.to_thread(_step_locked, True)
-                    due["__legacy__"] = max(deadline + BASE_TICK_SECONDS / max(_speed, 0.1),
-                                            time.monotonic())
+                    legacy_interval = BASE_TICK_SECONDS / max(_speed, 0.1)
+                    next_due = deadline + legacy_interval
+                    after = time.monotonic()
+                    due["__legacy__"] = next_due if next_due > after else after + legacy_interval
             for token in list(due):
                 if token not in live and token != "__legacy__":
                     del due[token]
