@@ -22,7 +22,7 @@ svg.map{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
 @keyframes draw{to{stroke-dashoffset:0}}
 .nd{cursor:pointer;opacity:0;animation:pop .5s var(--e) forwards;animation-delay:var(--d)}@keyframes pop{from{opacity:0}to{opacity:1}}
 .nd .dot{fill:var(--live);stroke:#06223a;stroke-width:1;transition:r .2s}
-.nd.warn .dot{fill:var(--warn);stroke:var(--warn)}.nd.crit .dot{fill:var(--crit);stroke:var(--crit)}
+.nd.warn .dot{fill:var(--warn);stroke:var(--warn)}.nd.crit .dot{fill:#E0243F;stroke:#fff;stroke-width:2}
 .nd .ring{fill:none;stroke:transparent;stroke-width:1.2}.nd.crit .ring{stroke:var(--crit);opacity:.5}.nd.ai .ring{stroke:var(--ai);stroke-dasharray:3 3}
 .nd:hover .dot,.nd.sel .dot{r:8.5}.nd.sel .ring{stroke:var(--tx);opacity:1}
 .dim .lk{opacity:.25}.dim .lk.hl{opacity:1;stroke:var(--cy);stroke-opacity:1}
@@ -95,7 +95,7 @@ body{background:linear-gradient(180deg,#BBD8F8,#DCEBFB)}body::before{display:non
 #amb{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 45% 40% at 16% 80%,#ffb24d44,transparent 70%);mix-blend-mode:screen;animation:amb 16s ease-in-out infinite alternate}@keyframes amb{from{opacity:.3}to{opacity:.9}}#cl{position:absolute;left:0;right:0;bottom:0;width:100%;height:18%;pointer-events:none}
 #hero{background:#14304d}#hero::before{display:none}#hm{inset:0 0 auto 0;height:72%}@media(max-aspect-ratio:1/1){#hm{top:9%;height:40%}.hl{object-position:80% 100%}}
 #top .wm{color:#fff}#top .logo-light{display:block;height:34px;width:auto}#side .logo-dark{display:block;height:34px;width:auto}#hero .ann,#hero .live{color:#d8e8f4}#hero .live i{background:#7ff5e0}#hm .grid,#hm ellipse,#hm #dep,#hm #rt,#hm #crew{display:none}
-#hm .lk{stroke:#a6efe6;stroke-opacity:.6}#hm .cont{stroke:#0c2542;opacity:.45}#hm .mt{fill:#d8e8f4}#hm .lbl{fill:#e8f4ff}#hm .nd .dot{fill:#6ff0d8;stroke:#fff}#hm .nd .halo{fill:#6ff0d8;opacity:.4}#hm .nd.warn .dot,#hm .nd.crit .dot{fill:#ff7a3d}#hm .nd.warn .halo,#hm .nd.crit .halo{fill:#ff7a3d}#hm .pu{fill:#d9fffb}#hm .nd.ai .dot{fill:#e2c8ff}
+#hm .lk{stroke:#a6efe6;stroke-opacity:.6}#hm .cont{stroke:#0c2542;opacity:.45}#hm .mt{fill:#d8e8f4}#hm .lbl{fill:#e8f4ff}#hm .nd .dot{fill:#6ff0d8;stroke:#fff}#hm .nd .halo{fill:#6ff0d8;opacity:.4}#hm .nd.warn .dot{fill:#ff7a3d}#hm .nd.crit .dot{fill:#E0243F;stroke:#fff;stroke-width:2}#hm .nd.warn .halo,#hm .nd.crit .halo{fill:#ff7a3d}#hm .pu{fill:#d9fffb}#hm .nd.ai .dot{fill:#e2c8ff}
 #copy p{color:#F4F8FF}#hero .ghost{border-color:#F4F8FF;color:#F4F8FF}#hero .ghost:hover{color:#fff;background:#ffffff33}
 h1,h2,.big,.sec>h3{font-weight:500}.lede{font-weight:400}.bcn{animation:bc .7s steps(2) infinite}@keyframes bc{50%{opacity:.2}}
 .keep .nd,.keep .lk,.keep .lbl{animation:none!important;opacity:1}.keep .lk{stroke-dashoffset:0}.team{cursor:default}
@@ -967,7 +967,7 @@ function mntBody(){const b=$('#mcrewbox'),q=$('#mq'),f=$('#mfleet');if(b)b.inner
 
 /* ===== Group 8: live network on a real map (Leaflet, CARTO tiles) ===== */
 let LNMAP=null,LNMK=new Map(),LNFB=false,LNERR=0,LNOK=0;
-const LN_COL={ok:'#0C9C83',warn:'#C27400',crit:'#D42F52'};
+const LN_COL={ok:'#0C9C83',warn:'#C27400',crit:'#E0243F'};
 function lnMsg(t){const m=$('#lnmsg');if(m)m.textContent=t}
 function lnFallback(msg){LNFB=true;const m=$('#lnmap'),s=$('#lnsvg');if(m)m.hidden=true;if(s){s.hidden=false;s.innerHTML=mapHTML('ln');wire(s,$('#ap'))}lnMsg(msg)}
 function lnBody(){
@@ -1032,7 +1032,7 @@ function lnRingStyle(){RINGS.forEach(r=>{const pl=LNRINGS.get(r.id);if(!pl)retur
 document.addEventListener('change',e=>{if(['lnd','lns','lno'].includes(e.target.id))lnFilter()});
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#lnr')&&LNMAP){LNMAP.fitBounds(T.map(t=>[t.raw.lat,t.raw.lon]),{padding:[24,24]})}});
 /* group 8: fault and model ripples, crew vans with their route to target. Only real backend states are drawn. */
-let LNRIPL=null,LNVANL=null,LNRIPKEY='',LNVANKEY='';
+let LNRIPL=null,LNVANL=null,LNROUTE=null,LNVANM=new Map(),LNROUTEKEY='',LNRIPKEY='',LNVANKEY='';
 function lnRipples(){
   if(!LNMAP||!window.L)return;const L=window.L;
   const hot=T.filter(t=>t.st==='crit'||t.ai);
@@ -1044,21 +1044,33 @@ function lnRipples(){
 }
 function lnVans(){
   if(!LNMAP||!window.L)return;const L=window.L;
-  if(!LNVANL)LNVANL=L.layerGroup().addTo(LNMAP);
+  if(!LNVANL){LNVANL=L.layerGroup().addTo(LNMAP);LNROUTE=L.layerGroup().addTo(LNMAP);LNVANM=new Map();LNVANKEY='';LNROUTEKEY=''}
   const key=TEAMS.map(t=>[t.name,t.lat,t.lon,t.state,t.target_lat,t.target_lon,t.eta,Math.round(t.hd||0)].join()).join('|');
-  if(key===LNVANKEY)return;LNVANKEY=key;LNVANL.clearLayers();
+  if(key===LNVANKEY)return;LNVANKEY=key;
+  // Routes and ETA labels change rarely; redraw only those.
+  const rkey=TEAMS.filter(t=>(t.state==='EN_ROUTE'||t.state==='RETURNING')&&t.target_lat!=null).map(t=>[t.name,t.lat,t.lon,t.target_lat,t.target_lon,t.eta].join()).join('|');
+  if(rkey!==LNROUTEKEY){LNROUTEKEY=rkey;LNROUTE.clearLayers();
+    TEAMS.forEach(t=>{if(!(t.state==='EN_ROUTE'||t.state==='RETURNING')||t.target_lat==null)return;
+      const a=[t.lat,t.lon],b=[t.target_lat,t.target_lon];
+      L.polyline([a,b],{color:'#D42F52',weight:3,dashArray:'6 5',opacity:.8,interactive:false}).addTo(LNROUTE);
+      const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+      L.marker(mid,{icon:L.divIcon({className:'etaw',html:'<span class="etal">ETA '+t.eta+' ticks · simulated</span>',iconSize:[0,0]}),interactive:false,keyboard:false}).addTo(LNROUTE);
+    });
+  }
+  // Vans move in place. Only the icon is rebuilt when its heading or state changes.
   TEAMS.forEach(t=>{
     const moving=t.state==='EN_ROUTE'||t.state==='RETURNING';
-    const hd=t.hd||0;
-    const html='<svg width="160" height="160" viewBox="-80 -80 160 160" style="pointer-events:none;overflow:visible" aria-hidden="true">'+VAN(hd,!moving)+'</svg>';
-    const mk=L.marker([t.lat,t.lon],{icon:L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}),interactive:false,keyboard:false,title:t.name+' · '+t.state}).addTo(LNVANL);
-    easeLeaflet(mk,t);
-    if(moving&&t.target_lat!=null){
-      const a=[t.lat,t.lon],b=[t.target_lat,t.target_lon];
-      L.polyline([a,b],{color:'#D42F52',weight:3,dashArray:'6 5',opacity:.8,interactive:false}).addTo(LNVANL);
-      const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];
-      L.marker(mid,{icon:L.divIcon({className:'etaw',html:'<span class="etal">ETA '+t.eta+' ticks · simulated</span>',iconSize:[0,0]}),interactive:false,keyboard:false}).addTo(LNVANL);
+    const hk=Math.round(t.hd||0)+'|'+moving;
+    const html='<svg width="160" height="160" viewBox="-80 -80 160 160" style="pointer-events:none;overflow:visible" aria-hidden="true">'+VAN(t.hd||0,!moving)+'</svg>';
+    let mk=LNVANM.get(t.name);
+    if(!mk){
+      mk=L.marker([t.lat,t.lon],{icon:L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}),interactive:false,keyboard:false,title:t.name+' · '+t.state}).addTo(LNVANL);
+      mk._hk=hk;LNVANM.set(t.name,mk);
+    }else{
+      mk.setLatLng([t.lat,t.lon]);
+      if(mk._hk!==hk){mk._hk=hk;mk.setIcon(L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}));mk.options.title=t.name+' · '+t.state}
     }
+    easeLeaflet(mk,t);
   });
 }
 /* group 8: repair sequence from backend states only. No progress value exists, so the amber sweep is indeterminate.
