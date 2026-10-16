@@ -957,17 +957,19 @@ function lnBody(){
 function liveInit(){
   const el=$('#lnmap');if(!el||LNMAP||LNFB)return;
   if(!window.L){lnMsg('Loading map…');return}
-  if(!T.length){lnMsg('Waiting for tower positions from the backend.');return}
+  // Only towers with backend data have coordinates. Seeded hero towers have no raw record.
+  const LIVE=T.filter(t=>t.raw&&Number.isFinite(t.raw.lat)&&Number.isFinite(t.raw.lon));
+  if(!LIVE.length){lnMsg('Waiting for tower positions from the backend.');return}
   if(!window.CARTO_KEY){lnFallback('Map tiles unavailable. Showing schematic.');return}
   const L=window.L;
   LNMAP=L.map(el,{zoomControl:true,attributionControl:true,preferCanvas:true});
-  LNMAP.fitBounds(T.map(t=>[t.raw.lat,t.raw.lon]),{padding:[24,24]});
+  LNMAP.fitBounds(LIVE.map(t=>[t.raw.lat,t.raw.lon]),{padding:[24,24]});
   const tl=L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(window.CARTO_KEY)}`,{subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap contributors © CARTO'});
   tl.on('tileload',()=>LNOK++);
   tl.on('tileerror',()=>{LNERR++;if(LNERR>=6&&!LNOK){LNMAP.remove();LNMAP=null;lnFallback('Map tiles unavailable. Showing schematic.')}});
   tl.addTo(LNMAP);
   const cr=L.canvas({padding:.5});
-  T.forEach(t=>{const m=L.circleMarker([t.raw.lat,t.raw.lon],{renderer:cr,radius:5,color:'#fff',weight:1.5,fillColor:LN_COL[t.st]||LN_COL.ok,fillOpacity:1}).bindTooltip(`${t.n} · ${t.st==='ok'?'In service':t.st==='warn'?'Warning':'Alarm'}`);m.on('click',()=>{const rm=document.documentElement.classList.contains('rm');LNMAP.flyTo([t.raw.lat,t.raw.lon],Math.max(LNMAP.getZoom(),12),{duration:rm?0:.6});pick(t.id,$('#ap'))});m.addTo(LNMAP);LNMK.set(t.id,{m,st:t.st})});
+  LIVE.forEach(t=>{const m=L.circleMarker([t.raw.lat,t.raw.lon],{renderer:cr,radius:5,color:'#fff',weight:1.5,fillColor:LN_COL[t.st]||LN_COL.ok,fillOpacity:1}).bindTooltip(`${t.n} · ${t.st==='ok'?'In service':t.st==='warn'?'Warning':'Alarm'}`);m.on('click',()=>{const rm=document.documentElement.classList.contains('rm');LNMAP.flyTo([t.raw.lat,t.raw.lon],Math.max(LNMAP.getZoom(),12),{duration:rm?0:.6});pick(t.id,$('#ap'))});m.addTo(LNMAP);LNMK.set(t.id,{m,st:t.st})});
   lnMsg('Live positions from backend coordinates. © OpenStreetMap contributors © CARTO');
   if('IntersectionObserver' in window){if(LNIO)LNIO.disconnect();LNIO=new IntersectionObserver(es=>es.forEach(e=>el.classList.toggle('off',!e.isIntersecting)));LNIO.observe(el)}
   lnRings();
