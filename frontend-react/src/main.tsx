@@ -13,6 +13,10 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./index.css";
 import App from "./App";
 
+console.info(
+  `SuliNOC build ${__BUILD_STAMP__.sha} · built ${__BUILD_STAMP__.built}`,
+);
+
 class ErrorBoundary extends Component<
   { children: ReactNode },
   { failed: boolean }

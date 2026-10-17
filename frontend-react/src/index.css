@@ -3769,3 +3769,4 @@ button.tower-row:hover{background:rgba(255,255,255,.04)}
 .ring-list-title{font:600 13px var(--sans,"Manrope",system-ui,sans-serif);margin:0 0 6px}
 .ring-list ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .ring-list li{display:flex;gap:12px;flex-wrap:wrap;font-size:13px}
+.build-stamp{display:block;margin-top:10px;opacity:.7;font-size:11px}
