@@ -309,10 +309,10 @@ input[type=checkbox]:focus-visible{outline:2px solid #10265C;outline-offset:2px}
 .mapbox.sm2 .cone{display:none}
 
 /* ===== Group 5: overview layout ===== */
-.ovg{display:grid;gap:26px 32px;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);grid-template-areas:"sent sent" "avail open" "strip strip" "chart attn" "map alerts" "power links";align-items:start}
+.ovg{display:grid;gap:26px 32px;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);grid-template-areas:"sent sent" "avail open" "strip strip" "chart attn" "alerts alerts" "power links";align-items:start}
 .ovg>*{min-width:0}
 .ov-sent{grid-area:sent}.ov-avail{grid-area:avail}.ov-open{grid-area:open}.ov-strip{grid-area:strip}
-.ov-attn{grid-area:attn}.ov-map{grid-area:map}.ov-chart{grid-area:chart}.ov-power{grid-area:power}.ov-alerts{grid-area:alerts}.ov-links{grid-area:links}
+.ov-attn{grid-area:attn}.ov-chart{grid-area:chart}.ov-power{grid-area:power}.ov-alerts{grid-area:alerts}.ov-links{grid-area:links}
 .ov-sent .lede{margin:6px 0 0}
 .ov-avail .big,.ov-open .big{font-size:64px;line-height:1;margin-top:4px;font-variant-numeric:tabular-nums}
 .ov-open .big{font-size:48px}
@@ -338,8 +338,6 @@ input[type=checkbox]:focus-visible{outline:2px solid #10265C;outline-offset:2px}
 .ovrow .sev{align-self:stretch}
 .ovrow.new{animation:ovflash 1.2s var(--e) both}
 @keyframes ovflash{from{background:#36DFFF33}to{background:transparent}}
-.ovm{width:100%;height:auto;aspect-ratio:5/3;display:block}
-.ovm .ring{fill:none;stroke:#36DFFF;stroke-opacity:.22;stroke-width:1.2}
 .ovchart{position:relative;min-height:200px}
 .ovchart svg{display:block;overflow:visible}
 .ovchart .ax{font:500 10px var(--m);fill:var(--t2)}
@@ -353,7 +351,7 @@ input[type=checkbox]:focus-visible{outline:2px solid #10265C;outline-offset:2px}
   .ovg{grid-template-columns:minmax(0,1fr);grid-template-areas:none;gap:22px}
   .ovg>*{grid-area:auto}
   .ov-sent{order:1}.ov-avail{order:2}.ov-open{order:3}.ov-strip{order:4}.ov-attn{order:5}
-  .ov-map{order:6}.ov-chart{order:7}.ov-power{order:8}.ov-alerts{order:9}.ov-links{order:10}
+  .ov-chart{order:7}.ov-power{order:8}.ov-alerts{order:9}.ov-links{order:10}
   .ov-avail .big{font-size:52px}.ov-open .big{font-size:40px}
   .ovstrip{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .ovt{padding:12px 10px;min-height:44px;border-left:0;padding-left:0;border-bottom:1px solid var(--ln)}
@@ -437,6 +435,10 @@ table.tt tbody tr.sel{background:rgba(54,223,255,.18);box-shadow:inset 3px 0 0 #
 #lnsvg{position:absolute;inset:0;width:100%;height:100%}
 #lnmsg{margin-top:8px}
 .ripw,.vanw,.etaw{background:none;border:0}
+.vanw{transition:transform .8s linear}
+.leaflet-zoom-anim .vanw{transition:none}
+.vdot{display:block;width:16px;height:16px;border-radius:50%;background:#10265C;border:2px solid #fff;box-shadow:0 0 0 3px #10265C33}
+.leaflet-marker-pane{pointer-events:none}
 .rip{position:absolute;left:-22px;top:-22px;width:44px;height:44px;border-radius:50%;pointer-events:none;box-sizing:border-box}
 .rip-f{border:2px solid #D42F52;animation:ripf 2.4s ease-out infinite}
 @keyframes ripf{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.5);opacity:0}}
@@ -697,7 +699,9 @@ function ovLede(){
 function ovTile(label,val,sub,nav,tip){return `<button class="ovt" type="button" data-nav="${nav}" title="${tip}"><span class="ovl">${label}</span><span class="ovv">${val}</span><span class="ovs">${sub}</span></button>`}
 function ovStrip(openN){
   const K=KPI||{},B=DB||{},D=DASH||{},rep=TEAMS.filter(t=>t.state=='REPAIRING').length;
-  return ovTile('Offline sites',numT(B.offline),`${numT(B.degraded)} degraded`,'towers','Sites that have stopped reporting. Sub-line: degraded sites.')+
+  const ch=D.traffic_change_pct;
+  return ovTile('QCI 9 throughput',`${numT(B.throughput_gbps,2)} Gbps`,ch==null?'no hour of history yet':`${ch>0?'+':''}${numT(ch,1)}% vs last hour`,'towers','Aggregate simulated best-effort throughput. Sub-line: change against one simulated hour earlier.')+
+  ovTile('Offline sites',numT(B.offline),`${numT(B.degraded)} degraded`,'towers','Sites that have stopped reporting. Sub-line: degraded sites.')+
   ovTile('Open incidents',numT(openN),`${numT(K.injected)} faults injected`,'inc','Active incidents from the backend. Sub-line: faults injected in this run.')+
   ovTile('Crews active',`${numT(K.active_teams)}/${TEAMS.length||'…'}`,`${rep} repairing`,'mnt','Crews on a job out of the fleet total. Sub-line: crews repairing a site.')+
   ovTile('MTTR',`${numT(K.mttr_min,1)} min`,`${numT(K.repairs)} repairs`,'mnt','Mean time to repair, in minutes, over completed repairs. Sub-line: repairs completed.')+
@@ -745,23 +749,6 @@ function easeVans(root){
     g.animate([{transform:`translate(${pv.x}px,${pv.y}px) scale(${s})`},{transform:`translate(${x}px,${y}px) scale(${s})`}],{duration:dur,easing:'linear'});
   });
 }
-function easeLeaflet(mk,t){
-  const now=performance.now(),k='L'+t.name,pv=VANPOS.get(k),el=mk.getElement&&mk.getElement();
-  if(pv&&pv.lat===t.lat&&pv.lon===t.lon)return;
-  VANPOS.set(k,{lat:t.lat,lon:t.lon,t:now});
-  if(!pv||!el||!LNMAP||!el.firstElementChild)return;
-  const a=LNMAP.latLngToContainerPoint([pv.lat,pv.lon]),b=LNMAP.latLngToContainerPoint([t.lat,t.lon]);
-  const dur=Math.min(1500,Math.max(200,now-pv.t));
-  el.firstElementChild.animate([{transform:`translate(${a.x-b.x}px,${a.y-b.y}px)`},{transform:'translate(0px,0px)'}],{duration:dur,easing:'linear'});
-}
-function ovMini(){
-  const m=$('#ovm');if(!m)return;
-  const key=RINGS.map(r=>r.id+':'+r.isolated).join()+'|'+TEAMS.map(t=>t.name+t.state+Math.round(t.p.x)+','+Math.round(t.p.y)+Math.round(t.hd||0)).join('|');
-  if(m.dataset.k===key)return;m.dataset.k=key;
-  const rings=RINGS.map(r=>`<polygon class="ring" points="${r.path.map(([la,lo])=>{const p=PROJ(la,lo);return p.x.toFixed(0)+','+p.y.toFixed(0)}).join(' ')}"/>`).join('');
-  const vans=TEAMS.map(t=>`<g data-team="${t.name}" data-x="${t.p.x.toFixed(0)}" data-y="${t.p.y.toFixed(0)}" data-s=".5" transform="translate(${t.p.x.toFixed(0)} ${t.p.y.toFixed(0)}) scale(.5)">${VAN(t.hd||0,!(t.state=='EN_ROUTE'||t.state=='RETURNING'))}</g>`).join('');
-  m.innerHTML=`<g>${rings}</g>${vans}`;easeVans(m);
-}
 async function loadAvail(){
   if(!RUNID){drawAvail();return}
   AVT=Date.now();
@@ -791,7 +778,7 @@ function drawAvail(){
     tip.hidden=false;tip.textContent=`${s.sim_time} · ${s.availability.toFixed(2)} % · simulated`;tip.style.left=Math.max(0,Math.min(r.width-190,x(i)/W*r.width-95))+'px'});
   svg.addEventListener('pointerleave',()=>{xh.setAttribute('visibility','hidden');xd.setAttribute('visibility','hidden');tip.hidden=true});
 }
-function ovAfter(){ovMini();if(Date.now()-AVT>15000)loadAvail();else drawAvail()}
+function ovAfter(){if(Date.now()-AVT>15000)loadAvail();else drawAvail()}
 function ovView(){
   const B=DB||{},N=T.length,openN=inc.filter(i=>i.a!=2).length;
   return `<div class="ovg">
@@ -800,7 +787,7 @@ function ovView(){
 <div class="ov-open"><div class="sm t2">Open incidents <span class="src">simulated</span></div><div class="big">${openN}</div></div>
 <section class="ov-strip sec" aria-label="Key values"><h3>Key values <span class="src">simulated</span></h3><div class="ovstrip">${ovStrip(openN)}</div></section>
 <section class="ov-attn sec"><h3>Needs attention <span class="src">active incidents</span></h3>${ovAttn()}</section>
-<section class="ov-map sec"><h3>Crews on the map</h3><svg id="ovm" class="mapbox sm2 ovm" viewBox="0 0 1000 600" role="img" aria-label="Crew positions, simulated. Vans only."></svg></section>
+
 <section class="ov-chart sec"><h3>Availability · last 30 min <span class="src">simulated</span></h3><div id="ovchart" class="ovchart"></div></section>
 <section class="ov-power sec"><h3>Site power &amp; fleet <span class="src">simulated</span></h3>${ovPower()}<div class="ovcounts"><div><span class="t2 sm">Power alarms</span> <b class="mono">${numT(KPI&&KPI.power)}</b></div><div><span class="t2 sm">Towers in service</span> <b class="mono">${numT(B.online)}/${N||'…'}</b></div></div>${ovFleet()}</section>
 <section class="ov-alerts sec"><h3>Recent alerts <span class="src">event log</span></h3>${ovAlerts()}</section>
@@ -1057,20 +1044,18 @@ function lnVans(){
       L.marker(mid,{icon:L.divIcon({className:'etaw',html:'<span class="etal">ETA '+t.eta+' ticks · simulated</span>',iconSize:[0,0]}),interactive:false,keyboard:false}).addTo(LNROUTE);
     });
   }
-  // Vans move in place. Only the icon is rebuilt when its heading or state changes.
+  // Crews: one small dot per crew. Shown on the way to an alarm, hidden once back at the centre.
+  // Movement is a single CSS transition on the marker, so there is no per-frame animation code.
   TEAMS.forEach(t=>{
-    const moving=t.state==='EN_ROUTE'||t.state==='RETURNING';
-    const hk=Math.round(t.hd||0)+'|'+moving;
-    const html='<svg width="160" height="160" viewBox="-80 -80 160 160" style="pointer-events:none;overflow:visible" aria-hidden="true">'+VAN(t.hd||0,!moving)+'</svg>';
+    const away=!(t.state==='RETURNING'||t.state==='IDLE');
     let mk=LNVANM.get(t.name);
+    if(!away){if(mk&&LNVANL.hasLayer(mk))LNVANL.removeLayer(mk);return}
     if(!mk){
-      mk=L.marker([t.lat,t.lon],{icon:L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}),interactive:false,keyboard:false,title:t.name+' · '+t.state}).addTo(LNVANL);
-      mk._hk=hk;LNVANM.set(t.name,mk);
-    }else{
-      mk.setLatLng([t.lat,t.lon]);
-      if(mk._hk!==hk){mk._hk=hk;mk.setIcon(L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}));mk.options.title=t.name+' · '+t.state}
+      mk=L.marker([t.lat,t.lon],{icon:L.divIcon({className:'vanw',html:'<span class="vdot"></span>',iconSize:[16,16],iconAnchor:[8,8]}),interactive:false,keyboard:false,title:t.name+' · '+t.state});
+      LNVANM.set(t.name,mk);
     }
-    easeLeaflet(mk,t);
+    if(!LNVANL.hasLayer(mk))mk.addTo(LNVANL);
+    mk.setLatLng([t.lat,t.lon]);
   });
 }
 /* group 8: repair sequence from backend states only. No progress value exists, so the amber sweep is indeterminate.
@@ -1199,7 +1184,15 @@ function anWire(){
     svg.addEventListener('pointerleave',()=>{tip.hidden=true;svg.querySelector('.anx').setAttribute('opacity','0');svg.querySelector('.anpt').setAttribute('opacity','0')});
   });
 }
-function anSamples(){const e=ANDATA.__raw;return e?e[ANTF]:null}
+function anRaw(){
+  const live=HIST||[];
+  if(ANTF==='30m')return live;
+  const fetched=(ANDATA.__raw&&ANDATA.__raw[ANTF])||[];
+  if(!fetched.length)return live;
+  const byTick=new Map();fetched.forEach(x=>byTick.set(x.tick,x));live.forEach(x=>byTick.set(x.tick,x));
+  return [...byTick.values()].sort((a,b)=>a.tick-b.tick);
+}
+function anSamples(){return anRaw()}
 function anView(){
   const tfs=[['30m','30 min'],['24h','24 h'],['7d','7 d']];
   return `<h2>Analytics</h2><div class="sm t2">Historical trends from the current run, in simulated time. Every series is simulated.</div>`
@@ -1214,7 +1207,7 @@ function anView(){
   +`<div class="anbtns"><button type="button" class="btn" id="an-report">Full report</button> <button type="button" class="btn" id="an-hist">Run history</button></div>`;
 }
 function anBodyHTML(){
-  const raw=ANDATA.__raw&&ANDATA.__raw[ANTF];
+  const raw=anRaw();
   if(!raw)return '<div class="t2 sm">Loading telemetry from the backend…</div>';
   if(!raw.length)return '<div class="t2">No samples yet for this range. The window fills as simulated time passes.</div>';
   const [av,...rest]=ANSPEC;
@@ -1222,11 +1215,11 @@ function anBodyHTML(){
    +`<div class="angrid">${rest.map(sp=>`<section class="ancell"><h3>${sp.t} <span class="src">simulated · ${sp.u}</span></h3>${anChart(sp,raw)}</section>`).join('')}</div>`;
 }
 async function anFetch(force){
-  if(!RUNID||ANFETCHING)return;
-  const now=Date.now();if(!force&&now-ANLAST<5000&&ANDATA.__raw&&ANDATA.__raw[ANTF])return;
+  if(!RUNID||ANFETCHING||ANTF==='30m')return;
+  const now=Date.now();if(!force&&now-ANLAST<60000&&ANDATA.__raw&&ANDATA.__raw[ANTF])return;
   ANFETCHING=true;
   try{const r=await fetch(`/api/telemetry/history?timeframe=${ANTF}&run_id=${encodeURIComponent(RUNID)}`,{cache:'no-store'});
-    if(r.status===409){ANMSG='The simulation run changed. Refreshing.';return}
+    if(r.status===409){ANMSG='The simulation run changed. Refreshing.';ANLAST=0;ANDATA.__raw={};setTimeout(()=>{Promise.resolve().then(pollOnce).catch(()=>{}).then(()=>anFetch(true))},300);return}
     if(!r.ok)throw new Error('backend returned '+r.status);
     const j=await r.json();ANDATA.__raw=ANDATA.__raw||{};ANDATA.__raw[ANTF]=j.samples||[];ANLAST=now;ANMSG=''}
   catch(e){ANMSG='Telemetry unavailable: '+e.message+'. Showing the last data.'}
@@ -1236,7 +1229,7 @@ async function anFetch(force){
 function anBody(){
   if(view!=='ana')return;
   const b=$('#anbody');if(!b)return;
-  const raw=ANDATA.__raw&&ANDATA.__raw[ANTF];
+  const raw=anRaw();
   const key=ANTF+':'+(raw?raw.length+':'+(raw.length?raw[raw.length-1].tick:''):'none');
   const m=$('#anmsg');if(m)m.textContent=ANMSG;
   if(ANKEYS.body===key)return;ANKEYS.body=key;
@@ -1253,7 +1246,7 @@ document.addEventListener('click',e=>{
 function anStats(raw){return ANSPEC.map(sp=>{const vs=raw.map(x=>ANVAL(x,sp)).filter(v=>v!=null);if(!vs.length)return `<tr><th scope="row">${sp.t}</th><td colspan="4" class="t2">no samples</td></tr>`;
   const mean=vs.reduce((a,c)=>a+c,0)/vs.length;const f=v=>anFmt(v,sp.u);
   return `<tr><th scope="row">${sp.t}</th><td data-l="Latest">${f(vs[vs.length-1])}</td><td data-l="Mean">${f(mean)}</td><td data-l="Min">${f(Math.min(...vs))}</td><td data-l="Max">${f(Math.max(...vs))}</td></tr>`}).join('')}
-function anReportHTML(){const raw=(ANDATA.__raw&&ANDATA.__raw[ANTF])||[];
+function anReportHTML(){const raw=anRaw();
   if(!raw.length)return '<div class="t2">No samples yet for this range. Nothing to report.</div>';
   return `<p class="sm t2">Range ${ANTF} · ${raw.length} samples · simulated time, this run. Figures are computed from the samples shown on this page.</p>`
    +`<table class="antab"><thead><tr><th scope="col">Metric</th><th scope="col">Latest</th><th scope="col">Mean</th><th scope="col">Min</th><th scope="col">Max</th></tr></thead><tbody>${anStats(raw)}</tbody></table>`;}
@@ -1385,7 +1378,7 @@ const minHM=m=>pad2(Math.floor(m/60)%24)+':'+pad2(m%60);
 const HS=k=>{const a=HIST.map(x=>x[k]);return a.length>1?a:[0,0]};
 function mkProj(){const b=CFG.bounds,c=Math.cos((b.lat_min+b.lat_max)/2*Math.PI/180),kx=(b.lon_max-b.lon_min)*c,ky=b.lat_max-b.lat_min,s=Math.min(880/kx,500/ky),ox=500-kx*s/2,oy=300-ky*s/2;return(lat,lon)=>({x:ox+(lon-b.lon_min)*c*s,y:oy+(b.lat_max-lat)*s})}
 let RINGS=[];
-function applyBackend(d){RINGS=d.rings||[];setTimeout(alertCheck,0);if(view==='set')setBody();if(view==='mnt')mntBody();if(view==='live'){if(!LNMAP&&!LNFB)liveInit();lnBody()}if(view==='ai')aiBody();if(view==='ana'&&Date.now()-ANLAST>5000)anFetch(false);
+function applyBackend(d){RINGS=d.rings||[];setTimeout(alertCheck,0);if(view==='set')setBody();if(view==='mnt')mntBody();if(view==='live'){if(!LNMAP&&!LNFB)liveInit();lnBody()}if(view==='ai')aiBody();if(view==='ana'){anBody();if(Date.now()-ANLAST>60000)anFetch(false)}
  DB=d.dashboard.current;HIST=d.dashboard.history;KPI=d.kpis;AIB=d.ai;DASH=d.dashboard;LOGS=d.logs||[];RUNID=d.run_id;
  const names=d.agg.map(a=>a.name);D=names;
  const ix={};
