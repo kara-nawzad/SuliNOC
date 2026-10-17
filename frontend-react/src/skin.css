@@ -212,87 +212,14 @@ header.topbar,
   color: var(--t2);
 }
 
-/* ---- Hero (welcome) ---- */
-.hero {
+/* ---- Hero: the new UI welcome frame (HeroFrame.tsx) ---- */
+.hero-frame {
   position: fixed;
-  inset: 0;
-  z-index: 80;
-  overflow: hidden;
-  background: linear-gradient(180deg, #8fc0f4 0%, #cde3fa 58%, #fbe1cc 100%);
-  color: #10265c;
-}
-.hero-bg {
-  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  opacity: 0.55;
-}
-.hero-tower {
-  position: absolute;
-  right: 4%;
-  bottom: 0;
-  height: 86%;
-  width: auto;
-  max-width: 55%;
-  object-fit: contain;
-  object-position: bottom;
-}
-.hero-copy {
-  position: absolute;
-  left: 48px;
-  top: 22%;
-  max-width: 520px;
-}
-.hero-greet {
-  margin: 0 0 6px;
-  font: 500 14px var(--sans);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #4b6192;
-}
-.hero-brand {
-  margin: 0 0 18px;
-  font: 600 22px var(--serif);
-  color: #1479c4;
-}
-.hero h1 {
-  margin: 0 0 14px;
-  font: 500 clamp(36px, 5vw, 60px)/1.05 var(--serif);
-  letter-spacing: -0.02em;
-  color: #10265c;
-}
-.hero-sub {
-  margin: 0 0 22px;
-  max-width: 440px;
-  font: 400 17px/1.5 var(--sans);
-  color: #33487a;
-}
-.hero-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.hero-cta,
-.hero-ghost {
-  min-height: 44px;
-  padding: 0 18px;
-  font: 600 15px var(--sans);
-  cursor: pointer;
-}
-.hero-cta {
-  background: #10265c;
-  color: #ffffff;
-  border: 1px solid #10265c;
-}
-.hero-cta:hover {
-  background: #0b1c44;
-}
-.hero-ghost {
-  background: rgba(255, 255, 255, 0.5);
-  color: #10265c;
-  border: 1.5px solid #10265c;
+  border: 0;
+  z-index: 80;
 }
 
 /* ---- Phone: bottom tab bar instead of the left rail ---- */

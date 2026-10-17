@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { useTelemetry } from "./hooks/useTelemetry";
 import { KpiGrid } from "./components/KpiGrid";
-import { Hero } from "./components/Hero";
+import { HeroFrame } from "./components/HeroFrame";
 import { NetworkMap } from "./components/NetworkMap";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
 import { AnalyticsRow } from "./components/AnalyticsRow";
@@ -52,7 +52,13 @@ type Dialog =
   | "impact"
   | null;
 
-export default function App() {
+function Console({
+  heroOpen,
+  setHeroOpen,
+}: {
+  heroOpen: boolean;
+  setHeroOpen: (open: boolean) => void;
+}) {
   const { config, data, status, error, refresh } = useTelemetry();
   const activeRunId = useRef<string | null>(null);
   const observedRunId = useRef<string | null>(null);
@@ -67,7 +73,6 @@ export default function App() {
     null,
   );
   const [section, setSection] = useState("overview");
-  const [heroOpen, setHeroOpen] = useState(true);
   const selectNode = useCallback((id: string) => {
     setSelected(id);
   }, []);
@@ -175,7 +180,10 @@ export default function App() {
           block: "start",
         });
   }
-  if (!config || !data)
+  // The welcome screen comes first: while it is open, nothing else is drawn.
+  if (!config || !data) {
+    // While the welcome screen is open, the console draws nothing behind it.
+    if (heroOpen) return null;
     return (
       <div className="boot-screen">
         <div className="brand-mark">
@@ -194,6 +202,7 @@ export default function App() {
         <small>LIVE SIMULATION · NO SYNTHETIC UI DATA</small>
       </div>
     );
+  }
   const p = config.presentation.palette;
   const theme = Object.fromEntries(
     Object.entries(p).map(([key, val]) => [`--${key}`, val]),
@@ -211,9 +220,6 @@ export default function App() {
         className={`app-shell ${data.control.paused ? "is-paused" : ""}`}
         style={theme}
       >
-        {heroOpen && (
-          <Hero onEnter={() => setHeroOpen(false)} onSkip={() => setHeroOpen(false)} />
-        )}
         <a className="skip-link" href="#overview">
           Skip to network overview
         </a>
@@ -672,5 +678,17 @@ export default function App() {
         </AnimatePresence>
       </div>
     </MotionConfig>
+  );
+}
+
+// The welcome screen lives outside the console tree, so its iframe mounts once
+// and is not remounted when telemetry arrives (remounting restarted its animation).
+export default function App() {
+  const [heroOpen, setHeroOpen] = useState(true);
+  return (
+    <>
+      {heroOpen && <HeroFrame onEnter={() => setHeroOpen(false)} />}
+      <Console heroOpen={heroOpen} setHeroOpen={setHeroOpen} />
+    </>
   );
 }
