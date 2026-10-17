@@ -3,6 +3,7 @@ import {
   MapContainer,
   Pane,
   CircleMarker,
+  Marker,
   Polyline,
   Tooltip,
   useMap,
@@ -69,43 +70,57 @@ function LocalBasemap({ config }: { config: Config }) {
   );
 }
 
+/** Tower markers follow the kit's `.tw` rules (theme.css): solid fill, white
+ * 2 px ring, 12 px on screen at every zoom. A halo is drawn only for the
+ * selected tower, faulty towers (warn/crit) and flagged towers (prediction). */
+const towerIconCache = new Map<string, L.DivIcon>();
+function towerIcon(cls: string, halo: boolean): L.DivIcon {
+  const key = `${cls}|${halo}`;
+  let icon = towerIconCache.get(key);
+  if (!icon) {
+    icon = L.divIcon({
+      className: "tw-wrapper",
+      html: `<span class="tw ${cls}${halo ? " sel" : ""}"></span>`,
+      iconSize: [12, 12],
+      iconAnchor: [6, 6],
+    });
+    towerIconCache.set(key, icon);
+  }
+  return icon;
+}
+
 const Towers = memo(function Towers({
   nodes,
   config,
+  selectedId,
   onSelect,
 }: {
   nodes: NodeData[];
   config: Config;
+  selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const renderer = useMemo(() => L.canvas({ padding: 0.3 }), []);
   return (
     <>
       {nodes.map((node) => {
-        const color = node.warn
-          ? config.presentation.palette.prediction
-          : config.status_colors[node.status];
-        const active =
-          node.warn || node.status !== config.presentation.healthy_status;
+        const offline = config.presentation.offline_statuses.includes(
+          node.status,
+        );
+        const faulty = node.status !== config.presentation.healthy_status;
+        const cls = node.warn ? "ai" : offline ? "crit" : faulty ? "warn" : "";
+        const halo = node.id === selectedId || faulty || !!node.warn;
         return (
-          <CircleMarker
+          <Marker
             key={node.id}
-            center={[node.lat, node.lon]}
-            renderer={renderer}
-            radius={active ? 7 : 5}
-            pathOptions={{
-              color,
-              fillColor: color,
-              fillOpacity: 0.92,
-              weight: active ? 10 : 6,
-              opacity: active ? 0.22 : 0.12,
-            }}
+            position={[node.lat, node.lon]}
+            icon={towerIcon(cls, halo)}
+            zIndexOffset={halo ? 300 : 0}
             eventHandlers={{ click: () => onSelect(node.id) }}
           >
             <Tooltip
               className="network-tooltip"
               direction="top"
-              offset={[0, -5]}
+              offset={[0, -7]}
             >
               <strong>{node.id}</strong>
               <br />
@@ -114,7 +129,7 @@ const Towers = memo(function Towers({
               {config.metric_labels.vswr} {node.vswr.toFixed(2)} ·{" "}
               {config.metric_labels.prb} {node.prb.toFixed(1)}%
             </Tooltip>
-          </CircleMarker>
+          </Marker>
         );
       })}
     </>
@@ -302,7 +317,12 @@ export function NetworkMap({
               )),
             )}
           {layers.sites && (
-            <Towers nodes={data.nodes} config={config} onSelect={onSelect} />
+            <Towers
+              nodes={data.nodes}
+              config={config}
+              selectedId={selectedId}
+              onSelect={onSelect}
+            />
           )}
           {layers.sites &&
             data.nodes

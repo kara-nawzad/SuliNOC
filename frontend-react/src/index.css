@@ -3734,3 +3734,13 @@ h1 {
     transition: none;
   }
 }
+
+/* Tower markers: the kit's `.tw` rules (SuliNOC-ui-kit theme.css), copied here
+ * rather than importing theme.css, whose global body/heading rules would restyle
+ * the whole app. Solid colour, 12 px on screen at every zoom, white 2 px ring.
+ * Halo only for selected (.sel), faulty (.warn/.crit) and flagged (.ai) towers. */
+.tw-wrapper{background:none;border:0}
+.tw{display:block;width:12px;height:12px;border-radius:50%;background:#0C9C83;border:2px solid #fff;box-shadow:0 0 0 1px #10265C33;opacity:1;box-sizing:border-box}
+.tw.warn{background:#C27400}.tw.crit{background:#D42F52}.tw.ai{background:#6A4BD8}
+.tw.sel,.tw.crit,.tw.ai{box-shadow:0 0 0 6px color-mix(in srgb,currentColor 22%,transparent)}
+.tw.sel{color:#1479C4}.tw.warn{color:#C27400}.tw.crit{color:#D42F52}.tw.ai{color:#6A4BD8}
