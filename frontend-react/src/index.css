@@ -3770,3 +3770,5 @@ button.tower-row:hover{background:rgba(255,255,255,.04)}
 .ring-list ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .ring-list li{display:flex;gap:12px;flex-wrap:wrap;font-size:13px}
 .build-stamp{display:block;margin-top:10px;opacity:.7;font-size:11px}
+/* One .note line under a page title (organisation pass). */
+.note{font:italic 500 12px var(--serif,Georgia,serif);color:#9fb3cc;margin:2px 0 10px;line-height:1.4}
