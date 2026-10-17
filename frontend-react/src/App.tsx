@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   Loader2,
   RadioTower,
+  Home,
   Search,
   Settings2,
   ShieldCheck,
@@ -29,6 +30,7 @@ import {
 } from "lucide-react";
 import { useTelemetry } from "./hooks/useTelemetry";
 import { KpiGrid } from "./components/KpiGrid";
+import { Hero } from "./components/Hero";
 import { NetworkMap } from "./components/NetworkMap";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
 import { AnalyticsRow } from "./components/AnalyticsRow";
@@ -65,6 +67,7 @@ export default function App() {
     null,
   );
   const [section, setSection] = useState("overview");
+  const [heroOpen, setHeroOpen] = useState(true);
   const selectNode = useCallback((id: string) => {
     setSelected(id);
   }, []);
@@ -208,6 +211,9 @@ export default function App() {
         className={`app-shell ${data.control.paused ? "is-paused" : ""}`}
         style={theme}
       >
+        {heroOpen && (
+          <Hero onEnter={() => setHeroOpen(false)} onSkip={() => setHeroOpen(false)} />
+        )}
         <a className="skip-link" href="#overview">
           Skip to network overview
         </a>
@@ -245,6 +251,14 @@ export default function App() {
             ))}
           </div>
           <div className="nav-bottom">
+            <button
+              className="nav-item"
+              title="Hero"
+              aria-label="Hero"
+              onClick={() => setHeroOpen(true)}
+            >
+              <Home size={19} />
+            </button>
             <button
               className="nav-item"
               title="Simulation settings"
