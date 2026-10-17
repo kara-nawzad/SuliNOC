@@ -14,12 +14,52 @@ import type {
 const CAPACITY_CODE = "session_capacity";
 const RETRY_HEADER = "X-AutoNOC-Retry";
 
+/** The visitor's simulation run is identified by a session token. The server
+ * issues it on the first response (x-autonoc-session) and also sets a cookie,
+ * but a cross-site embed (or iOS storage partitioning) can drop the cookie. A
+ * request with no token gets a brand-new run at tick 0, which is what made the
+ * embedded dashboard show "The simulation run changed". So the token is kept in
+ * sessionStorage and sent back on every request, like the single-file console. */
+const SESSION_KEY = "suli-noc-session";
+const SESSION_HEADER = "X-AutoNOC-Session";
+
+function readSessionToken(): string | null {
+  try {
+    return sessionStorage.getItem(SESSION_KEY);
+  } catch {
+    return null; // storage blocked: fall back to the cookie alone
+  }
+}
+
+function storeSessionToken(token: string) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, token);
+  } catch {
+    /* storage blocked */
+  }
+}
+
 async function send(path: string, init: RequestInit): Promise<Response> {
   const timeout = AbortSignal.timeout(15_000);
   const signal = init.signal
     ? AbortSignal.any([init.signal, timeout])
     : timeout;
-  return fetch(path, { ...init, signal, cache: "no-store" });
+  const headers: Record<string, string> =
+    init.headers instanceof Headers
+      ? Object.fromEntries(init.headers.entries())
+      : { ...((init.headers as Record<string, string> | undefined) ?? {}) };
+  const token = readSessionToken();
+  if (token) headers[SESSION_HEADER] = token;
+  const response = await fetch(path, {
+    ...init,
+    headers,
+    signal,
+    cache: "no-store",
+    credentials: "same-origin",
+  });
+  const issued = response.headers.get(SESSION_HEADER);
+  if (issued) storeSessionToken(issued);
+  return response;
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
