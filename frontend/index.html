@@ -435,6 +435,7 @@ table.tt tbody tr.sel{background:rgba(54,223,255,.18);box-shadow:inset 3px 0 0 #
 #lnsvg{position:absolute;inset:0;width:100%;height:100%}
 #lnmsg{margin-top:8px}
 .ripw,.vanw,.etaw{background:none;border:0}
+.leaflet-marker-pane{pointer-events:none}
 .rip{position:absolute;left:-22px;top:-22px;width:44px;height:44px;border-radius:50%;pointer-events:none;box-sizing:border-box}
 .rip-f{border:2px solid #D42F52;animation:ripf 2.4s ease-out infinite}
 @keyframes ripf{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.5);opacity:0}}
@@ -1050,6 +1051,10 @@ function lnVans(){
   // Vans move in place. Only the icon is rebuilt when its heading or state changes.
   TEAMS.forEach(t=>{
     const moving=t.state==='EN_ROUTE'||t.state==='RETURNING';
+    // Crews are shown on their way to an alarm and hidden once they are back at the centre.
+    const away=!(t.state==='RETURNING'||t.state==='IDLE');
+    const cur=LNVANM.get(t.name);
+    if(!away){if(cur&&LNVANL.hasLayer(cur))LNVANL.removeLayer(cur);return}
     const hk=Math.round(t.hd||0)+'|'+moving;
     const html='<svg width="160" height="160" viewBox="-80 -80 160 160" style="pointer-events:none;overflow:visible" aria-hidden="true">'+VAN(t.hd||0,!moving)+'</svg>';
     let mk=LNVANM.get(t.name);
@@ -1057,6 +1062,7 @@ function lnVans(){
       mk=L.marker([t.lat,t.lon],{icon:L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}),interactive:false,keyboard:false,title:t.name+' · '+t.state}).addTo(LNVANL);
       mk._hk=hk;LNVANM.set(t.name,mk);
     }else{
+      if(!LNVANL.hasLayer(mk))mk.addTo(LNVANL);
       mk.setLatLng([t.lat,t.lon]);
       if(mk._hk!==hk){mk._hk=hk;mk.setIcon(L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}));mk.options.title=t.name+' · '+t.state}
     }
@@ -1216,7 +1222,7 @@ async function anFetch(force){
   const now=Date.now();if(!force&&now-ANLAST<5000&&ANDATA.__raw&&ANDATA.__raw[ANTF])return;
   ANFETCHING=true;
   try{const r=await fetch(`/api/telemetry/history?timeframe=${ANTF}&run_id=${encodeURIComponent(RUNID)}`,{cache:'no-store'});
-    if(r.status===409){ANMSG='The simulation run changed. Refreshing.';return}
+    if(r.status===409){ANMSG='The simulation run changed. Refreshing.';ANLAST=0;setTimeout(()=>{Promise.resolve().then(pollOnce).catch(()=>{}).then(()=>anFetch(true))},300);return}
     if(!r.ok)throw new Error('backend returned '+r.status);
     const j=await r.json();ANDATA.__raw=ANDATA.__raw||{};ANDATA.__raw[ANTF]=j.samples||[];ANLAST=now;ANMSG=''}
   catch(e){ANMSG='Telemetry unavailable: '+e.message+'. Showing the last data.'}
