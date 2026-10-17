@@ -3744,3 +3744,16 @@ h1 {
 .tw.warn{background:#C27400}.tw.crit{background:#D42F52}.tw.ai{background:#6A4BD8}
 .tw.sel,.tw.crit,.tw.ai{box-shadow:0 0 0 6px color-mix(in srgb,currentColor 22%,transparent)}
 .tw.sel{color:#1479C4}.tw.warn{color:#C27400}.tw.crit{color:#D42F52}.tw.ai{color:#6A4BD8}
+
+/* Analytics charts (SuliNOC-ui-kit charts.js): Manrope 12 px axis text, never mono.
+ * Copied from the kit's theme.css chart rules; see also src/charts.js. */
+.ch-wrap{position:relative;width:100%}
+.ch-wrap svg{display:block;height:auto}
+.ch-wrap text{font:500 12px "Manrope",system-ui,sans-serif;fill:#4B6192}
+.ch-wrap .gl{stroke:#A9C2E6;stroke-opacity:.35;stroke-width:1}
+.ch-wrap .cr{stroke:#4B6192;stroke-width:1;opacity:0}
+.ch-tip{position:absolute;top:6px;background:#0b1624;border:1px solid #2a3b52;padding:5px 9px;font:500 12px "Manrope",system-ui,sans-serif;color:#e6eef9;pointer-events:none}
+.chart-title{font:600 13px "Manrope",system-ui,sans-serif;margin:10px 0 0;color:inherit}
+.chart-subtitle{font:500 12px "Manrope",system-ui,sans-serif;margin:0;opacity:.75}
+.chart-note{font:500 12px "Manrope",system-ui,sans-serif;margin:2px 0 4px;min-height:0;color:#D42F52}
+.chart-note:empty{display:none}
