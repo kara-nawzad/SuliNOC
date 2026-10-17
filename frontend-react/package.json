@@ -12,9 +12,11 @@
     "format:check": "prettier --check src *.ts *.js *.json index.html"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/inter": "^5.2.5",
     "@fontsource/jetbrains-mono": "^5.2.5",
     "@fontsource/manrope": "^5.3.0",
+    "@fontsource/newsreader": "^5.3.0",
     "@maplibre/maplibre-gl-leaflet": "^0.1.4",
     "framer-motion": "^12.6.2",
     "leaflet": "^1.9.4",

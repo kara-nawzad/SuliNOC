@@ -11,6 +11,10 @@ import "@fontsource/jetbrains-mono/latin-400.css";
 import "leaflet/dist/leaflet.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./index.css";
+import "@fontsource/newsreader/latin-400.css";
+import "@fontsource/newsreader/latin-500.css";
+import "@fontsource/ibm-plex-mono/latin-400.css";
+import "./skin.css";
 import App from "./App";
 
 console.info(
