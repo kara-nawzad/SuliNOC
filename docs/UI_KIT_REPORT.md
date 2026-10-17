@@ -47,3 +47,19 @@ creation (backend change needed; not made). See docs/SESSION_RUN_INVESTIGATION.m
   removing the "LOCAL SIMULATION" top-bar label (left as is).
 - Not done: old/restored/new screenshot comparison per page; full 7-page screenshot set.
 - `services/crewMotion.ts` is no longer used by the crew layer; kept with its tests.
+
+## Latest pass (prompt items)
+Build stamp: 0b69700 (top bar, Settings, footer). Tile stub: harness answers tiles.openfreemap.org with empty tiles; the map is verified only as the schematic/stub, not against real tiles.
+
+| Item | Result |
+|---|---|
+| Analytics: no redraw per update | Met: 0 redraws, 21 appends in 20 s. The 30 min tab now runs from when it was opened (it no longer trims its start); the provenance line says so. |
+| Page switch < 200 ms | Mixed: 45 ms on one run, 252 ms on another. Scroll is now instant. Not reliably met. |
+| Frame time < 16 ms | Missed: 268 ms avg in sandbox. |
+| Crew per-frame change small | 0.73 px avg, p95 5 px (desktop). |
+| Reduced motion snaps crews | Not clearly shown: frames are ~240 ms here, so single-frame jumps can't be separated from normal steps. Max 168 px in one frame, consistent with a snap, but not conclusive. |
+| DOM only on changed values | Missed: about 812 mutations/s (crew transforms and framer-motion). |
+| Mono only for IDs, coords, times | Applied to the non-ID uses found by search (counts, PRB, CQI, speed, money/hours, skill). Not an exhaustive audit. |
+| Repeated simulated label | Top-bar "LOCAL SIMULATION" removed; one .note per page (Live network, Towers). |
+| Wordmark in top bar only when sidebar hidden | No top-bar wordmark exists; the sidebar is never hidden here, so nothing to change. |
+| Screenshots 1280×800 and 390×844, 6 s after load, commit visible | Taken: new-desktop-1280x800.png and new-phone-390x844.png (in /home/user/shots, not committed). Commit shown in the top bar. |
