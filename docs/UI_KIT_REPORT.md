@@ -63,3 +63,11 @@ Build stamp: 0b69700 (top bar, Settings, footer). Tile stub: harness answers til
 | Repeated simulated label | Top-bar "LOCAL SIMULATION" removed; one .note per page (Live network, Towers). |
 | Wordmark in top bar only when sidebar hidden | No top-bar wordmark exists; the sidebar is never hidden here, so nothing to change. |
 | Screenshots 1280×800 and 390×844, 6 s after load, commit visible | Taken: new-desktop-1280x800.png and new-phone-390x844.png (in /home/user/shots, not committed). Commit shown in the top bar. |
+
+## Production build check
+Built with `vite build` to a temporary folder and served by `vite preview` (preview now proxies `/api`).
+- First load 1321 ms (dev was 2347 ms). Page switch to Analytics 204 ms (one run; was 45–252 ms in dev).
+- Frame time still about 268 ms average in the sandbox browser. Same as dev, so the cost is the headless
+  renderer with the map and glass panels, not the dev server. Not solved here; needs measurement on a real GPU browser.
+- DOM mutations still about 813/s, mostly crew marker transforms every frame. Not reduced.
+- Reduced motion: per-frame crew change 0.46 px avg, max 11 px. Still not a clear snap; frames are too slow to tell.
