@@ -696,7 +696,9 @@ function ovLede(){
 function ovTile(label,val,sub,nav,tip){return `<button class="ovt" type="button" data-nav="${nav}" title="${tip}"><span class="ovl">${label}</span><span class="ovv">${val}</span><span class="ovs">${sub}</span></button>`}
 function ovStrip(openN){
   const K=KPI||{},B=DB||{},D=DASH||{},rep=TEAMS.filter(t=>t.state=='REPAIRING').length;
-  return ovTile('Offline sites',numT(B.offline),`${numT(B.degraded)} degraded`,'towers','Sites that have stopped reporting. Sub-line: degraded sites.')+
+  const ch=D.traffic_change_pct;
+  return ovTile('QCI 9 throughput',`${numT(B.throughput_gbps,2)} Gbps`,ch==null?'no hour of history yet':`${ch>0?'+':''}${numT(ch,1)}% vs last hour`,'towers','Aggregate simulated best-effort throughput. Sub-line: change against one simulated hour earlier.')+
+  ovTile('Offline sites',numT(B.offline),`${numT(B.degraded)} degraded`,'towers','Sites that have stopped reporting. Sub-line: degraded sites.')+
   ovTile('Open incidents',numT(openN),`${numT(K.injected)} faults injected`,'inc','Active incidents from the backend. Sub-line: faults injected in this run.')+
   ovTile('Crews active',`${numT(K.active_teams)}/${TEAMS.length||'…'}`,`${rep} repairing`,'mnt','Crews on a job out of the fleet total. Sub-line: crews repairing a site.')+
   ovTile('MTTR',`${numT(K.mttr_min,1)} min`,`${numT(K.repairs)} repairs`,'mnt','Mean time to repair, in minutes, over completed repairs. Sub-line: repairs completed.')+
@@ -1056,15 +1058,15 @@ function lnVans(){
     const cur=LNVANM.get(t.name);
     if(!away){if(cur&&LNVANL.hasLayer(cur))LNVANL.removeLayer(cur);return}
     const hk=Math.round(t.hd||0)+'|'+moving;
-    const html='<svg width="160" height="160" viewBox="-80 -80 160 160" style="pointer-events:none;overflow:visible" aria-hidden="true">'+VAN(t.hd||0,!moving)+'</svg>';
+    const html='<svg width="56" height="56" viewBox="-80 -80 160 160" style="pointer-events:none;overflow:visible" aria-hidden="true">'+VAN(t.hd||0,!moving)+'</svg>';
     let mk=LNVANM.get(t.name);
     if(!mk){
-      mk=L.marker([t.lat,t.lon],{icon:L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}),interactive:false,keyboard:false,title:t.name+' · '+t.state}).addTo(LNVANL);
+      mk=L.marker([t.lat,t.lon],{icon:L.divIcon({className:'vanw',html:html,iconSize:[56,56],iconAnchor:[28,28]}),interactive:false,keyboard:false,title:t.name+' · '+t.state}).addTo(LNVANL);
       mk._hk=hk;LNVANM.set(t.name,mk);
     }else{
       if(!LNVANL.hasLayer(mk))mk.addTo(LNVANL);
       mk.setLatLng([t.lat,t.lon]);
-      if(mk._hk!==hk){mk._hk=hk;mk.setIcon(L.divIcon({className:'vanw',html:html,iconSize:[160,160],iconAnchor:[80,80]}));mk.options.title=t.name+' · '+t.state}
+      if(mk._hk!==hk){mk._hk=hk;mk.setIcon(L.divIcon({className:'vanw',html:html,iconSize:[56,56],iconAnchor:[28,28]}));mk.options.title=t.name+' · '+t.state}
     }
     easeLeaflet(mk,t);
   });
