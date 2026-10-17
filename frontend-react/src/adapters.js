@@ -37,7 +37,9 @@ export class CrewTrips {
     const toTarget = team.state === 'EN_ROUTE' && team.target_lat != null && team.target_lon != null;
     if (!toTarget && team.state !== 'RETURNING') {
       this.trips.delete(team.id);
-      return { route: [this.project(team.lat, team.lon)], progress: 0, moving: false };
+      // The kit's route math needs at least two points; a parked crew is a zero-length route.
+      const here = this.project(team.lat, team.lon);
+      return { route: [here, here], progress: 0, moving: false };
     }
     const key = `${team.target_lat},${team.target_lon}`;
     let trip = this.trips.get(team.id);

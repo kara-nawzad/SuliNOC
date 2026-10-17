@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useMap } from "react-leaflet";
-import { useReducedMotion } from "framer-motion";
 import L from "leaflet";
 import type { Config, Snapshot } from "../types/api";
-import { CrewMotion } from "../services/crewMotion";
+import { CrewMotion } from "../crew-motion.js";
+import { CrewTrips } from "../adapters.js";
+
+const projectLatLng = (lat: number, lon: number): [number, number] => {
+  const p = L.CRS.EPSG3857.project(L.latLng(lat, lon));
+  return [p.x, p.y];
+};
 
 /** Leaflet rounds latLngToLayerPoint to integer pixels. Keep its normal marker
  * lifecycle/zoom handling but use fractional translation during RAF movement;
@@ -22,8 +27,10 @@ export class SubpixelCrewMarker extends L.Marker {
   }
 }
 
-/** One RAF for the fleet; React and tooltips update only on received snapshots.
- * Clock ownership stays on the server; all destinations are confirmed samples. */
+/** Crew motion uses the kit's CrewMotion (src/crew-motion.js). Backend updates
+ * go in through motion.set() with a route and progress from the server; the RAF
+ * loop only renders positions. Projection: EPSG3857 before set(), unproject() in
+ * render(). Markers are created once per team and moved with setLatLng(). */
 export function CrewLayer({
   data,
   config,
@@ -32,25 +39,26 @@ export function CrewLayer({
   config: Config;
 }) {
   const map = useMap();
-  const reduced = useReducedMotion();
-  const motion = useMemo(
-    () => new CrewMotion(config.presentation.poll_ms),
-    [config],
-  );
   const markers = useRef(new Map<number, L.Marker>());
+  const trips = useMemo(() => new CrewTrips(projectLatLng), []);
+  const motion = useMemo(
+    () =>
+      new CrewMotion({
+        render: (id, frame) => {
+          const marker = markers.current.get(id);
+          if (!marker) return;
+          marker.setLatLng(
+            L.CRS.EPSG3857.unproject(L.point(frame.x, frame.y)),
+          );
+          marker.getElement()?.classList.toggle("crew-parked", !frame.moving);
+        },
+      }),
+    [],
+  );
 
   useEffect(() => {
     const now = performance.now();
-    motion.push(
-      {
-        runId: data.run_id,
-        tick: data.tick,
-        paused: data.control.paused,
-        teams: data.teams,
-      },
-      now,
-      !!reduced || document.hidden,
-    );
+    motion.setPaused(!!data.control.paused);
     const ids = new Set<number>();
     for (const team of data.teams) {
       ids.add(team.id);
@@ -62,7 +70,7 @@ export function CrewLayer({
         // Static SVG only; server-provided names below always use textContent.
         vehicle.innerHTML =
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h11v11H3zM14 10h4l3 4v3h-7"/><circle cx="7" cy="18" r="2" fill="currentColor"/><circle cx="18" cy="18" r="2" fill="currentColor"/></svg>';
-        marker = new SubpixelCrewMarker(motion.position(team.id, now)!, {
+        marker = new SubpixelCrewMarker(L.latLng(team.lat, team.lon), {
           icon: L.divIcon({
             className: "crew-wrapper",
             html: vehicle,
@@ -75,6 +83,12 @@ export function CrewLayer({
         marker.getElement()!.dataset.crewId = String(team.id);
         markers.current.set(team.id, marker);
       }
+      const track = trips.update(team);
+      motion.set(
+        team.id,
+        { route: track.route, progress: track.progress, moving: track.moving },
+        now,
+      );
       const text = `${team.name} · ${team.state.replaceAll("_", " ")} · ETA ${team.eta} ticks`;
       if (marker.options.title !== text) {
         const content = document.createElement("span");
@@ -89,36 +103,20 @@ export function CrewLayer({
       if (!ids.has(id)) {
         marker.remove();
         markers.current.delete(id);
+        motion.remove(id);
       }
     }
-  }, [map, data, config, motion, reduced]);
+  }, [map, data, config, motion, trips]);
 
   useEffect(() => {
-    let frame = 0;
     const fleet = markers.current;
-    const onVisibility = () => motion.settle();
-    document.addEventListener("visibilitychange", onVisibility);
-    function draw(now: number) {
-      if (!document.hidden) {
-        for (const [id, marker] of fleet) {
-          const position = motion.position(id, now);
-          const previous = marker.getLatLng();
-          if (
-            position &&
-            (position[0] !== previous.lat || position[1] !== previous.lng)
-          )
-            marker.setLatLng(position);
-        }
-      }
-      frame = requestAnimationFrame(draw);
-    }
-    frame = requestAnimationFrame(draw);
     return () => {
-      cancelAnimationFrame(frame);
-      document.removeEventListener("visibilitychange", onVisibility);
-      fleet.forEach((marker) => marker.remove());
+      fleet.forEach((marker, id) => {
+        motion.remove(id);
+        marker.remove();
+      });
       fleet.clear();
     };
-  }, [map, motion]);
+  }, [motion]);
   return null;
 }
