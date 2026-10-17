@@ -1,3 +1,4 @@
+import { TowerList } from "./components/TowerList";
 import {
   useCallback,
   useEffect,
@@ -223,11 +224,12 @@ export default function App() {
           <div className="nav-items">
             {[
               { id: "overview", icon: LayoutDashboard, label: "Overview" },
-              { id: "network", icon: Layers3, label: "Network topology" },
-              { id: "incidents", icon: Bell, label: "Active incidents" },
-              { id: "analytics", icon: Activity, label: "Telemetry analytics" },
-              { id: "fleet", icon: Truck, label: "Maintenance fleet" },
-              { id: "commander", icon: Sparkles, label: "A1 Commander" },
+              { id: "network", icon: Layers3, label: "Live network" },
+              { id: "incidents", icon: Bell, label: "Incidents" },
+              { id: "analytics", icon: Activity, label: "Analytics" },
+              { id: "fleet", icon: Truck, label: "Maintenance" },
+              { id: "commander", icon: Sparkles, label: "AI" },
+              { id: "towers", icon: RadioTower, label: "Towers" },
             ].map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
@@ -413,6 +415,14 @@ export default function App() {
                 navigate("network");
               }}
               onFleet={() => setDialog("fleet")}
+            />
+            <TowerList
+              data={data}
+              config={config}
+              onSelect={(id) => {
+                selectNode(id);
+                navigate("network");
+              }}
             />
             <footer className="app-footer">
               <span>

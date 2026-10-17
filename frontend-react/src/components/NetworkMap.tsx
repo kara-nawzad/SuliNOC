@@ -244,7 +244,7 @@ export function NetworkMap({
       aria-label="Live network map"
     >
       <PanelHeading
-        title="Network topology"
+        title="Live network"
         right={
           <div className="map-heading-right">
             <Dot color={p.healthy} pulse={!data.control.paused} />
@@ -254,6 +254,7 @@ export function NetworkMap({
           </div>
         }
       />
+      <p className="note">Live from the current simulation run. Crews move between confirmed positions.</p>
       <div className="map-stage">
         <MapContainer
           center={config.map_center}
@@ -417,6 +418,24 @@ export function NetworkMap({
               </option>
             ))}
           </select>
+          <div className="segmented" role="group" aria-label="Map style">
+            <button
+              type="button"
+              className={layers.streets ? "selected" : ""}
+              aria-pressed={layers.streets}
+              onClick={() => setLayers((v) => ({ ...v, streets: true }))}
+            >
+              Map
+            </button>
+            <button
+              type="button"
+              className={!layers.streets ? "selected" : ""}
+              aria-pressed={!layers.streets}
+              onClick={() => setLayers((v) => ({ ...v, streets: false }))}
+            >
+              Schematic
+            </button>
+          </div>
           <div className="layer-control">
             <button
               className={`map-button ${layerMenu ? "active" : ""}`}
@@ -513,6 +532,25 @@ export function NetworkMap({
         <span className="map-footer-hint">
           Select a site to inspect <span>↗</span>
         </span>
+      </div>
+      <div className="ring-list" aria-label="Fibre rings">
+        <h3 className="ring-list-title">Fibre rings</h3>
+        <ul>
+          {data.rings.map((r) => (
+            <li key={r.id}>
+              <span className="mono">RING {r.id}</span>
+              <span className="mono">{r.nodes.length} sites</span>
+              <span className="mono">{r.circumference_km.toFixed(1)} km</span>
+              <span>
+                {r.isolated
+                  ? "isolated"
+                  : r.cuts.length
+                    ? `${r.cuts.length} cut${r.cuts.length > 1 ? "s" : ""}`
+                    : "intact"}
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
