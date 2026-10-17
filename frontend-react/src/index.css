@@ -1761,7 +1761,8 @@ h1 {
 .chart-provenance {
   padding: 0 16px 11px;
   color: #52677e;
-  font-size: 6px;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 12px;
   line-height: 1.5;
 }
 .cell-table-head {
