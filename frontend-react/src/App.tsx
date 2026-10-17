@@ -302,6 +302,9 @@ export default function App() {
               <Bell size={18} />
               {data.dashboard.current.incidents > 0 && <i />}
             </button>
+            <span className="build-stamp mono" title="Build: commit and build time">
+              build {__BUILD_STAMP__.sha}
+            </span>
             <span className="header-divider" />
             <div className="header-system">
               <ShieldCheck size={16} />
