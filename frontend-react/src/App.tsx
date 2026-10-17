@@ -431,7 +431,9 @@ export default function App() {
               </span>
               <span>
                 Deterministic world. Predictive operations.
-                <span className="footer-version">AUTONOC / 3.0</span>
+                <span className="footer-version">
+                  AUTONOC / 3.0 · build {__BUILD_STAMP__.sha}
+                </span>
               </span>
             </footer>
           </main>
@@ -540,6 +542,9 @@ export default function App() {
         )}
         {dialog === "settings" && (
           <Modal title="Simulation settings" onClose={closeDialog}>
+            <small className="build-stamp mono">
+              build {__BUILD_STAMP__.sha} · {__BUILD_STAMP__.built}
+            </small>
             <div className="setting-row">
               <div>
                 <strong>Demo auto-approval</strong>
