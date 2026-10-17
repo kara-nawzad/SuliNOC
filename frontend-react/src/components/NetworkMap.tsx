@@ -250,7 +250,7 @@ export function NetworkMap({
             <Dot color={p.healthy} pulse={!data.control.paused} />
             <span>LIVE NETWORK</span>
             <span className="divider" />
-            <span className="mono">{config.num_nodes} SITES</span>
+            <span>{config.num_nodes} sites</span>
           </div>
         }
       />
@@ -539,8 +539,8 @@ export function NetworkMap({
           {data.rings.map((r) => (
             <li key={r.id}>
               <span className="mono">RING {r.id}</span>
-              <span className="mono">{r.nodes.length} sites</span>
-              <span className="mono">{r.circumference_km.toFixed(1)} km</span>
+              <span>{r.nodes.length} sites</span>
+              <span>{r.circumference_km.toFixed(1)} km</span>
               <span>
                 {r.isolated
                   ? "isolated"

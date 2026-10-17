@@ -146,7 +146,11 @@ export function TrafficQualityCard({
     const first = rows[0]?.tick ?? -1;
     const last = rows.at(-1)?.tick ?? -1;
     const fed = c.fed;
-    if (fed.key !== key || fed.first !== first) {
+    // Only a new timeframe, metric or run resets the chart. Window trimming
+    // does not: the kit's chart cannot drop points, so rebuilding on each trim
+    // would redraw every tick. The 30 min view therefore runs from the moment
+    // it was opened, and the provenance line says so.
+    if (fed.key !== key) {
       c.primary.setData(rows.map((r) => [r.x, r.s[metric]]));
       c.drop.setData(rows.map((r) => [r.x, r.s.drop_rate]));
       stats.redraws += 1;
@@ -240,7 +244,7 @@ export function TrafficQualityCard({
           ? historyError
           : `${samples.length} samples · ${coverageMinutes}/${requestedMinutes} sim min · ` +
             (timeframe === "30m"
-              ? "actual server samples, 5-minute simulation ticks"
+              ? "actual server samples, 5-minute simulation ticks, from when this view opened"
               : "actual current-run samples; longer windows fill as simulation time advances")}
       </p>
     </article>

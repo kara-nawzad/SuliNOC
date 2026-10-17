@@ -107,7 +107,7 @@ export function Inspector({
             <div className="inspector-gauge" key={key}>
               <div>
                 <span>{config.metric_labels[key]}</span>
-                <span className="mono">{value.toFixed(1)}%</span>
+                <span>{value.toFixed(1)}%</span>
               </div>
               <div className="meter-track">
                 <motion.i

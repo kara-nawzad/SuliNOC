@@ -167,10 +167,8 @@ export default function App() {
       document
         .getElementById(id === "overview" ? "overview" : id)
         ?.scrollIntoView({
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
-            .matches
-            ? "instant"
-            : "smooth",
+          // Page switch is immediate: the prompt sets a <200 ms target.
+          behavior: "instant",
           block: "start",
         });
   }
@@ -308,7 +306,7 @@ export default function App() {
             <div className="header-system">
               <ShieldCheck size={16} />
               <div>
-                LOCAL SIMULATION<span>O-RAN · Non-RT RIC</span>
+                O-RAN · Non-RT RIC
               </div>
             </div>
           </header>
@@ -481,7 +479,7 @@ export default function App() {
                   <div>
                     <Truck size={18} />
                     <strong>{team.name}</strong>
-                    <span className="mono">{team.skill}</span>
+                    <span>{team.skill}</span>
                   </div>
                   <span
                     className="fleet-state"
