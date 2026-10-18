@@ -5055,3 +5055,10 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 @media (max-width:1024px){
   .app-shell .alerts-rail .incident-list{flex:none;max-height:min(62vh,460px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
 }
+
+/* Tablet and narrow widths: the rail is only as tall as its cards, so no empty space is left under them */
+@media (max-width:1024px){
+  .app-shell .alerts-rail{align-self:start;grid-template-rows:auto;grid-auto-rows:auto;min-height:0}
+  .app-shell .alerts-rail>*{min-height:auto;overflow:visible}
+  .app-shell .alerts-rail .incident-list{overflow-y:auto;overflow-x:hidden}
+}
