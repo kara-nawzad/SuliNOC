@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: frontend-react/package-lock.json
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -35,8 +35,8 @@ jobs:
           pip install httpx
       - name: Build frontend
         run: |
-          npm ci --prefix frontend
-          npm run build --prefix frontend
+          npm ci --prefix frontend-react
+          npm run build --prefix frontend-react
       - name: Test engine and API contracts
         run: python -m pytest tests/ -q
 
