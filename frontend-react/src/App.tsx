@@ -33,6 +33,7 @@ import { KpiGrid } from "./components/KpiGrid";
 import { HeroFrame } from "./components/HeroFrame";
 import { NetworkMap } from "./components/NetworkMap";
 import { greetingFor } from "./utils/greeting";
+import { simTimeToMinutes } from "./adapters.js";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
 import { PowerCard } from "./components/AnalyticsRow";
 import { AnalyticsRow } from "./components/AnalyticsRow";
@@ -67,15 +68,6 @@ function Console({
   const observedRunId = useRef<string | null>(null);
   if (data?.run_id) activeRunId.current = data.run_id;
   const [selected, setSelected] = useState<string | null>(null);
-  // Visitor's local hour for the greeting; re-checked every minute.
-  const [localHour, setLocalHour] = useState(() => new Date().getHours());
-  useEffect(() => {
-    const timer = window.setInterval(
-      () => setLocalHour(new Date().getHours()),
-      60_000,
-    );
-    return () => window.clearInterval(timer);
-  }, []);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [injectNode, setInjectNode] = useState<string>();
   const [query, setQuery] = useState("");
@@ -284,6 +276,12 @@ function Console({
         .includes(query.toLowerCase()),
     )
     .slice(0, 12);
+  // Greeting follows the simulation clock (the hour of the sim time shown on the dashboard).
+  const simMinutes = simTimeToMinutes(data.kpis.sim_time);
+  const greetingText = greetingFor(
+    simMinutes == null ? new Date().getHours() : Math.floor((simMinutes % 1440) / 60),
+  );
+
   return (
     <MotionConfig reducedMotion="user">
       <div
@@ -429,10 +427,10 @@ function Console({
             <div className="overview-heading">
               <div>
                 <h1
-                  key={greetingFor(localHour)}
+                  key={greetingText}
                   className="overview-hi gslow"
                 >
-                  {greetingFor(localHour)}, Slemani.
+                  {greetingText}, Slemani.
                 </h1>
               </div>
               <div className="overview-meta">

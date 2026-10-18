@@ -1,5 +1,5 @@
 /**
- * Time-of-day greeting from the visitor's local clock (not the simulation clock).
+ * Time-of-day greeting for an hour (0–23). The console passes the simulation hour.
  *
  *   05:00 – 11:59  Good morning
  *   12:00 – 16:59  Good afternoon
