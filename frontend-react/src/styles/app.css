@@ -5009,3 +5009,13 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 .app-shell .chart-coverage{margin:6px 0 10px;font-size:12px;color:var(--sn-t2)}
 .app-shell .chart-coverage i{display:block;height:4px;border-radius:2px;background:#5b3fc4;margin-top:6px;max-width:100%}
 .app-shell .chart-coverage span{font-weight:600;color:var(--sn-tx)}
+
+/* Larger crew markers on the map (teams) */
+.app-shell .crew-marker{width:38px!important;height:38px!important;padding:7px!important;border-radius:12px}
+.app-shell .crew-marker svg{width:100%!important;height:100%!important}
+
+/* Larger towers list: rows and headings */
+.app-shell .tower-row{font-size:15px!important;padding:12px 14px!important;gap:12px}
+.app-shell .tower-row .mono{font-size:14px}
+.app-shell .tower-head,.app-shell .tower-head *{font-size:13px!important}
+.app-shell .towers-panel input[type=search]{font-size:15px}

@@ -66,6 +66,15 @@ function Console({
   const observedRunId = useRef<string | null>(null);
   if (data?.run_id) activeRunId.current = data.run_id;
   const [selected, setSelected] = useState<string | null>(null);
+  // Visitor's local hour for the greeting; re-checked every minute.
+  const [localHour, setLocalHour] = useState(() => new Date().getHours());
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setLocalHour(new Date().getHours()),
+      60_000,
+    );
+    return () => window.clearInterval(timer);
+  }, []);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [injectNode, setInjectNode] = useState<string>();
   const [query, setQuery] = useState("");
@@ -355,10 +364,10 @@ function Console({
             <div className="overview-heading">
               <div>
                 <h1
-                  key={greetingFor(new Date().getHours())}
+                  key={greetingFor(localHour)}
                   className="overview-hi gslow"
                 >
-                  {greetingFor(new Date().getHours())}, Slemani.
+                  {greetingFor(localHour)}, Slemani.
                 </h1>
               </div>
               <div className="overview-meta">

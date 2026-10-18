@@ -74,8 +74,8 @@ export function CrewLayer({
           icon: L.divIcon({
             className: "crew-wrapper",
             html: vehicle,
-            iconSize: [27, 27],
-            iconAnchor: [13, 13],
+            iconSize: [38, 38],
+            iconAnchor: [19, 19],
           }),
           zIndexOffset: 800,
         }).addTo(map);
