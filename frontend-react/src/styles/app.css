@@ -5047,3 +5047,6 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 .app-shell .layer-menu{font-size:16px!important;padding:12px 14px}
 .app-shell .layer-menu label{font-size:16px;padding:8px 6px;gap:10px;color:var(--sn-tx)}
 .app-shell .layer-menu input[type=checkbox]{accent-color:#0c9c83;width:18px;height:18px}
+
+/* About dialog disclaimer: readable size */
+.app-shell .dialog p.small-muted{font-size:16px!important;line-height:1.6}
