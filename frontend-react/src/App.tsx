@@ -798,7 +798,7 @@ export default function App() {
   const [heroOpen, setHeroOpen] = useState(true);
   return (
     <>
-      {heroOpen && <HeroFrame onEnter={() => setHeroOpen(false)} />}
+      <HeroFrame open={heroOpen} onEnter={() => setHeroOpen(false)} />
       <Console heroOpen={heroOpen} setHeroOpen={setHeroOpen} />
     </>
   );
