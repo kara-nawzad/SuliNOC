@@ -186,3 +186,65 @@ button.wordmark {
   .icon-button { min-width: 36px; }
   .wordmark { min-height: 36px; }
 }
+
+/* Brand: plain text wordmark, no frame. Replaces the boxed logo image. */
+.wordmark-text {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--tx);
+  white-space: nowrap;
+}
+.wordmark-text b {
+  font-weight: 800;
+  color: var(--live);
+}
+.boot-screen .wordmark-text {
+  display: block;
+  font-size: 48px;
+  margin: 0 auto 14px;
+  text-align: center;
+}
+
+/* The build stamp is hidden from the console (it stays in the source for tooling). */
+.build-stamp {
+  display: none !important;
+}
+
+/* Header tower icon: light tile instead of a navy square. */
+.network-symbol {
+  background: #e3f5f1 !important;
+  color: var(--live) !important;
+  border-color: #b8e3d8 !important;
+}
+
+/* Crew vehicles: white tiles with a coloured outline, visible on the light map. */
+.crew-marker {
+  background: #ffffff !important;
+  border: 2px solid currentColor !important;
+  box-shadow: 0 2px 8px rgba(16, 38, 92, 0.28) !important;
+  border-radius: 9px;
+}
+.crew-idle {
+  opacity: 0.8;
+}
+
+/* One note line under a panel heading lines up with the heading's text. */
+.glass > .note {
+  margin: 0;
+  padding: 0 18px 12px;
+}
+
+/* The wordmark button is bare text: no border, no fill. */
+button.wordmark,
+.global-header button.wordmark {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.wordmark .wordmark-text {
+  font-size: 26px;
+}

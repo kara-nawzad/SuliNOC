@@ -499,7 +499,7 @@ export function NetworkMap({
             {!layers.streets
               ? "Local schematic"
               : streetStatus === "ready"
-                ? "Street map · OpenStreetMap"
+                ? "Street map · Esri"
                 : streetStatus === "loading"
                   ? "Loading streets…"
                   : "Streets unavailable · schematic"}

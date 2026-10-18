@@ -188,7 +188,7 @@ function Console({
     if (heroOpen) return null;
     return (
       <div className="boot-screen">
-        <img className="brand-logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC" />
+        <span className="wordmark-text" aria-hidden="true">Suli<b>NOC</b></span>
         <h1>
           SuliNOC<span> / NETWORK COMMAND</span>
         </h1>
@@ -283,7 +283,7 @@ function Console({
               onClick={() => navigate("overview")}
               aria-label="SuliNOC overview"
             >
-              <img className="brand-logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC" />
+              <span className="wordmark-text" aria-hidden="true">Suli<b>NOC</b></span>
             </button>
             <span className="header-divider" />
             <div className="network-switch">
