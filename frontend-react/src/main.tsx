@@ -14,6 +14,7 @@ import "@fontsource/newsreader/latin-400.css";
 import "@fontsource/newsreader/latin-500.css";
 import "@fontsource/ibm-plex-mono/latin-400.css";
 import "./skin.css";
+import "./readable.css";
 import App from "./App";
 
 console.info(

@@ -1,0 +1,74 @@
+/* Last pass over the console: the few dark surfaces left from the old theme become
+ * light panels with navy text, and small coloured text is darkened so it reads on
+ * the light skin. Loaded after skin.css. */
+
+/* Map overlays that were dark navy chips. */
+.map-location,
+.weather-chip,
+.play-controls,
+.operator-avatar,
+.leaflet-tooltip.district-label,
+.leaflet-control-scale-line,
+.leaflet-control-attribution,
+.skip-link {
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: #10265c !important;
+  border-color: #a9c2e6 !important;
+  box-shadow: 0 1px 2px rgba(16, 38, 92, 0.12);
+  text-shadow: none;
+}
+.leaflet-control-attribution a {
+  color: #1479c4 !important;
+}
+.leaflet-tooltip.district-label {
+  font-weight: 600;
+  font-size: 12px;
+}
+.leaflet-tooltip.district-label::before {
+  border-top-color: rgba(255, 255, 255, 0.94);
+  border-bottom-color: rgba(255, 255, 255, 0.94);
+}
+
+/* Tower table header was a dark navy band. */
+.tower-row.tower-head {
+  background: #eaf3fe !important;
+  color: #4b6192 !important;
+}
+.tower-row.tower-head * {
+  color: #4b6192 !important;
+}
+
+/* Coloured status text (In Service, VSWR Alarm, …) uses the palette colours from
+ * /api/config. Each is swapped for a darker shade of the same hue so the text meets
+ * contrast on the light panels. The bright colours stay on bars, dots and markers. */
+[style*="color: rgb(16, 185, 129)"] { color: #0a7a5b !important; } /* healthy #10b981 */
+[style*="color: rgb(6, 182, 212)"] { color: #07647a !important; } /* fiber #06b6d4 */
+[style*="color: rgb(245, 158, 11)"] { color: #8a5300 !important; } /* warning #f59e0b */
+[style*="color: rgb(251, 146, 60)"] { color: #9a4a10 !important; } /* #fb923c */
+[style*="color: rgb(244, 63, 94)"] { color: #b3203f !important; } /* critical #f43f5e */
+[style*="color: rgb(139, 92, 246)"] { color: #5b3bc4 !important; } /* prediction #8b5cf6 */
+[style*="color: rgb(56, 189, 248)"] { color: #0c6b9c !important; } /* crew #38bdf8 */
+[style*="color: rgb(100, 116, 139)"] { color: #4b6192 !important; } /* muted #64748b */
+
+/* Section labels and mono notes were too pale on the light panels. */
+.section-label,
+.section-label span {
+  color: #3d5585;
+}
+.mono-note,
+.awaiting-predictions,
+span.mono {
+  color: #3d5585;
+}
+
+/* Specific overrides where index.css sets a stronger selector. */
+.app-shell .section-label > span:first-child,
+.app-shell .section-label > span:last-child {
+  color: #3d5585 !important;
+}
+.app-shell span.mono {
+  color: #3d5585 !important;
+}
+.app-shell .cell-load span {
+  color: #4b6192 !important;
+}
