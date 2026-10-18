@@ -179,6 +179,66 @@ function Console({
     },
     [refresh],
   );
+  // Keep the rail highlight on the section currently in view.
+  useEffect(() => {
+    const ids = [
+      "overview",
+      "network",
+      "incidents",
+      "analytics",
+      "commander",
+      "towers",
+    ];
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const h = window.innerHeight;
+      if (window.scrollY < 120) {
+        setSection((prev) => (prev === "overview" ? prev : "overview"));
+        return;
+      }
+      // Towers is the last section: once its top edge is on screen it is the one in view.
+      const towers = document.getElementById("towers");
+      if (towers && towers.getBoundingClientRect().top <= h * 0.75) {
+        setSection((prev) => (prev === "towers" ? prev : "towers"));
+        return;
+      }
+      // A1 Commander sits inside the telemetry row: it owns the highlight only
+      // when its panel reaches the top quarter of the screen.
+      const cmd = document.getElementById("commander");
+      if (cmd) {
+        const t = cmd.getBoundingClientRect().top;
+        if (t >= 0 && t <= h * 0.25) {
+          setSection((prev) => (prev === "commander" ? prev : "commander"));
+          return;
+        }
+      }
+      // Otherwise the section whose top is closest above the 60% line wins.
+      let best: string | null = null;
+      let bestTop = -Infinity;
+      for (const id of ids) {
+        if (id === "commander") continue;
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top <= h * 0.6 && top > bestTop) {
+          bestTop = top;
+          best = id;
+        }
+      }
+      if (best) setSection((prev) => (prev === best ? prev : best!));
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    update();
+    return () => {
+      document.removeEventListener("scroll", onScroll, { capture: true });
+      cancelAnimationFrame(frame);
+    };
+  }, [Boolean(config && data)]);
+
   function navigate(id: string) {
     setSection(id);
     if (id === "fleet") setDialog("fleet");
@@ -262,6 +322,7 @@ function Console({
             <button
               className="nav-item"
               title="Hero"
+              data-tip="Hero"
               aria-label="Hero"
               onClick={() => setHeroOpen(true)}
             >
@@ -270,6 +331,7 @@ function Console({
             <button
               className="nav-item"
               title="Simulation settings"
+              data-tip="Simulation settings"
               aria-label="Simulation settings"
               onClick={() => setDialog("settings")}
             >
@@ -278,6 +340,7 @@ function Console({
             <button
               className="nav-item"
               title="About this simulation"
+              data-tip="About this simulation"
               aria-label="About this simulation"
               onClick={() => setDialog("about")}
             >
