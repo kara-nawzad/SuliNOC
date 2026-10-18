@@ -4998,9 +4998,9 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 .app-shell .impact-notes strong{color:var(--sn-tx)!important}
 
 /* Fibre rings: two tidy columns with a clear gap; the status sits on the right of each cell */
-.app-shell .ring-list ul{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px;row-gap:0}
-.app-shell .ring-list li{display:grid;grid-template-columns:70px 78px 64px minmax(56px,1fr);gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #d6e2f2;font-size:12px}
+.app-shell .ring-list ul{grid-template-columns:repeat(2,minmax(0,1fr))!important;column-gap:32px!important;row-gap:0}
+.app-shell .ring-list li{display:grid!important;grid-template-columns:70px 78px 64px minmax(56px,1fr)!important;gap:12px;align-items:center;padding:9px 0!important;border-bottom:1px solid #d6e2f2!important;font-size:12px!important}
 .app-shell .ring-list li > span:last-child{text-align:right;white-space:nowrap}
 @media (max-width:767px){
-  .app-shell .ring-list ul{grid-template-columns:1fr}
+  .app-shell .ring-list ul{grid-template-columns:1fr!important}
 }
