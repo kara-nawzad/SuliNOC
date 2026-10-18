@@ -1,8 +1,18 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { RadioTower, X, MapPin, Wrench, Zap, ShieldCheck } from "lucide-react";
 import type { Config, NodeData } from "../types/api";
-import { NumberTween } from "./NumberTween";
+import { RangeGauge } from "./RangeGauge";
 import { tone } from "./ui";
+
+/** The same categories as the new UI's site inspector. */
+const GROUPS: { title: string; keys: string[] }[] = [
+  {
+    title: "Telecom",
+    keys: ["rsrp", "sinr", "cqi", "prb", "throughput", "latency", "loss", "jitter"],
+  },
+  { title: "Antenna & feeder", keys: ["vswr", "s11"] },
+  { title: "Equipment", keys: ["cpu", "temp", "dust"] },
+];
 
 export function Inspector({
   node,
@@ -15,6 +25,18 @@ export function Inspector({
   onClose: () => void;
   onInject: (id: string) => void;
 }) {
+  const gaugeFor = (key: string) => {
+    const value = node ? (node[key as keyof NodeData] as number) : NaN;
+    return (
+      <RangeGauge
+        key={key}
+        label={config.metric_labels[key] ?? key}
+        metric={key}
+        value={value}
+        spec={config.gauges?.[key]}
+      />
+    );
+  };
   return (
     <AnimatePresence>
       {node && (
@@ -66,60 +88,30 @@ export function Inspector({
               <span>Crew dispatched</span>
             ) : null}
           </div>
-          <h3>RADIO & HARDWARE</h3>
-          <div className="inspector-metrics">
-            {(
-              [
-                ["vswr", node.vswr, ":1", 2],
-                ["s11", node.s11, "dB", 1],
-                ["prb", node.prb, "%", 1],
-                ["cqi", node.cqi, "/15", 0],
-                ["rsrp", node.rsrp, "dBm", 1],
-                ["sinr", node.sinr, "dB", 1],
-                ["temp", node.temp, "°C", 1],
-                ["loss", node.loss, "%", 2],
-              ] as [string, number, string, number][]
-            ).map(([key, value, unit, decimals]) => (
-              <div key={key}>
-                <span>{config.metric_labels[key]}</span>
-                <strong>
-                  <NumberTween value={value} decimals={decimals} />
-                  <small>{unit}</small>
-                </strong>
-              </div>
-            ))}
-          </div>
-          <h3>
-            <Zap size={12} /> SITE POWER · TYPE {node.pwr}
-          </h3>
-          <div className="power-architecture">
-            {config.power_configs[node.pwr]}
-            <span
-              style={{ color: config.presentation.power_colors[node.power] }}
-            >
-              {node.power}
-            </span>
-          </div>
-          {[
-            { key: "battery", value: node.battery },
-            { key: "fuel", value: node.fuel },
-          ].map(({ key, value }) => (
-            <div className="inspector-gauge" key={key}>
-              <div>
-                <span>{config.metric_labels[key]}</span>
-                <span>{value.toFixed(1)}%</span>
-              </div>
-              <div className="meter-track">
-                <motion.i
-                  animate={{ width: `${value}%` }}
-                  style={{ background: config.presentation.palette.fiber }}
-                />
-              </div>
-            </div>
+          {GROUPS.map((group) => (
+            <section className="spec-group" key={group.title}>
+              <h3>{group.title}</h3>
+              {group.keys.map(gaugeFor)}
+            </section>
           ))}
-          <p className="small-muted">
-            Fuel is tank percentage; tank capacity in liters is not modeled.
-          </p>
+          <section className="spec-group">
+            <h3>
+              <Zap size={12} /> Power · {node.pwr}
+              {config.power_configs[node.pwr]
+                ? ` · ${config.power_configs[node.pwr]}`
+                : ""}
+            </h3>
+            <div className="range-source">
+              Source now:{" "}
+              <b style={{ color: config.presentation.power_colors[node.power] }}>
+                {node.power}
+              </b>
+            </div>
+            {["voltage", "battery", "fuel"].map(gaugeFor)}
+            <p className="small-muted">
+              Fuel is tank percentage; tank capacity in liters is not modeled.
+            </p>
+          </section>
           {node.ats && (
             <div
               className="inline-warning"
