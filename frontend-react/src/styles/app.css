@@ -4952,3 +4952,12 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 
 /* The "Street map · Esri" pill on the map is hidden. */
 .app-shell .map-mode{display:none!important}
+
+/* Map fixes: no dark outline on the zoom buttons, scale bar beside them, weather chip top-right with room, light district list */
+.app-shell .map-zoom{border:0;box-shadow:none;background:transparent;border-radius:var(--r-md)}
+.app-shell .leaflet-control-scale{margin-right:58px!important;margin-bottom:16px!important}
+.app-shell .weather-chip{top:112px;right:16px;bottom:auto;left:auto;max-width:min(260px,calc(100% - 32px))}
+.app-shell option{background:#ffffff;color:var(--sn-tx)}
+@media (max-width:767px){
+  .app-shell .weather-chip{top:auto;right:auto;left:12px;bottom:40px;max-width:calc(100% - 90px)}
+}
