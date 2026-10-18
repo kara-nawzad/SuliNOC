@@ -32,6 +32,8 @@ import { useTelemetry } from "./hooks/useTelemetry";
 import { KpiGrid } from "./components/KpiGrid";
 import { HeroFrame } from "./components/HeroFrame";
 import { NetworkMap } from "./components/NetworkMap";
+import { greetingFor } from "./utils/greeting";
+import "./components/greeting.css";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
 import { AnalyticsRow } from "./components/AnalyticsRow";
 import { Inspector } from "./components/Inspector";
@@ -343,7 +345,10 @@ function Console({
                   Network overview
                   <span className="overview-dot" />
                 </h1>
-                <p>Your network, in focus. Every site. Every signal.</p>
+                <p className="overview-greeting">
+                  {greetingFor(new Date().getHours())}, operator.{" "}
+                  <span>Your network, in focus. Every site. Every signal.</span>
+                </p>
               </div>
               <div className="overview-meta">
                 <span className={`connection ${status}`}>

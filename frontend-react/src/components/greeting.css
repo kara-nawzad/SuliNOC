@@ -1,0 +1,8 @@
+/* Overview greeting: "Good morning, operator." in the heading's sub-line. */
+.overview-greeting {
+  color: #10265c;
+  font-size: 15px;
+}
+.overview-greeting > span {
+  color: #4b6192;
+}
