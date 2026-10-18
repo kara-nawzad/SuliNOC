@@ -354,17 +354,12 @@ function Console({
           <main id="overview">
             <div className="overview-heading">
               <div>
-                <div className="breadcrumb">
-                  WORKSPACE <ChevronRight size={10} /> NETWORK OPERATIONS
-                </div>
-                <h1>
-                  Network overview
-                  <span className="overview-dot" />
+                <h1
+                  key={greetingFor(new Date().getHours())}
+                  className="overview-hi gslow"
+                >
+                  {greetingFor(new Date().getHours())}, Slemani.
                 </h1>
-                <p className="overview-greeting">
-                  {greetingFor(new Date().getHours())}, operator.{" "}
-                  <span>Your network, in focus. Every site. Every signal.</span>
-                </p>
               </div>
               <div className="overview-meta">
                 <span className={`connection ${status}`}>
@@ -473,9 +468,6 @@ function Console({
               </span>
               <span>
                 Deterministic world. Predictive operations.
-                <span className="footer-version">
-                  SULINOC / 3.0 · build {__BUILD_STAMP__.sha}
-                </span>
               </span>
             </footer>
           </main>

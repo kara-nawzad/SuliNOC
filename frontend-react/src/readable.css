@@ -352,3 +352,121 @@ button.wordmark,
   color: var(--tx);
   opacity: 1 !important;
 }
+
+/* ---- Round 2 (user review) ---- */
+
+/* Logo: larger in the header. */
+.brand-logo {
+  height: 40px !important;
+}
+
+/* Overview greeting: the hero's greeting, with its wavy underline and blur-in change. */
+.overview-hi {
+  position: relative;
+  display: inline-block;
+  margin: 6px 0 0;
+  font: 500 clamp(30px, 3.4vw, 42px)/1.1 var(--serif);
+  color: var(--tx);
+  letter-spacing: -0.01em;
+}
+.overview-hi::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  height: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Cpath d='M0 4Q6 0 12 4T24 4' fill='none' stroke='%231479C4' stroke-width='1.6'/%3E%3C/svg%3E") repeat-x;
+}
+.gslow {
+  animation: gfade 3.4s ease both;
+}
+@keyframes gfade {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+/* Command bar: groups keep their place when the AI pill appears. */
+.command-bar {
+  justify-content: flex-start !important;
+}
+.command-bar > :first-child {
+  margin-right: auto;
+}
+
+/* One heading style for every panel. */
+.panel-heading h2 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--tx);
+}
+
+/* Site power card: donut and legend side by side, nothing spills out. */
+.power-card {
+  min-width: 0;
+  overflow: hidden;
+}
+.power-chart-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+.donut-wrap {
+  width: 112px;
+  height: 112px;
+  position: relative;
+}
+.donut-wrap strong {
+  font-size: 22px;
+  line-height: 1;
+}
+.power-legend span {
+  white-space: normal;
+}
+
+/* Chart titles, units and notes get breathing room. */
+.chart-title {
+  margin-top: 16px;
+}
+.chart-subtitle {
+  margin-top: 2px;
+}
+.chart-note {
+  margin: 4px 0 6px;
+}
+
+/* Donut label sits inside the ring; the fleet bar sits at the card's foot. */
+.donut-wrap > div {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.donut-wrap small {
+  width: 72px;
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+}
+.power-card {
+  display: flex;
+  flex-direction: column;
+}
+.power-card .fleet-summary {
+  margin-top: auto;
+}

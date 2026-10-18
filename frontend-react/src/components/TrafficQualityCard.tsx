@@ -117,7 +117,7 @@ export function TrafficQualityCard({
     const drop = lineChart(dropHost.current!, {
       color: p.prediction,
       unit: "%",
-      decimals: 3,
+      decimals: 1,
       zero: true,
       onNote: (text: string) => {
         if (dropNote.current) dropNote.current.textContent = text;
@@ -244,7 +244,7 @@ export function TrafficQualityCard({
       <p className="chart-provenance">
         {historyError
           ? historyError
-          : `${samples.length} samples · ${coverageMinutes}/${requestedMinutes} sim min · ` +
+          : `${samples.length} samples · ${coverageMinutes} of ${requestedMinutes} sim min · ` +
             (timeframe === "30m"
               ? "actual server samples, 5-minute simulation ticks, from when this view opened"
               : "actual current-run samples; longer windows fill as simulation time advances")}
