@@ -50,7 +50,7 @@ export function AnalyticsRow({
               <small>{cell.district}</small>
             </span>
             <span className="cell-load">
-              <span className="mono">{cell.prb.toFixed(0)}%</span>
+              <span>{cell.prb.toFixed(0)}%</span>
               <span className="load-bar">
                 <motion.i
                   animate={{ width: `${cell.prb}%` }}
@@ -58,7 +58,7 @@ export function AnalyticsRow({
                 />
               </span>
             </span>
-            <span className="cqi mono">{cell.cqi}</span>
+            <span className="cqi">{cell.cqi}</span>
           </button>
         ))}
         <p className="analytics-foot">

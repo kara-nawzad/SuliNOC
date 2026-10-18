@@ -1,0 +1,285 @@
+/* SuliNOC skin: the kit's light tokens, fonts and surfaces, applied on top of the
+ * existing components. Loaded last so it overrides index.css without rewriting it.
+ * Tokens: SuliNOC-ui-kit/src/theme.css. Fonts: Newsreader (headings), Manrope (text),
+ * IBM Plex Mono (IDs, coordinates, times only). */
+:root {
+  color-scheme: light;
+  --bg: #d6e7fb;
+  --s1: #eaf3fe;
+  --s2: #f6faff;
+  --ln: #a9c2e6;
+  --tx: #10265c;
+  --t2: #4b6192;
+  --live: #0c9c83;
+  --link: #1479c4;
+  --warn: #c27400;
+  --crit: #d42f52;
+  --ai: #6a4bd8;
+  --serif: "Newsreader", Georgia, serif;
+  --sans: "Manrope", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  font-family: var(--sans);
+  color: var(--tx);
+  background: var(--bg);
+  --muted-text: #4b6192;
+  --line: rgba(16, 38, 92, 0.12);
+  --cyan-ui: #1479c4;
+}
+.app-shell {
+  background: var(--bg);
+  color: var(--tx);
+}
+.navigation-rail {
+  background: var(--s1);
+  border-right: 1px solid var(--ln);
+}
+.nav-item,
+.brand-mark {
+  color: var(--t2);
+}
+.nav-item.active,
+.nav-item[aria-current="page"] {
+  color: var(--link);
+  background: #ffffff;
+}
+main h1,
+main h2,
+.overview-heading h1,
+.glass h2,
+.glass h3,
+.kpi-value,
+.big {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--tx);
+}
+main,
+.app-shell p,
+.app-shell span,
+.app-shell small,
+.app-shell label {
+  font-family: var(--sans);
+}
+.mono,
+code,
+.inspector-coords {
+  font-family: var(--mono);
+}
+/* Panels: light surfaces with the kit's border and soft shadow. */
+.glass,
+.kpi-card,
+.analytics-card,
+.map-panel,
+.inspector,
+.policy-panel,
+.towers-panel {
+  background: var(--s2) !important;
+  color: var(--tx);
+  border: 1px solid var(--ln) !important;
+  box-shadow: 0 2px 10px rgba(16, 38, 92, 0.08) !important;
+}
+.kpi-title,
+.kpi-note,
+.small-muted,
+.analytics-foot,
+.chart-provenance,
+.note {
+  color: var(--t2) !important;
+}
+.note {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+}
+.app-footer {
+  color: var(--t2);
+  border-top: 1px solid var(--ln);
+}
+.app-footer .footer-version {
+  font-family: var(--mono);
+}
+/* Tower and chart text stay readable on the light surface. */
+.network-tooltip {
+  background: #ffffff !important;
+  color: var(--tx) !important;
+  border: 1px solid var(--ln);
+}
+.ch-wrap text {
+  fill: var(--t2);
+}
+.ch-wrap .gl {
+  stroke: var(--ln);
+}
+select,
+input[type="search"],
+input[type="text"] {
+  background: #ffffff;
+  color: var(--tx);
+  border: 1px solid var(--ln);
+}
+
+/* Text: the light theme's navy wherever a component sets no colour of its own
+ * (inline colours from status tokens are left alone). */
+.app-shell :where(p, strong, b, h1, h2, h3, h4, label, small, td, th, li, dt, dd, em, span, div, button, a):not([style*="color"]) {
+  color: var(--tx);
+}
+.app-shell :where(.small-muted, .kpi-title, .kpi-note, .analytics-foot, .chart-provenance, small, .breadcrumb, .eyebrow, .map-location, .inspector-coords) {
+  color: var(--t2);
+}
+.kpi-value,
+.kpi-value * ,
+.kpi-unit {
+  color: var(--tx) !important;
+}
+.kpi-value > span:first-child {
+  color: var(--tx) !important;
+}
+/* Header and map on the light surface */
+.app-shell header,
+header.topbar,
+.topbar {
+  background: var(--s1) !important;
+  border-bottom: 1px solid var(--ln) !important;
+  color: var(--tx);
+}
+.map-stage,
+.leaflet-container,
+.map-panel .leaflet-container {
+  background: #dfeefc !important;
+}
+.map-panel {
+  background: var(--s2) !important;
+}
+.map-stage .local-basemap,
+.map-stage svg {
+  color: var(--tx);
+}
+/* Controls: light fields and segmented tabs */
+.segmented,
+.timeframe-tabs,
+.layer-control,
+.map-button,
+.switch,
+.header-bell,
+.header-system,
+.nav-item {
+  background: #ffffff;
+  border-color: var(--ln);
+  color: var(--t2);
+}
+.segmented button.selected,
+.timeframe-tabs button.selected,
+.map-button.active {
+  background: var(--link);
+  color: #ffffff;
+}
+.connection-banner,
+.run-error-banner {
+  background: #fff4f6;
+  color: var(--crit);
+  border: 1px solid #f2b8c4;
+}
+
+/* Buttons, fields and the clock pill: light surfaces with navy text, except the
+ * active segmented tab and the primary accent (kept navy so they read as primary). */
+.app-shell button:not(.selected):not(.active):not(.nav-item):not(.tower-row):not(.segmented button):not(.timeframe-tabs button):not(.map-button) {
+  background: #ffffff;
+  border: 1px solid var(--ln);
+  color: var(--tx);
+}
+.app-shell button:disabled {
+  opacity: 0.5;
+}
+.app-shell select,
+.app-shell input {
+  background: #ffffff !important;
+  color: var(--tx) !important;
+  border: 1px solid var(--ln) !important;
+}
+.app-shell input::placeholder {
+  color: var(--t2);
+}
+.sim-clock {
+  background: #ffffff !important;
+  border: 1px solid var(--ln) !important;
+  color: var(--tx) !important;
+}
+.sim-clock .mono {
+  color: var(--tx) !important;
+}
+.connection {
+  color: var(--t2);
+}
+
+/* ---- Hero: the new UI welcome frame (HeroFrame.tsx) ---- */
+.hero-frame {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  z-index: 80;
+}
+
+/* ---- Phone: bottom tab bar instead of the left rail ---- */
+@media (max-width: 600px) {
+  .navigation-rail {
+    inset: auto 0 0 0;
+    top: auto;
+    width: 100%;
+    height: 64px;
+    flex-direction: row;
+    justify-content: space-around;
+    background: var(--s1);
+    border-right: 0;
+    border-top: 1px solid var(--ln);
+    z-index: 40;
+  }
+  .navigation-rail .brand-mark,
+  .navigation-rail .nav-bottom .nav-item:nth-child(n + 3) {
+    display: none;
+  }
+  .navigation-rail .nav-items,
+  .navigation-rail .nav-bottom {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    gap: 0;
+    width: 100%;
+  }
+  .navigation-rail .nav-item {
+    min-width: 44px;
+    min-height: 44px;
+    border: 0;
+    background: none;
+  }
+  .navigation-rail .nav-item.active {
+    background: none;
+    color: var(--link);
+  }
+  .app-shell main,
+  .app-shell header {
+    margin-left: 0 !important;
+  }
+  .app-shell main {
+    padding-bottom: 84px;
+  }
+  .hero-copy {
+    left: 22px;
+    right: 22px;
+    top: 12%;
+  }
+  .hero-tower {
+    right: -6%;
+    height: 56%;
+    opacity: 0.9;
+  }
+  .hero h1 {
+    font-size: 34px;
+  }
+  .hero-sub {
+    font-size: 15px;
+  }
+}

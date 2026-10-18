@@ -82,7 +82,7 @@ export function SimControls({
           onClick={() => setSpeedOpen((v) => !v)}
         >
           <Gauge size={13} />
-          <span className="mono">{data.control.speed}×</span>
+          <span>{data.control.speed}×</span>
           <ChevronDown size={12} />
         </button>
         {speedOpen && (

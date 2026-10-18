@@ -1,0 +1,111 @@
+/* Site inspector: categorised readings with range sliders (see RangeGauge.tsx).
+ * Light panels, navy text. Bad readings are red, warnings amber, good teal. */
+.inspector .spec-group {
+  margin-top: 18px;
+}
+.inspector .spec-group > h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4b6192;
+}
+.inspector .range-source {
+  font-size: 13px;
+  color: #4b6192;
+  margin-bottom: 6px;
+}
+.range-gauge {
+  margin: 12px 0 4px;
+}
+.range-gauge.is-unrated .range-head {
+  margin-bottom: 0;
+}
+.range-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+  color: #10265c;
+}
+.range-head > span {
+  color: #4b6192;
+}
+.range-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.range-value small {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.range-track {
+  position: relative;
+  height: 10px;
+  margin: 9px 0 4px;
+  border-radius: 999px;
+  background: #e4edf9;
+  overflow: visible;
+}
+.range-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.range-band:first-child {
+  border-radius: 999px 0 0 999px;
+}
+.range-band:last-of-type {
+  border-radius: 0 999px 999px 0;
+}
+.range-fill {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 999px;
+  opacity: 0.85;
+}
+.range-mark {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #0c9c83;
+  box-shadow: 0 1px 3px rgba(16, 38, 92, 0.25);
+}
+.range-gauge.is-bad .range-mark {
+  box-shadow: 0 0 0 4px rgba(212, 47, 82, 0.18), 0 1px 3px rgba(16, 38, 92, 0.25);
+}
+.range-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #4b6192;
+  font-variant-numeric: tabular-nums;
+}
+.range-scale > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.range-scale > span:first-child,
+.range-scale > span:last-child {
+  white-space: nowrap;
+}
+.range-gauge.is-bad .range-head b {
+  color: #b3203f;
+}

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { CrewTrips, towerClass, historyPoints, simTimeToMinutes } from '../src/adapters.js';
 import { xLabel, hhmm } from '../src/charts.js';
 let fails = 0;
@@ -27,7 +26,12 @@ ok(b.route === a.route, 'route is fixed for one trip (no jumps)');
 const c = trips.update({ ...go, eta: 0, state: 'REPAIRING' });
 ok(c.moving === false, 'repairing team is not moving');
 
-const real = JSON.parse(readFileSync('/tmp/delta.json', 'utf8'));
+// Built-in sample with the real field names (sim_time, throughput_gbps); no /tmp dependency.
+const real = { dashboard: { history: [
+  { tick: 0, sim_time: 'D1 00:00', throughput_gbps: 45.0 },
+  { tick: 1, sim_time: 'D1 00:05', throughput_gbps: 45.2 },
+  { tick: 2, sim_time: 'D1 04:45', throughput_gbps: 44.9 },
+] } };
 const pts = historyPoints(real.dashboard.history, 'throughput_gbps');
 ok(pts.length === real.dashboard.history.length, 'every history row becomes a point');
 ok(xLabel(285, 1440) === '04:45', 'short time label 04:45');

@@ -9,9 +9,17 @@ import "@fontsource/inter/latin-600.css";
 import "@fontsource/inter/latin-700.css";
 import "@fontsource/jetbrains-mono/latin-400.css";
 import "leaflet/dist/leaflet.css";
-import "maplibre-gl/dist/maplibre-gl.css";
 import "./index.css";
+import "@fontsource/newsreader/latin-400.css";
+import "@fontsource/newsreader/latin-500.css";
+import "@fontsource/ibm-plex-mono/latin-400.css";
+import "./skin.css";
+import "./readable.css";
+import "./desktop-type.css";
 import App from "./App";
+// Phone rules load last so they win over every desktop rule above.
+import "./phone.css";
+import "./phone-layout.css";
 
 console.info(
   `SuliNOC build ${__BUILD_STAMP__.sha} · built ${__BUILD_STAMP__.built}`,

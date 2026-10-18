@@ -22,7 +22,7 @@ import {
 import type { Config, NodeData, Snapshot } from "../types/api";
 import { Dot, PanelHeading, tone } from "./ui";
 import { CrewLayer } from "./CrewLayer";
-import StreetBasemap, { type StreetStatus } from "./StreetBasemap";
+import TileBasemap, { type StreetStatus } from "./TileBasemap";
 
 /** Self-contained geographic schematic: only the engine's existing road
  * corridors are drawn. There are deliberately no remote image tiles, API keys,
@@ -92,6 +92,7 @@ function towerIcon(cls: string, halo: boolean): L.DivIcon {
 const Towers = memo(function Towers({
   nodes,
   config,
+  aiOn,
   selectedId,
   onSelect,
 }: {
@@ -99,6 +100,7 @@ const Towers = memo(function Towers({
   config: Config;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  aiOn: boolean;
 }) {
   return (
     <>
@@ -107,8 +109,9 @@ const Towers = memo(function Towers({
           node.status,
         );
         const faulty = node.status !== config.presentation.healthy_status;
-        const cls = node.warn ? "ai" : offline ? "crit" : faulty ? "warn" : "";
-        const halo = node.id === selectedId || faulty || !!node.warn;
+        const aiFlag = !!node.warn && aiOn;
+        const cls = aiFlag ? "ai" : offline ? "crit" : faulty ? "warn" : "";
+        const halo = node.id === selectedId || faulty || aiFlag;
         return (
           <Marker
             key={node.id}
@@ -223,7 +226,6 @@ export function NetworkMap({
     crews: true,
     districts: true,
     streets: true,
-    "street names": true,
   });
   const [layerMenu, setLayerMenu] = useState(false);
   const [streetStatus, setStreetStatus] = useState<StreetStatus>("loading");
@@ -250,7 +252,7 @@ export function NetworkMap({
             <Dot color={p.healthy} pulse={!data.control.paused} />
             <span>LIVE NETWORK</span>
             <span className="divider" />
-            <span className="mono">{config.num_nodes} SITES</span>
+            <span>{config.num_nodes} sites</span>
           </div>
         }
       />
@@ -275,9 +277,8 @@ export function NetworkMap({
             <LocalBasemap config={config} />
           )}
           {layers.streets && (
-            <StreetBasemap
+            <TileBasemap
               key={streetAttempt}
-              names={layers["street names"]}
               onStatus={setStreetStatus}
             />
           )}
@@ -322,12 +323,13 @@ export function NetworkMap({
               nodes={data.nodes}
               config={config}
               selectedId={selectedId}
+              aiOn={data.ai.ai_enabled}
               onSelect={onSelect}
             />
           )}
           {layers.sites &&
             data.nodes
-              .filter((n) => n.warn)
+              .filter((n) => n.warn && data.ai.ai_enabled)
               .map((n) => (
                 <CircleMarker
                   key={`prediction-${n.id}`}
@@ -501,7 +503,7 @@ export function NetworkMap({
             {!layers.streets
               ? "Local schematic"
               : streetStatus === "ready"
-                ? "Street map · OpenStreetMap"
+                ? "Street map · Esri"
                 : streetStatus === "loading"
                   ? "Loading streets…"
                   : "Streets unavailable · schematic"}
@@ -539,8 +541,8 @@ export function NetworkMap({
           {data.rings.map((r) => (
             <li key={r.id}>
               <span className="mono">RING {r.id}</span>
-              <span className="mono">{r.nodes.length} sites</span>
-              <span className="mono">{r.circumference_km.toFixed(1)} km</span>
+              <span>{r.nodes.length} sites</span>
+              <span>{r.circumference_km.toFixed(1)} km</span>
               <span>
                 {r.isolated
                   ? "isolated"

@@ -117,7 +117,7 @@ export function TrafficQualityCard({
     const drop = lineChart(dropHost.current!, {
       color: p.prediction,
       unit: "%",
-      decimals: 3,
+      decimals: 1,
       zero: true,
       onNote: (text: string) => {
         if (dropNote.current) dropNote.current.textContent = text;
@@ -128,6 +128,8 @@ export function TrafficQualityCard({
     return () => {
       primaryHost.current && (primaryHost.current.innerHTML = "");
       dropHost.current && (dropHost.current.innerHTML = "");
+      charts.current.primary?.destroy();
+      charts.current.drop?.destroy();
       charts.current.primary = null;
       charts.current.drop = null;
       charts.current.fed = { key: "", first: -1, last: -1 };
@@ -146,7 +148,11 @@ export function TrafficQualityCard({
     const first = rows[0]?.tick ?? -1;
     const last = rows.at(-1)?.tick ?? -1;
     const fed = c.fed;
-    if (fed.key !== key || fed.first !== first) {
+    // Only a new timeframe, metric or run resets the chart. Window trimming
+    // does not: the kit's chart cannot drop points, so rebuilding on each trim
+    // would redraw every tick. The 30 min view therefore runs from the moment
+    // it was opened, and the provenance line says so.
+    if (fed.key !== key) {
       c.primary.setData(rows.map((r) => [r.x, r.s[metric]]));
       c.drop.setData(rows.map((r) => [r.x, r.s.drop_rate]));
       stats.redraws += 1;
@@ -238,9 +244,9 @@ export function TrafficQualityCard({
       <p className="chart-provenance">
         {historyError
           ? historyError
-          : `${samples.length} samples · ${coverageMinutes}/${requestedMinutes} sim min · ` +
+          : `${samples.length} samples · ${coverageMinutes} of ${requestedMinutes} sim min · ` +
             (timeframe === "30m"
-              ? "actual server samples, 5-minute simulation ticks"
+              ? "actual server samples, 5-minute simulation ticks, from when this view opened"
               : "actual current-run samples; longer windows fill as simulation time advances")}
       </p>
     </article>

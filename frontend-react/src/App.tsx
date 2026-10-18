@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   Loader2,
   RadioTower,
+  Home,
   Search,
   Settings2,
   ShieldCheck,
@@ -29,7 +30,10 @@ import {
 } from "lucide-react";
 import { useTelemetry } from "./hooks/useTelemetry";
 import { KpiGrid } from "./components/KpiGrid";
+import { HeroFrame } from "./components/HeroFrame";
 import { NetworkMap } from "./components/NetworkMap";
+import { greetingFor } from "./utils/greeting";
+import "./components/greeting.css";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
 import { AnalyticsRow } from "./components/AnalyticsRow";
 import { Inspector } from "./components/Inspector";
@@ -50,7 +54,13 @@ type Dialog =
   | "impact"
   | null;
 
-export default function App() {
+function Console({
+  heroOpen,
+  setHeroOpen,
+}: {
+  heroOpen: boolean;
+  setHeroOpen: (open: boolean) => void;
+}) {
   const { config, data, status, error, refresh } = useTelemetry();
   const activeRunId = useRef<string | null>(null);
   const observedRunId = useRef<string | null>(null);
@@ -167,21 +177,20 @@ export default function App() {
       document
         .getElementById(id === "overview" ? "overview" : id)
         ?.scrollIntoView({
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
-            .matches
-            ? "instant"
-            : "smooth",
+          // Page switch is immediate: the prompt sets a <200 ms target.
+          behavior: "instant",
           block: "start",
         });
   }
-  if (!config || !data)
+  // The welcome screen comes first: while it is open, nothing else is drawn.
+  if (!config || !data) {
+    // While the welcome screen is open, the console draws nothing behind it.
+    if (heroOpen) return null;
     return (
       <div className="boot-screen">
-        <div className="brand-mark">
-          A<span>N</span>
-        </div>
+        <img className="brand-logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC" />
         <h1>
-          AutoNOC<span> / NETWORK COMMAND</span>
+          SuliNOC<span> / NETWORK COMMAND</span>
         </h1>
         <Loader2 className="spin" size={22} />
         <p>{error ?? "Establishing telemetry uplink…"}</p>
@@ -193,6 +202,7 @@ export default function App() {
         <small>LIVE SIMULATION · NO SYNTHETIC UI DATA</small>
       </div>
     );
+  }
   const p = config.presentation.palette;
   const theme = Object.fromEntries(
     Object.entries(p).map(([key, val]) => [`--${key}`, val]),
@@ -214,13 +224,6 @@ export default function App() {
           Skip to network overview
         </a>
         <nav className="navigation-rail" aria-label="Main navigation">
-          <button
-            className="brand-mark"
-            onClick={() => navigate("overview")}
-            aria-label="AutoNOC overview"
-          >
-            A<span>N</span>
-          </button>
           <div className="nav-items">
             {[
               { id: "overview", icon: LayoutDashboard, label: "Overview" },
@@ -234,8 +237,8 @@ export default function App() {
               <button
                 key={id}
                 className={`nav-item ${section === id ? "active" : ""}`}
-                title={label}
                 aria-label={label}
+                data-tip={label}
                 aria-current={section === id ? "page" : undefined}
                 onClick={() => navigate(id)}
               >
@@ -247,6 +250,14 @@ export default function App() {
             ))}
           </div>
           <div className="nav-bottom">
+            <button
+              className="nav-item"
+              title="Hero"
+              aria-label="Hero"
+              onClick={() => setHeroOpen(true)}
+            >
+              <Home size={19} />
+            </button>
             <button
               className="nav-item"
               title="Simulation settings"
@@ -263,16 +274,17 @@ export default function App() {
             >
               <CircleHelp size={19} />
             </button>
-            <span className="operator-avatar" title="Local simulation operator">
-              OP
-            </span>
           </div>
         </nav>
         <div className="main-shell">
           <header className="global-header">
-            <div className="wordmark">
-              AutoNOC<span>COMMAND CENTER</span>
-            </div>
+            <button
+              className="wordmark"
+              onClick={() => navigate("overview")}
+              aria-label="SuliNOC overview"
+            >
+              <img className="brand-logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC" />
+            </button>
             <span className="header-divider" />
             <div className="network-switch">
               <span className="network-symbol">
@@ -304,25 +316,50 @@ export default function App() {
               <Bell size={18} />
               {data.dashboard.current.incidents > 0 && <i />}
             </button>
+            {/* Phones only (see phone-layout.css): these three live in the bottom bar on desktop. */}
+            <div className="phone-tools">
+              <button
+                className="icon-button"
+                aria-label="Welcome screen"
+                onClick={() => setHeroOpen(true)}
+              >
+                <Home size={18} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Simulation settings"
+                onClick={() => setDialog("settings")}
+              >
+                <Settings2 size={18} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="About this simulation"
+                onClick={() => setDialog("about")}
+              >
+                <CircleHelp size={18} />
+              </button>
+            </div>
+            <span className="build-stamp mono" title="Build: commit and build time">
+              build {__BUILD_STAMP__.sha}
+            </span>
             <span className="header-divider" />
             <div className="header-system">
               <ShieldCheck size={16} />
               <div>
-                LOCAL SIMULATION<span>O-RAN · Non-RT RIC</span>
+                O-RAN · Non-RT RIC
               </div>
             </div>
           </header>
           <main id="overview">
             <div className="overview-heading">
               <div>
-                <div className="breadcrumb">
-                  WORKSPACE <ChevronRight size={10} /> NETWORK OPERATIONS
-                </div>
-                <h1>
-                  Network overview
-                  <span className="overview-dot" />
+                <h1
+                  key={greetingFor(new Date().getHours())}
+                  className="overview-hi gslow"
+                >
+                  {greetingFor(new Date().getHours())}, Slemani.
                 </h1>
-                <p>Your network, in focus. Every site. Every signal.</p>
               </div>
               <div className="overview-meta">
                 <span className={`connection ${status}`}>
@@ -431,9 +468,6 @@ export default function App() {
               </span>
               <span>
                 Deterministic world. Predictive operations.
-                <span className="footer-version">
-                  AUTONOC / 3.0 · build {__BUILD_STAMP__.sha}
-                </span>
               </span>
             </footer>
           </main>
@@ -481,7 +515,7 @@ export default function App() {
                   <div>
                     <Truck size={18} />
                     <strong>{team.name}</strong>
-                    <span className="mono">{team.skill}</span>
+                    <span>{team.skill}</span>
                   </div>
                   <span
                     className="fleet-state"
@@ -604,7 +638,7 @@ export default function App() {
               <Boxes size={30} />
             </div>
             <p className="dialog-intro">
-              AutoNOC is a deterministic LTE digital twin of{" "}
+              SuliNOC is a deterministic LTE digital twin of{" "}
               {config.presentation.network_name}. The Doctor diagnoses, the
               Oracle forecasts, and the Commander applies cost-based policies.
             </p>
@@ -657,5 +691,17 @@ export default function App() {
         </AnimatePresence>
       </div>
     </MotionConfig>
+  );
+}
+
+// The welcome screen lives outside the console tree, so its iframe mounts once
+// and is not remounted when telemetry arrives (remounting restarted its animation).
+export default function App() {
+  const [heroOpen, setHeroOpen] = useState(true);
+  return (
+    <>
+      {heroOpen && <HeroFrame onEnter={() => setHeroOpen(false)} />}
+      <Console heroOpen={heroOpen} setHeroOpen={setHeroOpen} />
+    </>
   );
 }

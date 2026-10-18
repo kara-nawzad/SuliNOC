@@ -75,10 +75,10 @@ export function TowerList({
             <span role="cell" style={{ color: config.status_colors[n.status] }}>
               {config.status_names[n.status]}
             </span>
-            <span className="mono" role="cell">
+            <span role="cell">
               {n.prb.toFixed(1)}%
             </span>
-            <span className="mono" role="cell">
+            <span role="cell">
               {n.cqi}
             </span>
             <span className="mono" role="cell">

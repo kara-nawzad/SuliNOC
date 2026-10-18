@@ -1,0 +1,472 @@
+/* Last pass over the console: the few dark surfaces left from the old theme become
+ * light panels with navy text, and small coloured text is darkened so it reads on
+ * the light skin. Loaded after skin.css. */
+
+/* Map overlays that were dark navy chips. */
+.map-location,
+.weather-chip,
+.play-controls,
+.operator-avatar,
+.leaflet-tooltip.district-label,
+.leaflet-control-scale-line,
+.leaflet-control-attribution,
+.skip-link {
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: #10265c !important;
+  border-color: #a9c2e6 !important;
+  box-shadow: 0 1px 2px rgba(16, 38, 92, 0.12);
+  text-shadow: none;
+}
+.leaflet-control-attribution a {
+  color: #1479c4 !important;
+}
+.leaflet-tooltip.district-label {
+  font-weight: 600;
+  font-size: 12px;
+}
+.leaflet-tooltip.district-label::before {
+  border-top-color: rgba(255, 255, 255, 0.94);
+  border-bottom-color: rgba(255, 255, 255, 0.94);
+}
+
+/* Tower table header was a dark navy band. */
+.tower-row.tower-head {
+  background: #eaf3fe !important;
+  color: #4b6192 !important;
+}
+.tower-row.tower-head * {
+  color: #4b6192 !important;
+}
+
+/* Coloured status text (In Service, VSWR Alarm, …) uses the palette colours from
+ * /api/config. Each is swapped for a darker shade of the same hue so the text meets
+ * contrast on the light panels. The bright colours stay on bars, dots and markers. */
+[style*="color: rgb(16, 185, 129)"] { color: #0a7a5b !important; } /* healthy #10b981 */
+[style*="color: rgb(6, 182, 212)"] { color: #07647a !important; } /* fiber #06b6d4 */
+[style*="color: rgb(245, 158, 11)"] { color: #8a5300 !important; } /* warning #f59e0b */
+[style*="color: rgb(251, 146, 60)"] { color: #9a4a10 !important; } /* #fb923c */
+[style*="color: rgb(244, 63, 94)"] { color: #b3203f !important; } /* critical #f43f5e */
+[style*="color: rgb(139, 92, 246)"] { color: #5b3bc4 !important; } /* prediction #8b5cf6 */
+[style*="color: rgb(56, 189, 248)"] { color: #0c6b9c !important; } /* crew #38bdf8 */
+[style*="color: rgb(100, 116, 139)"] { color: #4b6192 !important; } /* muted #64748b */
+
+/* Section labels and mono notes were too pale on the light panels. */
+.section-label,
+.section-label span {
+  color: #3d5585;
+}
+.mono-note,
+.awaiting-predictions,
+span.mono {
+  color: #3d5585;
+}
+
+/* Specific overrides where index.css sets a stronger selector. */
+.app-shell .section-label > span:first-child,
+.app-shell .section-label > span:last-child {
+  color: #3d5585 !important;
+}
+.app-shell span.mono {
+  color: #3d5585 !important;
+}
+.app-shell .cell-load span {
+  color: #4b6192 !important;
+}
+
+/* Header captions and the breadcrumb were 7–9px on desktop; 10px keeps the layout. */
+.wordmark > span,
+.breadcrumb,
+.network-switch span,
+.search-trigger kbd,
+.operator-avatar {
+  font-size: 10px;
+}
+
+/* Dialogs (search, settings, about, event history, fault and scenario forms) were
+ * dark navy with navy text. They become light panels, like the rest of the console. */
+.dialog {
+  background: #f6faff !important;
+  color: #10265c !important;
+  border-color: #a9c2e6 !important;
+  box-shadow: 0 18px 60px rgba(16, 38, 92, 0.28);
+}
+.dialog::backdrop {
+  background: rgba(16, 38, 92, 0.35);
+}
+.dialog h1,
+.dialog h2,
+.dialog h3,
+.dialog-heading h2 {
+  color: #10265c !important;
+}
+.dialog .eyebrow,
+.dialog-heading .eyebrow,
+.dialog-intro {
+  color: #4b6192 !important;
+}
+.dialog input,
+.dialog select,
+.dialog textarea {
+  background: #ffffff !important;
+  color: #10265c !important;
+  border-color: #a9c2e6 !important;
+}
+.dialog [class*="search"] {
+  background: #ffffff !important;
+  border-color: #a9c2e6 !important;
+  color: #10265c !important;
+}
+
+/* Brand: the SuliNOC logo replaces the old text wordmark. */
+.brand-logo {
+  display: block;
+  height: 30px;
+  width: auto;
+}
+button.wordmark {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.boot-screen .brand-logo {
+  height: 56px;
+  margin: 0 auto 14px;
+}
+
+/* Pills and toasts that were dark navy in the AI-enabled state. */
+.roi-pill {
+  background: #ffffff !important;
+  color: #10265c !important;
+  border-color: #a9c2e6 !important;
+}
+.roi-pill.active {
+  background: #eafaf4 !important;
+  color: #0a7a5b !important;
+  border-color: #0c9c83 !important;
+}
+.toast {
+  background: #ffffff !important;
+  color: #10265c !important;
+  border-color: #a9c2e6 !important;
+  box-shadow: 0 10px 30px rgba(16, 38, 92, 0.2);
+}
+
+/* Traffic charts: axis text at 12 px, as the kit specifies. */
+.traffic-card svg text {
+  font-family: var(--sans);
+  font-size: 12px;
+}
+
+/* Desktop type and target floor (above the phone breakpoint; phone.css covers phones).
+   Labels under 11 px and buttons under 36 px were too small to read or hit. */
+@media (min-width: 601px) {
+  .breadcrumb,
+  .breadcrumb * { font-size: 12px; }
+  .connection,
+  .search-trigger kbd,
+  .search-trigger span,
+  .connection-banner { font-size: 12px; }
+  .network-switch div > span,
+  .sim-clock,
+  .sim-clock span,
+  .command-context span,
+  .command-context-sub { font-size: 12px; }
+  .leaflet-control-scale-line,
+  .map-north span { font-size: 12px; }
+  .overview-greeting,
+  .overview-greeting > span { font-size: 13px; }
+  .build-stamp { font-size: 12px; }
+  .icon-button,
+  .speed-button,
+  .scenario-button,
+  .roi-pill,
+  .ai-toggle,
+  .search-trigger { min-height: 36px; }
+  .icon-button { min-width: 36px; }
+  .wordmark { min-height: 36px; }
+}
+
+/* Brand: plain text wordmark, no frame. Replaces the boxed logo image. */
+.wordmark-text {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--tx);
+  white-space: nowrap;
+}
+.wordmark-text b {
+  font-weight: 800;
+  color: var(--live);
+}
+.boot-screen .wordmark-text {
+  display: block;
+  font-size: 48px;
+  margin: 0 auto 14px;
+  text-align: center;
+}
+
+/* The build stamp is hidden from the console (it stays in the source for tooling). */
+.build-stamp {
+  display: none !important;
+}
+
+/* Header tower icon: light tile instead of a navy square. */
+.network-symbol {
+  background: #e3f5f1 !important;
+  color: var(--live) !important;
+  border-color: #b8e3d8 !important;
+}
+
+/* Crew vehicles: white tiles with a coloured outline, visible on the light map. */
+.crew-marker {
+  background: #ffffff !important;
+  border: 2px solid currentColor !important;
+  box-shadow: 0 2px 8px rgba(16, 38, 92, 0.28) !important;
+  border-radius: 9px;
+}
+.crew-idle {
+  opacity: 0.8;
+}
+
+/* One note line under a panel heading lines up with the heading's text. */
+.glass > .note {
+  margin: 0;
+  padding: 0 18px 12px;
+}
+
+/* The wordmark button is bare text: no border, no fill. */
+button.wordmark,
+.global-header button.wordmark {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.wordmark .wordmark-text {
+  font-size: 26px;
+}
+
+/* Logo: the file has a white background; multiply makes it disappear on the blue header. */
+.brand-logo {
+  display: block;
+  height: 30px;
+  width: auto;
+  mix-blend-mode: multiply;
+}
+.boot-screen .brand-logo {
+  height: 56px;
+  margin: 0 auto 14px;
+}
+
+/* Rail: no empty band above Overview; light hover and light tooltip (no navy). */
+.nav-items {
+  margin-top: 6px !important;
+}
+.navigation-rail {
+  padding-top: 14px !important;
+}
+.nav-item:hover {
+  background: #e3eefb !important;
+  color: #0c6e8f !important;
+}
+.nav-item.active {
+  background: #d5f1f7 !important;
+  color: #0c6e8f !important;
+}
+.nav-item::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ffffff;
+  color: var(--tx);
+  border: 1px solid var(--ln);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: 600 12px var(--sans);
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(16, 38, 92, 0.14);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+.nav-item:hover::after,
+.nav-item:focus-visible::after {
+  opacity: 1;
+}
+
+/* Header search: light chip instead of grey. */
+.search-trigger {
+  background: #ffffff !important;
+  border-color: var(--ln) !important;
+  color: var(--muted-text) !important;
+}
+.search-trigger kbd {
+  background: #eef4fc !important;
+  color: var(--muted-text) !important;
+  border: 1px solid var(--ln) !important;
+}
+
+/* AI toggle: light track; teal when on. */
+.toggle-track {
+  background: #c9d8ea !important;
+}
+.enabled .toggle-track {
+  background: var(--live) !important;
+}
+
+/* Fibre rings: aligned columns, light rules. */
+.ring-list {
+  border-top: 1px solid var(--line) !important;
+}
+.ring-list ul {
+  gap: 0 !important;
+}
+.ring-list li {
+  display: grid !important;
+  grid-template-columns: 76px 84px 84px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--tx);
+}
+.ring-list li:last-child {
+  border-bottom: 0;
+}
+
+/* AI Commander: a full-height card, not a short strip. */
+.policy-panel {
+  min-height: 300px;
+}
+
+/* Maintenance fleet cards: white and fully opaque, not grey. */
+.fleet-card {
+  background: #ffffff !important;
+  border: 1px solid var(--ln) !important;
+  color: var(--tx);
+  opacity: 1 !important;
+}
+
+/* ---- Round 2 (user review) ---- */
+
+/* Logo: larger in the header. */
+.brand-logo {
+  height: 40px !important;
+}
+
+/* Overview greeting: the hero's greeting, with its wavy underline and blur-in change. */
+.overview-hi {
+  position: relative;
+  display: inline-block;
+  margin: 6px 0 0;
+  font: 500 clamp(30px, 3.4vw, 42px)/1.1 var(--serif);
+  color: var(--tx);
+  letter-spacing: -0.01em;
+}
+.overview-hi::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  height: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Cpath d='M0 4Q6 0 12 4T24 4' fill='none' stroke='%231479C4' stroke-width='1.6'/%3E%3C/svg%3E") repeat-x;
+}
+.gslow {
+  animation: gfade 3.4s ease both;
+}
+@keyframes gfade {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+/* Command bar: groups keep their place when the AI pill appears. */
+.command-bar {
+  justify-content: flex-start !important;
+}
+.command-bar > :first-child {
+  margin-right: auto;
+}
+
+/* One heading style for every panel. */
+.panel-heading h2 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--tx);
+}
+
+/* Site power card: donut and legend side by side, nothing spills out. */
+.power-card {
+  min-width: 0;
+  overflow: hidden;
+}
+.power-chart-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+.donut-wrap {
+  width: 112px;
+  height: 112px;
+  position: relative;
+}
+.donut-wrap strong {
+  font-size: 22px;
+  line-height: 1;
+}
+.power-legend span {
+  white-space: normal;
+}
+
+/* Chart titles, units and notes get breathing room. */
+.chart-title {
+  margin-top: 16px;
+}
+.chart-subtitle {
+  margin-top: 2px;
+}
+.chart-note {
+  margin: 4px 0 6px;
+}
+
+/* Donut label sits inside the ring; the fleet bar sits at the card's foot. */
+.donut-wrap > div {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.donut-wrap small {
+  width: 72px;
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+}
+.power-card {
+  display: flex;
+  flex-direction: column;
+}
+.power-card .fleet-summary {
+  margin-top: auto;
+}
