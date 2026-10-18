@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   Pane,
@@ -160,15 +160,13 @@ function MapTools({
       scale.remove();
     };
   }, [map]);
-  useEffect(() => {
-    const observer = new ResizeObserver(() =>
-      map.invalidateSize({ pan: false }),
-    );
-    observer.observe(map.getContainer());
-    return () => observer.disconnect();
-  }, [map]);
-  useEffect(() => {
-    const b = config.bounds;
+  // Refs read by the resize observer, so it always sees the latest config and selection.
+  const configRef = useRef(config);
+  configRef.current = config;
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  const fitAll = useCallback(() => {
+    const b = configRef.current.bounds;
     map.fitBounds(
       [
         [b.lat_min, b.lon_min],
@@ -176,7 +174,19 @@ function MapTools({
       ],
       { padding: [15, 15], animate: false },
     );
-  }, [map, config, resetKey]);
+  }, [map]);
+  useEffect(() => {
+    // On resize: recompute the map size, then refit all towers (unless one is selected).
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize({ pan: false });
+      if (!selectedRef.current) fitAll();
+    });
+    observer.observe(map.getContainer());
+    return () => observer.disconnect();
+  }, [map, fitAll]);
+  useEffect(() => {
+    fitAll();
+  }, [fitAll, config, resetKey]);
   useEffect(() => {
     if (selected)
       map.flyTo(

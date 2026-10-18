@@ -526,7 +526,9 @@ function Console({
                   <p>{team.target ?? "Returning / available at depot"}</p>
                   <div className="fleet-card-foot">
                     <span>ETA {team.eta} ticks</span>
-                    <span>{team.missions} missions</span>
+                    <span>
+                      {team.missions} {team.missions === 1 ? "mission" : "missions"}
+                    </span>
                   </div>
                 </article>
               ))}
