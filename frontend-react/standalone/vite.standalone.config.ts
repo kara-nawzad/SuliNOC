@@ -49,7 +49,7 @@ function standalone(): Plugin {
     load(id) {
       if (id !== "\0" + HERO_ID) return null;
       // The hero page, with every relative asset inlined so it works inside srcDoc.
-      let html = readFileSync(resolve(publicDir, "hero-source.html"), "utf8");
+      let html = readFileSync(resolve(publicDir, "assets/hero-source.html"), "utf8");
       html = html.replace(
         /(["'(])(\/?)assets\/([A-Za-z0-9._\-\/]+)/g,
         (match, lead: string, _slash: string, path: string) => {
@@ -62,9 +62,9 @@ function standalone(): Plugin {
     transform(code, id) {
       if (!/\.(tsx|ts|jsx|js)$/.test(id) || id.includes("node_modules")) return null;
       let out = code;
-      // Frame of the welcome screen: the hero page inline, not from /hero-source.html.
-      if (out.includes('src="/hero-source.html"')) {
-        out = `import HERO_HTML from "${HERO_ID}";\n` + out.replace('src="/hero-source.html"', "srcDoc={HERO_HTML}");
+      // Frame of the welcome screen: the hero page inline, not from /assets/hero-source.html.
+      if (out.includes('src="/assets/hero-source.html"')) {
+        out = `import HERO_HTML from "${HERO_ID}";\n` + out.replace('src="/assets/hero-source.html"', "srcDoc={HERO_HTML}");
       }
       // Any "/assets/x" string the console uses becomes an inline data URI.
       out = out.replace(/"\/assets\/([A-Za-z0-9._\-\/]+)"/g, (match, path: string) => {
