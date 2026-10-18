@@ -33,8 +33,11 @@ import { KpiGrid } from "./components/KpiGrid";
 import { HeroFrame } from "./components/HeroFrame";
 import { NetworkMap } from "./components/NetworkMap";
 import { greetingFor } from "./utils/greeting";
+import { simTimeToMinutes } from "./adapters.js";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
+import { PowerCard } from "./components/AnalyticsRow";
 import { AnalyticsRow } from "./components/AnalyticsRow";
+import { PanelNote } from "./components/PanelNote";
 import { Inspector } from "./components/Inspector";
 import { HistoryModal } from "./components/HistoryModal";
 import { CounterfactualModal } from "./components/CounterfactualModal";
@@ -169,6 +172,66 @@ function Console({
     },
     [refresh],
   );
+  // Keep the rail highlight on the section currently in view.
+  useEffect(() => {
+    const ids = [
+      "overview",
+      "network",
+      "incidents",
+      "analytics",
+      "commander",
+      "towers",
+    ];
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const h = window.innerHeight;
+      if (window.scrollY < 120) {
+        setSection((prev) => (prev === "overview" ? prev : "overview"));
+        return;
+      }
+      // Towers is the last section: once its top edge is on screen it is the one in view.
+      const towers = document.getElementById("towers");
+      if (towers && towers.getBoundingClientRect().top <= h * 0.75) {
+        setSection((prev) => (prev === "towers" ? prev : "towers"));
+        return;
+      }
+      // A1 Commander sits inside the telemetry row: it owns the highlight only
+      // when its panel reaches the top quarter of the screen.
+      const cmd = document.getElementById("commander");
+      if (cmd) {
+        const t = cmd.getBoundingClientRect().top;
+        if (t >= 0 && t <= h * 0.25) {
+          setSection((prev) => (prev === "commander" ? prev : "commander"));
+          return;
+        }
+      }
+      // Otherwise the section whose top is closest above the 60% line wins.
+      let best: string | null = null;
+      let bestTop = -Infinity;
+      for (const id of ids) {
+        if (id === "commander") continue;
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top <= h * 0.6 && top > bestTop) {
+          bestTop = top;
+          best = id;
+        }
+      }
+      if (best) setSection((prev) => (prev === best ? prev : best!));
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    update();
+    return () => {
+      document.removeEventListener("scroll", onScroll, { capture: true });
+      cancelAnimationFrame(frame);
+    };
+  }, [Boolean(config && data)]);
+
   function navigate(id: string) {
     setSection(id);
     if (id === "fleet") setDialog("fleet");
@@ -213,6 +276,12 @@ function Console({
         .includes(query.toLowerCase()),
     )
     .slice(0, 12);
+  // Greeting follows the simulation clock (the hour of the sim time shown on the dashboard).
+  const simMinutes = simTimeToMinutes(data.kpis.sim_time);
+  const greetingText = greetingFor(
+    simMinutes == null ? new Date().getHours() : Math.floor((simMinutes % 1440) / 60),
+  );
+
   return (
     <MotionConfig reducedMotion="user">
       <div
@@ -252,6 +321,7 @@ function Console({
             <button
               className="nav-item"
               title="Hero"
+              data-tip="Hero"
               aria-label="Hero"
               onClick={() => setHeroOpen(true)}
             >
@@ -260,6 +330,7 @@ function Console({
             <button
               className="nav-item"
               title="Simulation settings"
+              data-tip="Simulation settings"
               aria-label="Simulation settings"
               onClick={() => setDialog("settings")}
             >
@@ -268,6 +339,7 @@ function Console({
             <button
               className="nav-item"
               title="About this simulation"
+              data-tip="About this simulation"
               aria-label="About this simulation"
               onClick={() => setDialog("about")}
             >
@@ -275,6 +347,7 @@ function Console({
             </button>
           </div>
         </nav>
+        <PanelNote />
         <div className="main-shell">
           <header className="global-header">
             <button
@@ -354,10 +427,10 @@ function Console({
             <div className="overview-heading">
               <div>
                 <h1
-                  key={greetingFor(new Date().getHours())}
+                  key={greetingText}
                   className="overview-hi gslow"
                 >
-                  {greetingFor(new Date().getHours())}, Slemani.
+                  {greetingText}, Slemani.
                 </h1>
               </div>
               <div className="overview-meta">
@@ -431,7 +504,13 @@ function Console({
                 onSelect={selectNode}
                 onActivity={() => setDialog("activity")}
                 execute={execute}
-              />
+              >
+                <PowerCard
+                  data={data}
+                  config={config}
+                  onFleet={() => setDialog("fleet")}
+                />
+              </AlertsSidebar>
             </div>
             <div className="section-label">
               <span>
@@ -450,7 +529,17 @@ function Console({
                 selectNode(id);
                 navigate("network");
               }}
-              onFleet={() => setDialog("fleet")}
+              commander={
+                <AlertsSidebar
+                  key={`cmd-${data.run_id}`}
+                  part="commander"
+                  config={config}
+                  data={data}
+                  onSelect={selectNode}
+                  onActivity={() => setDialog("activity")}
+                  execute={execute}
+                />
+              }
             />
             <TowerList
               data={data}
@@ -582,34 +671,40 @@ function Console({
             </small>
             <div className="setting-row">
               <div>
-                <strong>Demo auto-approval</strong>
+                <strong>Auto-approve crew requests (demo)</strong>
                 <p>
-                  Automatically approve pending crew requests after 10
-                  wall-clock seconds. The current worker checks this on
-                  inference cycles.
+                  When On, the system approves a pending crew dispatch by
+                  itself after 10 seconds. When Off, a person must approve
+                  each one.
                 </p>
               </div>
-              <button
-                className={`switch ${data.control.auto_approve_seconds > 0 ? "on" : ""}`}
-                role="switch"
-                aria-label="Demo auto-approval"
-                aria-checked={data.control.auto_approve_seconds > 0}
-                disabled={busy}
-                onClick={() =>
-                  void execute(
-                    () =>
-                      api.ai(
-                        true,
-                        data.run_id,
-                        data.control.auto_approve_seconds > 0 ? 0 : 10,
-                      ),
-                    "Approval policy updated",
-                    data.run_id,
-                  )
-                }
-              >
-                <i />
-              </button>
+              <div className="approval-choice" role="group" aria-label="Demo auto-approval">
+                {[
+                  { label: "Off", seconds: 0 },
+                  { label: "On · 10 s", seconds: 10 },
+                ].map((option) => {
+                  const active =
+                    (data.control.auto_approve_seconds > 0) === (option.seconds > 0);
+                  return (
+                    <button
+                      key={option.label}
+                      type="button"
+                      className={active ? "selected" : ""}
+                      aria-pressed={active}
+                      disabled={busy || active}
+                      onClick={() =>
+                        void execute(
+                          () => api.ai(true, data.run_id, option.seconds),
+                          "Approval policy updated",
+                          data.run_id,
+                        )
+                      }
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="settings-info">
               <span>Predictor</span>
@@ -701,7 +796,7 @@ export default function App() {
   const [heroOpen, setHeroOpen] = useState(true);
   return (
     <>
-      {heroOpen && <HeroFrame onEnter={() => setHeroOpen(false)} />}
+      <HeroFrame open={heroOpen} onEnter={() => setHeroOpen(false)} />
       <Console heroOpen={heroOpen} setHeroOpen={setHeroOpen} />
     </>
   );

@@ -123,6 +123,7 @@ export function TrafficQualityCard({
         if (dropNote.current) dropNote.current.textContent = text;
       },
     });
+    drop.setDomain(0, 2);
     charts.current.primary = primary;
     charts.current.drop = drop;
     return () => {
@@ -148,11 +149,18 @@ export function TrafficQualityCard({
     const first = rows[0]?.tick ?? -1;
     const last = rows.at(-1)?.tick ?? -1;
     const fed = c.fed;
-    // Only a new timeframe, metric or run resets the chart. Window trimming
-    // does not: the kit's chart cannot drop points, so rebuilding on each trim
-    // would redraw every tick. The 30 min view therefore runs from the moment
-    // it was opened, and the provenance line says so.
-    if (fed.key !== key) {
+    // Longer windows: only a new timeframe, metric or run resets the chart,
+    // and new ticks are appended. The chart cannot drop points, so the 30 min
+    // view is redrawn instead (see below).
+    // Fixed axis: QCI 9 traffic 20–50 Gbps; PRB stays automatic.
+    c.primary.setWindow(WINDOW_MINUTES[timeframe]);
+    c.drop?.setWindow(WINDOW_MINUTES[timeframe]);
+    // E-RAB drop proxy: fixed 0–3 % axis (three whole-percent ticks above zero).
+    c.drop?.setDomain(0, 3);
+    c.primary.setDomain(metric === "throughput_gbps" ? 20 : null, 50);
+    // The 30 min view holds only a few points, so it is redrawn from the
+    // trimmed window every time; otherwise old points would stay on the axis.
+    if (fed.key !== key || timeframe === "30m") {
       c.primary.setData(rows.map((r) => [r.x, r.s[metric]]));
       c.drop.setData(rows.map((r) => [r.x, r.s.drop_rate]));
       stats.redraws += 1;
@@ -246,7 +254,7 @@ export function TrafficQualityCard({
           ? historyError
           : `${samples.length} samples · ${coverageMinutes} of ${requestedMinutes} sim min · ` +
             (timeframe === "30m"
-              ? "actual server samples, 5-minute simulation ticks, from when this view opened"
+              ? "actual server samples, 5-minute simulation ticks, last 30 sim min"
               : "actual current-run samples; longer windows fill as simulation time advances")}
       </p>
     </article>

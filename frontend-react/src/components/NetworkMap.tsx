@@ -493,16 +493,24 @@ export function NetworkMap({
           </div>
         </div>
         <div className="map-location">
-          <MapPin size={12} /> {config.presentation.network_name.toUpperCase()}{" "}
-          <span> / </span> {config.presentation.region_label}
+          <MapPin size={12} /> IRAQ <span> / </span> KURDISTAN{" "}
+          <span> / </span> SULAYMANIYAH
         </div>
         {storm && (
-          <div className="weather-chip" style={tone(p.warning)}>
+          <div
+            key={storm.id}
+            className="weather-chip"
+            style={tone(p.warning)}
+            role="status"
+            aria-live="polite"
+          >
             <CloudLightning size={15} />
             <div>
-              <strong>{storm.name}</strong>
+              <strong>
+                Storm over {storm.name}
+              </strong>
               <span>
-                {storm.weather} · {storm.wind} km/h
+                Wind {storm.wind} km/h · {storm.node_count} sites in area
               </span>
             </div>
           </div>

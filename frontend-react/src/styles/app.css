@@ -4936,3 +4936,190 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 
 /* the welcome screen covers everything, including the phone bottom bar */
 .hero-frame{z-index:1200!important}
+
+/* phone: the incident list keeps its own scroll area instead of growing with every alarm */
+@media (max-width:767px){
+  .app-shell .alerts-rail .incident-list{flex:none;max-height:min(62vh,460px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+}
+
+/* Wrappers behind the playback buttons, the O-RAN badge and the map buttons: no background or outline.
+   The buttons themselves keep their own look. */
+.app-shell .play-controls,
+.app-shell .header-system,
+.app-shell .map-top-overlay{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+.app-shell .map-top-overlay .layer-control,
+.app-shell .map-top-overlay .map-button{background:transparent!important}
+
+/* The "Street map · Esri" pill on the map is hidden. */
+.app-shell .map-mode{display:none!important}
+
+/* Map fixes: no dark outline on the zoom buttons, scale bar beside them, weather chip top-right with room, light district list */
+.app-shell .map-zoom{border:0;box-shadow:none;background:transparent;border-radius:var(--r-md)}
+.app-shell .leaflet-control-scale{margin-right:58px!important;margin-bottom:16px!important}
+.app-shell .weather-chip{top:112px;right:16px;bottom:auto;left:auto;max-width:min(260px,calc(100% - 32px))}
+.app-shell option{background:#ffffff;color:var(--sn-tx)}
+@media (max-width:767px){
+  .app-shell .weather-chip{top:auto;right:auto;left:12px;bottom:40px;max-width:calc(100% - 90px)}
+}
+
+/* Gauge caption: two short lines inside the ring so it doesn't run over the arc */
+.app-shell .radial-value p{font-size:11px!important;line-height:1.25;max-width:84px;margin:5px auto 0;white-space:normal}
+
+/* Oracle outlook and A1 Commander share one panel; each keeps its own heading */
+.app-shell .oracle-combo .combo-divider{height:1px;background:var(--sn-ln,#d6e0ef);margin:var(--sp-4) 0}
+.app-shell .commander-slot{min-width:0}
+.app-shell .oracle-combo .commander-slot .policy-panel{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}
+.app-shell .oracle-combo .commander-slot .policy-panel .policy-list{max-height:none}
+/* Sticky header stays above the map's floating chips when the page scrolls */
+.app-shell .global-header{z-index:1000}
+
+/* Chart readout: light tooltip with dark text (was navy with light text) */
+.app-shell .ch-tip{background:#ffffff!important;border:1px solid #c9d8ee!important;color:var(--sn-tx)!important;box-shadow:0 4px 14px #10265c1f;font-weight:600}
+
+/* Executive counterfactual: light surfaces, readable text, no dark gradients */
+.app-shell .impact-live{background:#eef4fc!important;border:1px solid #c9d8ee!important}
+.app-shell .impact-live-heading{color:var(--sn-t2)!important;font-size:12px!important}
+.app-shell .impact-live-heading .live-on,.app-shell .impact-live-heading .live-off{color:var(--sn-tx)!important}
+.app-shell .impact-live-values > div > span{color:var(--sn-t2)!important;font-size:12px!important}
+.app-shell .impact-live-values strong{color:var(--sn-tx)!important;font-size:20px!important}
+.app-shell .impact-live-values > div:nth-child(2) strong{color:#5b3fc4!important}
+.app-shell .impact-live-values small{color:var(--sn-t2)!important;font-size:12px!important}
+.app-shell .impact-live-inactive{color:var(--sn-t2)!important;font-size:12px!important}
+.app-shell .impact-table-wrap{border:1px solid #c9d8ee!important;background:#ffffff}
+.app-shell .impact-table{font-size:12px!important}
+.app-shell .impact-table th,.app-shell .impact-table td{border-bottom:1px solid #e3ebf7!important}
+.app-shell .impact-table thead th{background:#eef4fc!important;color:var(--sn-tx)!important;font-size:12px!important;font-weight:650}
+.app-shell .impact-table tbody th{color:var(--sn-tx)!important;font-weight:600}
+.app-shell .impact-table td{color:var(--sn-tx)!important}
+.app-shell .impact-table .positive{color:#0f7a5a!important;font-weight:600}
+.app-shell .impact-table .caution{color:#a15c07!important;font-weight:600}
+.app-shell .impact-callout{background:#f3efff!important;border-left:3px solid #5b3fc4!important;color:#2e2470!important;font-size:14px!important;line-height:1.7!important;opacity:1!important;filter:none!important;text-shadow:none!important}
+.app-shell .impact-notes p{color:var(--sn-t2)!important;font-size:12px!important}
+.app-shell .impact-notes strong{color:var(--sn-tx)!important}
+
+/* Fibre rings: two tidy columns with a clear gap; the status sits on the right of each cell */
+.app-shell .ring-list ul{grid-template-columns:repeat(2,minmax(0,1fr))!important;column-gap:32px!important;row-gap:0}
+.app-shell .ring-list li{display:grid!important;grid-template-columns:70px 78px 64px minmax(56px,1fr)!important;gap:12px;align-items:center;padding:9px 0!important;border-bottom:1px solid #d6e2f2!important;font-size:12px!important}
+.app-shell .ring-list li > span:last-child{text-align:right;white-space:nowrap}
+@media (max-width:767px){
+  .app-shell .ring-list ul{grid-template-columns:1fr!important}
+}
+
+/* Coverage line: how much of the chosen window has been recorded so far */
+.app-shell .chart-coverage{margin:6px 0 10px;font-size:12px;color:var(--sn-t2)}
+.app-shell .chart-coverage i{display:block;height:4px;border-radius:2px;background:#5b3fc4;margin-top:6px;max-width:100%}
+.app-shell .chart-coverage span{font-weight:600;color:var(--sn-tx)}
+
+/* Larger crew markers on the map (teams) */
+.app-shell .crew-marker{width:38px!important;height:38px!important;padding:7px!important;border-radius:12px}
+.app-shell .crew-marker svg{width:100%!important;height:100%!important}
+
+/* Larger towers list: rows and headings */
+.app-shell .tower-row{font-size:15px!important;padding:12px 14px!important;gap:12px}
+.app-shell .tower-row .mono{font-size:14px}
+.app-shell .tower-head,.app-shell .tower-head *{font-size:13px!important}
+.app-shell .towers-panel input[type=search]{font-size:15px}
+
+/* Click-a-card note: small window with a plain explanation */
+.app-shell .panel-note{position:fixed;z-index:1500;background:#ffffff;color:var(--sn-tx);border:1px solid #c9d8ee;border-radius:14px;box-shadow:0 14px 34px #10265c2e;padding:16px 42px 16px 18px}
+.app-shell .panel-note h4{margin:0 0 6px;font-size:17px;font-weight:650;color:var(--sn-tx)}
+.app-shell .panel-note p{margin:0;font-size:15px;line-height:1.55;color:#2c3f66}
+.app-shell .panel-note-close{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid #c9d8ee;background:#f5f8fd;color:var(--sn-tx);display:grid;place-items:center;cursor:pointer}
+
+/* Simulation settings: two clear choices instead of a bare switch */
+.app-shell .approval-choice{display:flex;gap:8px;margin-top:8px;flex:none}
+.app-shell .approval-choice button{min-height:44px;min-width:104px;padding:0 16px;border-radius:10px;border:1px solid #9fb6d6;background:#ffffff;color:var(--sn-tx);font-size:16px;font-weight:600}
+.app-shell .approval-choice button.selected{background:#0c9c83;border-color:#0c9c83;color:#ffffff}
+.app-shell .approval-choice button:disabled{opacity:1;cursor:default}
+.app-shell .setting-row strong{font-size:18px}
+.app-shell .setting-row p,.app-shell .settings-info,.app-shell .settings-info span,.app-shell .settings-info strong{font-size:16px!important}
+
+/* Dialogs: bigger, readable text */
+.app-shell .dialog p{font-size:16px;line-height:1.6}
+.app-shell .dialog .eyebrow{font-size:13px}
+
+/* Explore the API: readable button */
+.app-shell .dialog .button.secondary,.app-shell .dialog a.button{background:#10265c!important;color:#ffffff!important;font-size:16px!important;font-weight:600;padding:12px 20px!important;border:0!important}
+.app-shell .dialog .button.secondary svg,.app-shell .dialog a.button svg{color:#ffffff}
+
+/* Layers menu: matches the palette and is easier to read */
+.app-shell .layer-control [aria-expanded="true"],.app-shell .layer-control .map-button.active{background:#10265c!important;color:#ffffff!important;border-color:#10265c!important}
+.app-shell .layer-menu{font-size:16px!important;padding:12px 14px}
+.app-shell .layer-menu label{font-size:16px;padding:8px 6px;gap:10px;color:var(--sn-tx)}
+.app-shell .layer-menu input[type=checkbox]{accent-color:#0c9c83;width:18px;height:18px}
+
+/* About dialog disclaimer: readable size */
+.app-shell .dialog p.small-muted{font-size:16px!important;line-height:1.6}
+
+/* Narrow and tablet widths: the incident list keeps a fixed height and scrolls inside it */
+@media (max-width:1024px){
+  .app-shell .alerts-rail .incident-list{flex:none;max-height:min(62vh,460px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
+}
+
+/* Tablet and narrow widths: the rail is only as tall as its cards, so no empty space is left under them */
+@media (max-width:1024px){
+  .app-shell .alerts-rail{align-self:start;grid-template-rows:auto;grid-auto-rows:auto;min-height:0}
+  .app-shell .alerts-rail>*{min-height:auto;overflow:visible}
+  .app-shell .alerts-rail .incident-list{overflow-y:auto;overflow-x:hidden}
+}
+
+/* Tablet (768-1024 px, two columns): Active incidents and Site power & fleet share one fixed height; each scrolls inside */
+@media (min-width:768px) and (max-width:1024px){
+  .app-shell .alerts-rail{grid-template-rows:minmax(0,560px)!important;align-items:stretch}
+  .app-shell .alerts-rail>*{height:100%;min-height:0;overflow:hidden}
+  .app-shell .alerts-rail .incident-list{flex:1 1 auto;min-height:0;max-height:none}
+  .app-shell .alerts-rail .power-card{overflow-y:auto;overscroll-behavior:contain}
+}
+
+/* Tablet: both rail cards are only as tall as the power card's content (no empty space); incidents scroll inside */
+@media (min-width:768px) and (max-width:1024px){
+  .app-shell .alerts-rail{grid-template-rows:auto!important;align-items:start}
+  .app-shell .alerts-rail>*{height:auto;min-height:0;overflow:hidden}
+  .app-shell .alerts-rail .incident-list{flex:none;max-height:240px;overflow-y:auto;overflow-x:hidden}
+  .app-shell .alerts-rail .power-card{overflow:visible}
+}
+
+/* History: completed-demo cards lighter than the dialog, text still readable */
+.run-summary-card{background:linear-gradient(135deg,#2a4263,#213652)!important;border-color:#8eaac246!important}
+.run-summary-grid>div{background:#33507a80!important;border-color:#c8dcf01f!important}
+.run-summary-eyebrow{color:#a9c3de!important}
+.run-summary-day,.run-summary-grid span,.run-summary-foot{color:#b7cbe0!important}
+.run-summary-grid strong,.run-summary-heading time{color:#f0f6fd!important}
+
+/* History tabs: light track, dark text (was a near-black bar) */
+.history-tabs{background:#e4eefb!important;border-color:#a9c2e6!important}
+.history-tabs button{color:#33487a!important}
+.history-tabs button.selected{color:#10265c!important;background:#ffffff!important;border:1px solid #8eaac2!important;padding:7px 10px}
+
+/* Weather alert: top-left of the map, under the district picker; slides in when a storm appears */
+.app-shell .weather-chip,
+.weather-chip {
+  top: 58px !important;
+  left: 15px !important;
+  right: auto !important;
+  bottom: auto !important;
+  max-width: min(300px, calc(100% - 30px)) !important;
+  padding: 10px 13px !important;
+  animation: weather-slide-in 0.5s var(--e, ease-out) both;
+}
+.app-shell .weather-chip strong,
+.weather-chip strong {
+  font-size: 12px !important;
+  font-weight: 650 !important;
+}
+.app-shell .weather-chip span,
+.weather-chip span {
+  font-size: 11px !important;
+  margin-top: 3px !important;
+}
+@keyframes weather-slide-in {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: none; }
+}
+@media (max-width: 767px) {
+  .app-shell .weather-chip,
+  .weather-chip { top: 52px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .weather-chip { animation: none !important; }
+}
