@@ -493,8 +493,8 @@ export function NetworkMap({
           </div>
         </div>
         <div className="map-location">
-          <MapPin size={12} /> {config.presentation.network_name.toUpperCase()}{" "}
-          <span> / </span> {config.presentation.region_label}
+          <MapPin size={12} /> IRAQ <span> / </span> KURDISTAN{" "}
+          <span> / </span> SULAYMANIYAH
         </div>
         {storm && (
           <div className="weather-chip" style={tone(p.warning)}>

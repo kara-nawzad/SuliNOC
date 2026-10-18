@@ -4949,3 +4949,6 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 .app-shell .map-top-overlay{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
 .app-shell .map-top-overlay .layer-control,
 .app-shell .map-top-overlay .map-button{background:transparent!important}
+
+/* The "Street map · Esri" pill on the map is hidden. */
+.app-shell .map-mode{display:none!important}
