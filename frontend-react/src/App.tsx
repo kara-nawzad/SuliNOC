@@ -36,6 +36,7 @@ import { greetingFor } from "./utils/greeting";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
 import { PowerCard } from "./components/AnalyticsRow";
 import { AnalyticsRow } from "./components/AnalyticsRow";
+import { PanelNote } from "./components/PanelNote";
 import { Inspector } from "./components/Inspector";
 import { HistoryModal } from "./components/HistoryModal";
 import { CounterfactualModal } from "./components/CounterfactualModal";
@@ -348,6 +349,7 @@ function Console({
             </button>
           </div>
         </nav>
+        <PanelNote />
         <div className="main-shell">
           <header className="global-header">
             <button
@@ -671,34 +673,40 @@ function Console({
             </small>
             <div className="setting-row">
               <div>
-                <strong>Demo auto-approval</strong>
+                <strong>Auto-approve crew requests (demo)</strong>
                 <p>
-                  Automatically approve pending crew requests after 10
-                  wall-clock seconds. The current worker checks this on
-                  inference cycles.
+                  When On, the system approves a pending crew dispatch by
+                  itself after 10 seconds. When Off, a person must approve
+                  each one.
                 </p>
               </div>
-              <button
-                className={`switch ${data.control.auto_approve_seconds > 0 ? "on" : ""}`}
-                role="switch"
-                aria-label="Demo auto-approval"
-                aria-checked={data.control.auto_approve_seconds > 0}
-                disabled={busy}
-                onClick={() =>
-                  void execute(
-                    () =>
-                      api.ai(
-                        true,
-                        data.run_id,
-                        data.control.auto_approve_seconds > 0 ? 0 : 10,
-                      ),
-                    "Approval policy updated",
-                    data.run_id,
-                  )
-                }
-              >
-                <i />
-              </button>
+              <div className="approval-choice" role="group" aria-label="Demo auto-approval">
+                {[
+                  { label: "Off", seconds: 0 },
+                  { label: "On · 10 s", seconds: 10 },
+                ].map((option) => {
+                  const active =
+                    (data.control.auto_approve_seconds > 0) === (option.seconds > 0);
+                  return (
+                    <button
+                      key={option.label}
+                      type="button"
+                      className={active ? "selected" : ""}
+                      aria-pressed={active}
+                      disabled={busy || active}
+                      onClick={() =>
+                        void execute(
+                          () => api.ai(true, data.run_id, option.seconds),
+                          "Approval policy updated",
+                          data.run_id,
+                        )
+                      }
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="settings-info">
               <span>Predictor</span>

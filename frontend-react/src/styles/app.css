@@ -5019,3 +5019,31 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 .app-shell .tower-row .mono{font-size:14px}
 .app-shell .tower-head,.app-shell .tower-head *{font-size:13px!important}
 .app-shell .towers-panel input[type=search]{font-size:15px}
+
+/* Click-a-card note: small window with a plain explanation */
+.app-shell .panel-note{position:fixed;z-index:1500;background:#ffffff;color:var(--sn-tx);border:1px solid #c9d8ee;border-radius:14px;box-shadow:0 14px 34px #10265c2e;padding:16px 42px 16px 18px}
+.app-shell .panel-note h4{margin:0 0 6px;font-size:17px;font-weight:650;color:var(--sn-tx)}
+.app-shell .panel-note p{margin:0;font-size:15px;line-height:1.55;color:#2c3f66}
+.app-shell .panel-note-close{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid #c9d8ee;background:#f5f8fd;color:var(--sn-tx);display:grid;place-items:center;cursor:pointer}
+
+/* Simulation settings: two clear choices instead of a bare switch */
+.app-shell .approval-choice{display:flex;gap:8px;margin-top:8px;flex:none}
+.app-shell .approval-choice button{min-height:44px;min-width:104px;padding:0 16px;border-radius:10px;border:1px solid #9fb6d6;background:#ffffff;color:var(--sn-tx);font-size:16px;font-weight:600}
+.app-shell .approval-choice button.selected{background:#0c9c83;border-color:#0c9c83;color:#ffffff}
+.app-shell .approval-choice button:disabled{opacity:1;cursor:default}
+.app-shell .setting-row strong{font-size:18px}
+.app-shell .setting-row p,.app-shell .settings-info,.app-shell .settings-info span,.app-shell .settings-info strong{font-size:16px!important}
+
+/* Dialogs: bigger, readable text */
+.app-shell .dialog p{font-size:16px;line-height:1.6}
+.app-shell .dialog .eyebrow{font-size:13px}
+
+/* Explore the API: readable button */
+.app-shell .dialog .button.secondary,.app-shell .dialog a.button{background:#10265c!important;color:#ffffff!important;font-size:16px!important;font-weight:600;padding:12px 20px!important;border:0!important}
+.app-shell .dialog .button.secondary svg,.app-shell .dialog a.button svg{color:#ffffff}
+
+/* Layers menu: matches the palette and is easier to read */
+.app-shell .layer-control [aria-expanded="true"],.app-shell .layer-control .map-button.active{background:#10265c!important;color:#ffffff!important;border-color:#10265c!important}
+.app-shell .layer-menu{font-size:16px!important;padding:12px 14px}
+.app-shell .layer-menu label{font-size:16px;padding:8px 6px;gap:10px;color:var(--sn-tx)}
+.app-shell .layer-menu input[type=checkbox]{accent-color:#0c9c83;width:18px;height:18px}
