@@ -21,7 +21,11 @@ export function lineChart(host, { color = '#0C9C83', unit = '', decimals = 1, ze
     const ticks = niceTicks(lo, hi), y0 = Math.min(ticks[0], lo), y1 = Math.max(ticks.at(-1), hi), x0 = xs[0], x1 = xs.at(-1), span = x1 - x0 || 1;
     sx = (x) => L + ((x - x0) / span) * (W - L - R); sy = (v) => T + (1 - (v - y0) / (y1 - y0 || 1)) * (H - T - B);
     let s = ''; for (const v of ticks) s += `<line class="gl" x1="${L}" x2="${W - R}" y1="${sy(v)}" y2="${sy(v)}"/><text class="ay" x="${L - 8}" y="${sy(v) + 4}" text-anchor="end">${fixed(v)}</text>`;
-    for (let i = 0; i < 5; i++) { const x = x0 + (span * i) / 4, lab = xLabel(x, span); if (lab) s += `<text class="ax" x="${sx(x)}" y="${H - 8}" text-anchor="${i === 0 ? 'start' : i === 4 ? 'end' : 'middle'}">${lab}</text>`; }
+    if (span > 1440) { // long windows: one label at every midnight, e.g. 00:00 D2
+      for (let m = Math.ceil(x0 / 1440) * 1440; m <= x1; m += 1440) s += `<text class="ax" x="${sx(m)}" y="${H - 8}" text-anchor="middle">00:00 D${Math.floor(m / 1440) + 1}</text>`;
+    } else {
+      for (let i = 0; i < 5; i++) { const x = x0 + (span * i) / 4, lab = xLabel(x, span); if (lab) s += `<text class="ax" x="${sx(x)}" y="${H - 8}" text-anchor="${i === 0 ? 'start' : i === 4 ? 'end' : 'middle'}">${lab}</text>`; }
+    }
     g.innerHTML = s; ln.setAttribute('d', pts.map((p, i) => (i ? 'L' : 'M') + sx(p[0]).toFixed(1) + ' ' + sy(p[1]).toFixed(1)).join(''));
     dot.setAttribute('cx', sx(x1)); dot.setAttribute('cy', sy(pts.at(-1)[1]));
     onNote(!dom && !zero && y0 > 0 ? `Axis starts at ${y0.toFixed(decimals)}${unit}, not zero.` : ''); };
