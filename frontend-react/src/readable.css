@@ -157,3 +157,32 @@ button.wordmark {
   font-family: var(--sans);
   font-size: 12px;
 }
+
+/* Desktop type and target floor (above the phone breakpoint; phone.css covers phones).
+   Labels under 11 px and buttons under 36 px were too small to read or hit. */
+@media (min-width: 601px) {
+  .breadcrumb,
+  .breadcrumb * { font-size: 12px; }
+  .connection,
+  .search-trigger kbd,
+  .search-trigger span,
+  .connection-banner { font-size: 12px; }
+  .network-switch div > span,
+  .sim-clock,
+  .sim-clock span,
+  .command-context span,
+  .command-context-sub { font-size: 12px; }
+  .leaflet-control-scale-line,
+  .map-north span { font-size: 12px; }
+  .overview-greeting,
+  .overview-greeting > span { font-size: 13px; }
+  .build-stamp { font-size: 12px; }
+  .icon-button,
+  .speed-button,
+  .scenario-button,
+  .roi-pill,
+  .ai-toggle,
+  .search-trigger { min-height: 36px; }
+  .icon-button { min-width: 36px; }
+  .wordmark { min-height: 36px; }
+}
