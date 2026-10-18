@@ -5070,3 +5070,11 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
   .app-shell .alerts-rail .incident-list{flex:1 1 auto;min-height:0;max-height:none}
   .app-shell .alerts-rail .power-card{overflow-y:auto;overscroll-behavior:contain}
 }
+
+/* Tablet: both rail cards are only as tall as the power card's content (no empty space); incidents scroll inside */
+@media (min-width:768px) and (max-width:1024px){
+  .app-shell .alerts-rail{grid-template-rows:auto!important;align-items:start}
+  .app-shell .alerts-rail>*{height:auto;min-height:0;overflow:hidden}
+  .app-shell .alerts-rail .incident-list{flex:none;max-height:240px;overflow-y:auto;overflow-x:hidden}
+  .app-shell .alerts-rail .power-card{overflow:visible}
+}
