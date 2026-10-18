@@ -5,6 +5,7 @@ export function xLabel(minutes: number, spanMinutes: number): string;
 export interface LineChart {
   setData(points: [number, number][]): void;
   append(point: [number, number]): void;
+  setDomain(min: number | null, max?: number): void;
   destroy(): void;
 }
 export function lineChart(

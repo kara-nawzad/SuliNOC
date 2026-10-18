@@ -123,6 +123,7 @@ export function TrafficQualityCard({
         if (dropNote.current) dropNote.current.textContent = text;
       },
     });
+    drop.setDomain(0, 2);
     charts.current.primary = primary;
     charts.current.drop = drop;
     return () => {
@@ -152,6 +153,8 @@ export function TrafficQualityCard({
     // does not: the kit's chart cannot drop points, so rebuilding on each trim
     // would redraw every tick. The 30 min view therefore runs from the moment
     // it was opened, and the provenance line says so.
+    // Fixed axis: QCI 9 traffic 20–50 Gbps; PRB stays automatic.
+    c.primary.setDomain(metric === "throughput_gbps" ? 20 : null, 50);
     if (fed.key !== key) {
       c.primary.setData(rows.map((r) => [r.x, r.s[metric]]));
       c.drop.setData(rows.map((r) => [r.x, r.s.drop_rate]));

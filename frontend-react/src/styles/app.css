@@ -4972,3 +4972,35 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 .app-shell .oracle-combo .commander-slot .policy-panel .policy-list{max-height:none}
 /* Sticky header stays above the map's floating chips when the page scrolls */
 .app-shell .global-header{z-index:1000}
+
+/* Chart readout: light tooltip with dark text (was navy with light text) */
+.app-shell .ch-tip{background:#ffffff!important;border:1px solid #c9d8ee!important;color:var(--sn-tx)!important;box-shadow:0 4px 14px #10265c1f;font-weight:600}
+
+/* Executive counterfactual: light surfaces, readable text, no dark gradients */
+.app-shell .impact-live{background:#eef4fc!important;border:1px solid #c9d8ee!important}
+.app-shell .impact-live-heading{color:var(--sn-t2)!important;font-size:12px!important}
+.app-shell .impact-live-heading .live-on,.app-shell .impact-live-heading .live-off{color:var(--sn-tx)!important}
+.app-shell .impact-live-values > div > span{color:var(--sn-t2)!important;font-size:12px!important}
+.app-shell .impact-live-values strong{color:var(--sn-tx)!important;font-size:20px!important}
+.app-shell .impact-live-values > div:nth-child(2) strong{color:#5b3fc4!important}
+.app-shell .impact-live-values small{color:var(--sn-t2)!important;font-size:12px!important}
+.app-shell .impact-live-inactive{color:var(--sn-t2)!important;font-size:12px!important}
+.app-shell .impact-table-wrap{border:1px solid #c9d8ee!important;background:#ffffff}
+.app-shell .impact-table{font-size:12px!important}
+.app-shell .impact-table th,.app-shell .impact-table td{border-bottom:1px solid #e3ebf7!important}
+.app-shell .impact-table thead th{background:#eef4fc!important;color:var(--sn-tx)!important;font-size:12px!important;font-weight:650}
+.app-shell .impact-table tbody th{color:var(--sn-tx)!important;font-weight:600}
+.app-shell .impact-table td{color:var(--sn-tx)!important}
+.app-shell .impact-table .positive{color:#0f7a5a!important;font-weight:600}
+.app-shell .impact-table .caution{color:#a15c07!important;font-weight:600}
+.app-shell .impact-callout{background:#f3efff!important;border-left:3px solid #5b3fc4!important;color:#2e2470!important;font-size:14px!important;line-height:1.7!important;opacity:1!important;filter:none!important;text-shadow:none!important}
+.app-shell .impact-notes p{color:var(--sn-t2)!important;font-size:12px!important}
+.app-shell .impact-notes strong{color:var(--sn-tx)!important}
+
+/* Fibre rings: two tidy columns with a clear gap; the status sits on the right of each cell */
+.app-shell .ring-list ul{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px;row-gap:0}
+.app-shell .ring-list li{display:grid;grid-template-columns:70px 78px 64px minmax(56px,1fr);gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #d6e2f2;font-size:12px}
+.app-shell .ring-list li > span:last-child{text-align:right;white-space:nowrap}
+@media (max-width:767px){
+  .app-shell .ring-list ul{grid-template-columns:1fr}
+}
