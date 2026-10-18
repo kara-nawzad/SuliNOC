@@ -5050,3 +5050,8 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 
 /* About dialog disclaimer: readable size */
 .app-shell .dialog p.small-muted{font-size:16px!important;line-height:1.6}
+
+/* Narrow and tablet widths: the incident list keeps a fixed height and scrolls inside it */
+@media (max-width:1024px){
+  .app-shell .alerts-rail .incident-list{flex:none;max-height:min(62vh,460px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
+}
