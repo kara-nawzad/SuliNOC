@@ -22,7 +22,7 @@ import {
 import type { Config, NodeData, Snapshot } from "../types/api";
 import { Dot, PanelHeading, tone } from "./ui";
 import { CrewLayer } from "./CrewLayer";
-import StreetBasemap, { type StreetStatus } from "./StreetBasemap";
+import TileBasemap, { type StreetStatus } from "./TileBasemap";
 
 /** Self-contained geographic schematic: only the engine's existing road
  * corridors are drawn. There are deliberately no remote image tiles, API keys,
@@ -223,7 +223,6 @@ export function NetworkMap({
     crews: true,
     districts: true,
     streets: true,
-    "street names": true,
   });
   const [layerMenu, setLayerMenu] = useState(false);
   const [streetStatus, setStreetStatus] = useState<StreetStatus>("loading");
@@ -275,9 +274,8 @@ export function NetworkMap({
             <LocalBasemap config={config} />
           )}
           {layers.streets && (
-            <StreetBasemap
+            <TileBasemap
               key={streetAttempt}
-              names={layers["street names"]}
               onStatus={setStreetStatus}
             />
           )}
