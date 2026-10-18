@@ -234,6 +234,17 @@ export function TrafficQualityCard({
           </button>
         </div>
       </div>
+      <div className="chart-coverage">
+        <span>
+          Showing {coverageMinutes} of {requestedMinutes} sim min recorded so far
+        </span>
+        <i
+          aria-hidden="true"
+          style={{
+            width: `${Math.min(100, (coverageMinutes / requestedMinutes) * 100)}%`,
+          }}
+        />
+      </div>
       <h3 className="chart-title">{primaryLabel}</h3>
       <p className="chart-subtitle">{primaryUnit}</p>
       <p className="chart-note" ref={primaryNote} />
