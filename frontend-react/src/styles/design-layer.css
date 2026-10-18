@@ -344,3 +344,6 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
   .app-shell .incident-target{min-height:44px!important}
   .app-shell .leaflet-control-attribution a{display:inline-block;padding:14px 6px;margin:-14px -6px}
 }
+
+/* the welcome screen covers everything, including the phone bottom bar */
+.hero-frame{z-index:1200!important}
