@@ -4941,3 +4941,11 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 @media (max-width:767px){
   .app-shell .alerts-rail .incident-list{flex:none;max-height:min(62vh,460px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 }
+
+/* Wrappers behind the playback buttons, the O-RAN badge and the map buttons: no background or outline.
+   The buttons themselves keep their own look. */
+.app-shell .play-controls,
+.app-shell .header-system,
+.app-shell .map-top-overlay{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+.app-shell .map-top-overlay .layer-control,
+.app-shell .map-top-overlay .map-button{background:transparent!important}
