@@ -4961,3 +4961,6 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 @media (max-width:767px){
   .app-shell .weather-chip{top:auto;right:auto;left:12px;bottom:40px;max-width:calc(100% - 90px)}
 }
+
+/* Gauge caption: two short lines inside the ring so it doesn't run over the arc */
+.app-shell .radial-value p{font-size:11px!important;line-height:1.25;max-width:84px;margin:5px auto 0;white-space:normal}
