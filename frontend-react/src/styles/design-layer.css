@@ -49,17 +49,17 @@ body{font-family:var(--sn-ui);font-size:var(--fs-body);line-height:1.5;backgroun
   radial-gradient(1100px 520px at 12% -8%,#e9f3ff 0%,rgba(233,243,255,0) 70%),
   radial-gradient(900px 480px at 100% 0%,#cfe2fa 0%,rgba(207,226,250,0) 65%),var(--sn-bg)}
 .app-shell *{font-family:inherit}
-.app-shell :where(.mono,code,kbd,samp,.incident-target,.seed,.build-stamp,.footer-version,.inspector-coords,
-  .tower-row .mono,.range-source,.mono-note,.chart-provenance .mono,.ring-list .mono,.tw-id){
+.app-shell :where(.mono,code,kbd,samp,.incident-target,.seed,.build-stamp,.inspector-coords,
+  .tower-row .mono,.range-source,.chart-provenance .mono,.ring-list .mono){
   font-family:var(--sn-mono)!important;font-feature-settings:"zero" 0;letter-spacing:0}
 .app-shell svg text{font-family:var(--sn-ui)!important}
 .app-shell ::selection{background:#bfe0f7;color:var(--sn-tx)}
 /* the type floor: nothing below 11px, labels are 11px, body is 13px */
 .app-shell :where(.eyebrow,.section-label span,.small-muted,.kpi-note,.analytics-foot,.chart-provenance,
-  .chart-axis,.chart-scale-labels,.footer-version,.map-footer-hint,.map-legend,.cell-table-head,.range-scale){
+  .map-footer-hint,.map-legend,.cell-table-head,.range-scale){
   font-size:var(--fs-label)!important;line-height:1.4}
 .app-shell :where(.eyebrow,.section-label>span,.cell-table-head>*){text-transform:uppercase;letter-spacing:.08em;font-weight:600}
-.app-shell :where(.kpi-title,.breadcrumb,.map-location,.note,.policy-description,.inspector-coords){font-size:var(--fs-caption)!important}
+.app-shell :where(.kpi-title,.map-location,.note,.policy-description,.inspector-coords){font-size:var(--fs-caption)!important}
 /* ---------- shell & layout ---------- */
 .app-shell .navigation-rail{width:var(--nav-w);padding:16px 0;background:var(--sn-s1);border-right:1px solid var(--sn-ln-soft);
   box-shadow:1px 0 0 rgba(255,255,255,.7) inset}
@@ -162,7 +162,7 @@ body{font-family:var(--sn-ui);font-size:var(--fs-body);line-height:1.5;backgroun
 .app-shell .map-zoom{box-shadow:var(--sh-1);border-radius:var(--r-md);overflow:hidden}
 .app-shell .map-location,.app-shell .map-mode,.app-shell .weather-chip{font-size:var(--fs-caption)!important;border-radius:var(--r-md);
   background:rgba(246,250,255,.92)!important;border:1px solid var(--sn-ln);box-shadow:var(--sh-1);color:var(--sn-tx)}
-.app-shell .network-tooltip,.app-shell .chart-tooltip,.app-shell .ch-tip,.app-shell .speed-popover,.app-shell .layer-menu,.app-shell .search-results{
+.app-shell .network-tooltip,.app-shell .speed-popover,.app-shell .layer-menu,.app-shell .search-results{
   background:var(--sn-s2)!important;color:var(--sn-tx)!important;border:1px solid var(--sn-ln)!important;border-radius:var(--r-md);box-shadow:var(--sh-2);
   font-size:var(--fs-caption)!important}
 .app-shell .district-label{font-size:var(--fs-label)!important;font-weight:600}
@@ -180,8 +180,8 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 .app-shell .toast{background:var(--sn-s2)!important;color:var(--sn-tx)!important;border:1px solid var(--sn-ln)!important;border-radius:var(--r-md);
   font-size:var(--fs-body)!important;box-shadow:var(--sh-pop);animation:sn-toast var(--t-slow) var(--ease) both;bottom:calc(var(--sp-6) + env(safe-area-inset-bottom,0px))}
 /* ---------- data motion ---------- */
-.app-shell .load-bar,.app-shell .meter-track>*,.app-shell .range-fill,.app-shell .site-microbar>*{transition:width var(--t-slow) var(--ease),background-color var(--t-base) ease}
-.app-shell .sparkline path,.app-shell .traffic-chart path{transition:d var(--t-slow) var(--ease)}
+.app-shell .load-bar,.app-shell .range-fill,.app-shell .site-microbar>*{transition:width var(--t-slow) var(--ease),background-color var(--t-base) ease}
+.app-shell .sparkline path{transition:d var(--t-slow) var(--ease)}
 .app-shell .status-dot.pulse,.app-shell .live-line .status-dot{animation:sn-breathe 2.4s var(--ease-io) infinite}
 .app-shell .incident{transition:background-color var(--t-fast) var(--ease);animation:sn-slide var(--t-slow) var(--ease) both}
 .app-shell .incident:hover{background:var(--sn-s3)}
@@ -325,4 +325,22 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
   html{scroll-behavior:auto}
   .app-shell *,.app-shell *::before,.app-shell *::after,dialog::backdrop{animation-duration:.01ms!important;animation-iteration-count:1!important;
     transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+/* phone: AI commander card sized to its content (no stretch into empty space) */
+@media (max-width:767px){
+  .app-shell .policy-panel{flex:none!important;height:auto!important;min-height:0!important;padding:var(--sp-3) var(--card-pad)!important;gap:var(--sp-2)}
+  .app-shell .alerts-rail .policy-panel .policy-list,
+  .app-shell .alerts-rail .policy-panel .policy-empty{flex:none!important;overflow:visible;min-height:0!important}
+  .app-shell .policy-empty{padding:var(--sp-2) 0!important;gap:var(--sp-3);align-items:center}
+  .app-shell .oracle-orb{width:36px!important;height:36px!important}
+  .app-shell .policy-foot{padding-top:var(--sp-2)}
+}
+
+/* phone: 44px touch targets for buttons and segmented controls */
+@media (max-width:767px), (pointer:coarse){
+  .app-shell button:not(.leaflet-control *){min-height:44px}
+  .app-shell button:where([class=""],.selected){min-width:44px!important}
+  .app-shell .search-trigger{min-width:44px!important}
+  .app-shell .incident-target{min-height:44px!important}
+  .app-shell .leaflet-control-attribution a{display:inline-block;padding:14px 6px;margin:-14px -6px}
 }
