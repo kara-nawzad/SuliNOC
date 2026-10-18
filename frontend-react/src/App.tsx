@@ -188,11 +188,9 @@ function Console({
     if (heroOpen) return null;
     return (
       <div className="boot-screen">
-        <div className="brand-mark">
-          A<span>N</span>
-        </div>
+        <img className="brand-logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC" />
         <h1>
-          AutoNOC<span> / NETWORK COMMAND</span>
+          SuliNOC<span> / NETWORK COMMAND</span>
         </h1>
         <Loader2 className="spin" size={22} />
         <p>{error ?? "Establishing telemetry uplink…"}</p>
@@ -226,13 +224,6 @@ function Console({
           Skip to network overview
         </a>
         <nav className="navigation-rail" aria-label="Main navigation">
-          <button
-            className="brand-mark"
-            onClick={() => navigate("overview")}
-            aria-label="AutoNOC overview"
-          >
-            A<span>N</span>
-          </button>
           <div className="nav-items">
             {[
               { id: "overview", icon: LayoutDashboard, label: "Overview" },
@@ -283,16 +274,17 @@ function Console({
             >
               <CircleHelp size={19} />
             </button>
-            <span className="operator-avatar" title="Local simulation operator">
-              OP
-            </span>
           </div>
         </nav>
         <div className="main-shell">
           <header className="global-header">
-            <div className="wordmark">
-              AutoNOC<span>COMMAND CENTER</span>
-            </div>
+            <button
+              className="wordmark"
+              onClick={() => navigate("overview")}
+              aria-label="SuliNOC overview"
+            >
+              <img className="brand-logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC" />
+            </button>
             <span className="header-divider" />
             <div className="network-switch">
               <span className="network-symbol">
@@ -482,7 +474,7 @@ function Console({
               <span>
                 Deterministic world. Predictive operations.
                 <span className="footer-version">
-                  AUTONOC / 3.0 · build {__BUILD_STAMP__.sha}
+                  SULINOC / 3.0 · build {__BUILD_STAMP__.sha}
                 </span>
               </span>
             </footer>
@@ -654,7 +646,7 @@ function Console({
               <Boxes size={30} />
             </div>
             <p className="dialog-intro">
-              AutoNOC is a deterministic LTE digital twin of{" "}
+              SuliNOC is a deterministic LTE digital twin of{" "}
               {config.presentation.network_name}. The Doctor diagnoses, the
               Oracle forecasts, and the Commander applies cost-based policies.
             </p>

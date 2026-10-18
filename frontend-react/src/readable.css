@@ -116,3 +116,44 @@ span.mono {
   border-color: #a9c2e6 !important;
   color: #10265c !important;
 }
+
+/* Brand: the SuliNOC logo replaces the old text wordmark. */
+.brand-logo {
+  display: block;
+  height: 30px;
+  width: auto;
+}
+button.wordmark {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.boot-screen .brand-logo {
+  height: 56px;
+  margin: 0 auto 14px;
+}
+
+/* Pills and toasts that were dark navy in the AI-enabled state. */
+.roi-pill {
+  background: #ffffff !important;
+  color: #10265c !important;
+  border-color: #a9c2e6 !important;
+}
+.roi-pill.active {
+  background: #eafaf4 !important;
+  color: #0a7a5b !important;
+  border-color: #0c9c83 !important;
+}
+.toast {
+  background: #ffffff !important;
+  color: #10265c !important;
+  border-color: #a9c2e6 !important;
+  box-shadow: 0 10px 30px rgba(16, 38, 92, 0.2);
+}
+
+/* Traffic charts: axis text at 12 px, as the kit specifies. */
+.traffic-card svg text {
+  font-family: var(--sans);
+  font-size: 12px;
+}

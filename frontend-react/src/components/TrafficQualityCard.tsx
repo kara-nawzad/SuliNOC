@@ -128,6 +128,8 @@ export function TrafficQualityCard({
     return () => {
       primaryHost.current && (primaryHost.current.innerHTML = "");
       dropHost.current && (dropHost.current.innerHTML = "");
+      charts.current.primary?.destroy();
+      charts.current.drop?.destroy();
       charts.current.primary = null;
       charts.current.drop = null;
       charts.current.fed = { key: "", first: -1, last: -1 };

@@ -159,7 +159,7 @@ export function Modal({
       <div className="dialog-content">
         <div className="dialog-heading">
           <div>
-            <span className="eyebrow">AUTONOC COMMAND</span>
+            <span className="eyebrow">SULINOC COMMAND</span>
             <h2 id={id}>{title}</h2>
           </div>
           <button

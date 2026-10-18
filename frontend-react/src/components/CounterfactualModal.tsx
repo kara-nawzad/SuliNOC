@@ -67,7 +67,7 @@ export function CounterfactualModal({
               A1 Autonomous Intent — Economic &amp; Operational Impact
             </h2>
             <p className="impact-subtitle">
-              Arm A (reactive, no AI) vs Arm C (autonomous AutoNOC) · matched
+              Arm A (reactive, no AI) vs Arm C (autonomous SuliNOC) · matched
               schedules · {study.seeds} seeds × {study.simulatedDaysPerSeed}{" "}
               simulated days
             </p>
@@ -138,7 +138,7 @@ export function CounterfactualModal({
               <tr>
                 <th scope="col">Metric</th>
                 <th scope="col">Arm A · No AI</th>
-                <th scope="col">Arm C · AutoNOC AI</th>
+                <th scope="col">Arm C · SuliNOC AI</th>
                 <th scope="col">Difference (C vs A)</th>
               </tr>
             </thead>
