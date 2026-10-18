@@ -1,5 +1,4 @@
 import type { GaugeSpec } from "../types/api";
-import "./range-gauge.css";
 
 /** Good / warning / failing, judged with the backend's thresholds (config.gauges).
  * `lower_bad` metrics fail when they fall; the others fail when they rise. */

@@ -33,7 +33,6 @@ import { KpiGrid } from "./components/KpiGrid";
 import { HeroFrame } from "./components/HeroFrame";
 import { NetworkMap } from "./components/NetworkMap";
 import { greetingFor } from "./utils/greeting";
-import "./components/greeting.css";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
 import { AnalyticsRow } from "./components/AnalyticsRow";
 import { Inspector } from "./components/Inspector";
@@ -526,7 +525,9 @@ function Console({
                   <p>{team.target ?? "Returning / available at depot"}</p>
                   <div className="fleet-card-foot">
                     <span>ETA {team.eta} ticks</span>
-                    <span>{team.missions} missions</span>
+                    <span>
+                      {team.missions} {team.missions === 1 ? "mission" : "missions"}
+                    </span>
                   </div>
                 </article>
               ))}

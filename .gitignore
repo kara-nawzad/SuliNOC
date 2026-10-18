@@ -62,3 +62,4 @@ Thumbs.db
 # Trained artifacts under models/ (including the required .npz scalers) are
 # intentionally committed for reproducible local and Fly.io startup.
 /data/
+frontend-react/standalone/out/
