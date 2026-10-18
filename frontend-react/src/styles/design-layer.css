@@ -1,0 +1,328 @@
+/* =====================================================================
+   SuliNOC · design layer
+   One source of truth for type, spacing, colour, motion and breakpoints.
+   Loaded last, so it settles every earlier override. No logic is touched.
+   ===================================================================== */
+:root{
+  /* type: serif for display, sans for UI, mono for identifiers & data */
+  --sn-ui:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --sn-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --sn-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:var(--sn-ui); --serif:var(--sn-display); --mono:var(--sn-mono);
+  /* type scale (px): 11 label · 12 caption · 13 body · 14 emphasis · 16 lead · 20 title · 28 display-s · 40 display */
+  --fs-label:11px; --fs-caption:12px; --fs-body:13px; --fs-strong:14px; --fs-lead:16px;
+  --fs-title:18px; --fs-display-s:28px; --fs-display:clamp(30px,2.4vw + 14px,42px);
+  /* space (4px grid) */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
+  --pad-x:clamp(16px,2.2vw,32px);
+  --card-pad:20px;
+  --gap:20px;
+  /* shape */
+  --r-sm:8px; --r-md:12px; --r-lg:16px;
+  /* colour: the existing light-blue palette, completed with the missing steps */
+  --sn-bg:#d6e7fb; --sn-s1:#eaf3fe; --sn-s2:#f6faff; --sn-s3:#e1edfb;
+  --sn-ln:#a9c2e6; --sn-ln-soft:#c4d7ef; --sn-line:rgba(16,38,92,.10);
+  --sn-tx:#10265c; --sn-t2:#4b6192; --sn-t3:#5f739f;
+  --sn-link:#1479c4; --sn-link-strong:#0c6e8f; --sn-link-wash:#d5f1f7;
+  --sn-live:#0c9c83; --sn-warn:#b86e00; --sn-crit:#d42f52; --sn-ai:#6a4bd8;
+  --sn-focus:0 0 0 3px rgba(20,121,196,.28);
+  /* elevation */
+  --sh-1:0 1px 2px rgba(16,38,92,.06),0 6px 18px -10px rgba(16,38,92,.16);
+  --sh-2:0 2px 4px rgba(16,38,92,.06),0 14px 32px -12px rgba(16,38,92,.22);
+  --sh-pop:0 18px 50px -12px rgba(16,38,92,.35);
+  /* motion */
+  --ease:cubic-bezier(.22,1,.36,1);
+  --ease-io:cubic-bezier(.65,0,.35,1);
+  --t-fast:140ms; --t-base:220ms; --t-slow:420ms;
+  /* map the older tokens to the new scale so every earlier rule agrees */
+  --bg:var(--sn-bg); --s1:var(--sn-s1); --s2:var(--sn-s2); --ln:var(--sn-ln);
+  --tx:var(--sn-tx); --t2:var(--sn-t2); --live:var(--sn-live); --link:var(--sn-link);
+  --warn:var(--sn-warn); --crit:var(--sn-crit); --ai:var(--sn-ai);
+  --line:var(--sn-line); --muted-text:var(--sn-t2); --cyan-ui:var(--sn-link);
+  --nav-w:72px; --header-h:64px;
+}
+/* ---------- foundations ---------- */
+html{scroll-behavior:smooth;scroll-padding-top:16px;-webkit-text-size-adjust:100%}
+body{font-family:var(--sn-ui);font-size:var(--fs-body);line-height:1.5;background:var(--sn-bg);color:var(--sn-tx);
+  font-feature-settings:"tnum" 1,"cv11" 1;text-rendering:optimizeLegibility}
+.app-shell{font-family:var(--sn-ui);font-size:var(--fs-body);background:
+  radial-gradient(1100px 520px at 12% -8%,#e9f3ff 0%,rgba(233,243,255,0) 70%),
+  radial-gradient(900px 480px at 100% 0%,#cfe2fa 0%,rgba(207,226,250,0) 65%),var(--sn-bg)}
+.app-shell *{font-family:inherit}
+.app-shell :where(.mono,code,kbd,samp,.incident-target,.seed,.build-stamp,.footer-version,.inspector-coords,
+  .tower-row .mono,.range-source,.mono-note,.chart-provenance .mono,.ring-list .mono,.tw-id){
+  font-family:var(--sn-mono)!important;font-feature-settings:"zero" 0;letter-spacing:0}
+.app-shell svg text{font-family:var(--sn-ui)!important}
+.app-shell ::selection{background:#bfe0f7;color:var(--sn-tx)}
+/* the type floor: nothing below 11px, labels are 11px, body is 13px */
+.app-shell :where(.eyebrow,.section-label span,.small-muted,.kpi-note,.analytics-foot,.chart-provenance,
+  .chart-axis,.chart-scale-labels,.footer-version,.map-footer-hint,.map-legend,.cell-table-head,.range-scale){
+  font-size:var(--fs-label)!important;line-height:1.4}
+.app-shell :where(.eyebrow,.section-label>span,.cell-table-head>*){text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.app-shell :where(.kpi-title,.breadcrumb,.map-location,.note,.policy-description,.inspector-coords){font-size:var(--fs-caption)!important}
+/* ---------- shell & layout ---------- */
+.app-shell .navigation-rail{width:var(--nav-w);padding:16px 0;background:var(--sn-s1);border-right:1px solid var(--sn-ln-soft);
+  box-shadow:1px 0 0 rgba(255,255,255,.7) inset}
+.app-shell .main-shell{margin-left:var(--nav-w)!important}
+.app-shell .main-shell main#overview{padding:var(--sp-6) var(--pad-x) 56px!important;max-width:1760px;margin-inline:auto}
+.app-shell .global-header{height:var(--header-h);padding:0 var(--pad-x);gap:var(--sp-4);background:rgba(234,243,254,.82)!important;
+  -webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3);
+  border-bottom:1px solid var(--sn-ln-soft)!important;position:sticky;top:0;z-index:45}
+.app-shell .header-divider{background:var(--sn-ln-soft);height:24px}
+.app-shell .overview-heading{margin-bottom:var(--sp-5);gap:var(--sp-4);align-items:flex-end}
+.app-shell .overview-heading h1,.app-shell .overview-greeting{font-family:var(--sn-display)!important;font-weight:500;
+  font-size:var(--fs-display)!important;line-height:1.08;letter-spacing:-.015em;color:var(--sn-tx)}
+.app-shell .overview-heading p{font-size:var(--fs-caption)!important;letter-spacing:0;color:var(--sn-t2);margin-top:var(--sp-2)}
+.app-shell .command-bar{margin-bottom:var(--sp-5);padding:var(--sp-3) 0;gap:var(--sp-3);border-top:0;border-bottom:1px solid var(--sn-line)}
+.app-shell .command-context{font-size:var(--fs-caption);letter-spacing:.06em;text-transform:uppercase;color:var(--sn-t2)}
+.app-shell .sim-controls{gap:var(--sp-2);flex-wrap:wrap}
+.app-shell .kpi-grid{gap:var(--gap);margin-bottom:var(--gap)}
+.app-shell .primary-grid{gap:var(--gap);margin-bottom:var(--gap)}
+.app-shell .analytics-grid{gap:var(--gap);align-items:stretch}
+.app-shell .section-label{margin:var(--sp-6) 0 var(--sp-3);padding:0 var(--sp-1);align-items:center}
+.app-shell .section-label>span{color:var(--sn-t2)!important}
+/* ---------- surfaces ---------- */
+.app-shell .glass{background:var(--sn-s2)!important;border:1px solid var(--sn-ln)!important;border-radius:var(--r-lg);
+  box-shadow:var(--sh-1);-webkit-backdrop-filter:none;backdrop-filter:none}
+.app-shell .panel-heading{padding:var(--sp-4) var(--card-pad) var(--sp-3);gap:var(--sp-3);min-height:56px}
+.app-shell .panel-heading h2,.app-shell .analytics-card h2,.app-shell .alerts-rail .panel-heading h2,.app-shell .map-panel .panel-heading h2{
+  font-family:var(--sn-display)!important;font-weight:500;font-size:var(--fs-title)!important;line-height:1.2;letter-spacing:-.005em;color:var(--sn-tx)}
+.app-shell .panel-heading .eyebrow{margin-bottom:2px}
+.app-shell .map-panel{border-radius:var(--r-lg)}
+.app-shell .note,.app-shell .map-panel .note{padding:0 var(--card-pad);margin:0 0 var(--sp-3);color:var(--sn-t2)}
+/* KPI cards */
+.app-shell .kpi-card{padding:var(--sp-4) var(--card-pad);min-height:124px;border-radius:var(--r-lg);
+  transition:transform var(--t-base) var(--ease),box-shadow var(--t-base) var(--ease),border-color var(--t-base) var(--ease)}
+.app-shell .kpi-card:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--tone,var(--sn-link)) 45%,var(--sn-ln))!important}
+.app-shell .kpi-title{font-weight:600;color:var(--sn-t2)}
+.app-shell .kpi-value{font-weight:600;letter-spacing:-.02em;font-size:30px!important;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--sn-tx)}
+.app-shell .kpi-unit{font-size:var(--fs-caption)!important;color:var(--sn-t3);font-weight:500;margin-left:2px}
+.app-shell .kpi-note{color:var(--sn-t2)}
+/* lists, tables, rows */
+.app-shell .ring-list{padding:var(--sp-4) var(--card-pad) var(--sp-3);margin-top:0;border-top:1px solid var(--sn-line)!important}
+.app-shell .ring-list-title{font:600 var(--fs-label)/1.4 var(--sn-ui)!important;letter-spacing:.08em;text-transform:uppercase;color:var(--sn-t2);margin:0 0 var(--sp-2)}
+.app-shell .ring-list li{grid-template-columns:72px minmax(0,1fr) minmax(0,1fr) auto!important;column-gap:var(--sp-3);padding:var(--sp-2) 0!important;font-size:var(--fs-body)!important}
+.app-shell .map-footer{padding:var(--sp-3) var(--card-pad);gap:var(--sp-3) var(--sp-4);border-top:1px solid var(--sn-line)}
+.app-shell .map-legend{gap:var(--sp-2) var(--sp-4);color:var(--sn-t2)}
+.app-shell .towers-panel{padding-bottom:var(--sp-5)}
+.app-shell .towers-panel>input{margin:0 var(--card-pad) var(--sp-3);width:calc(100% - var(--card-pad)*2)}
+.app-shell .tower-table{margin:0 var(--card-pad);width:calc(100% - var(--card-pad)*2);border:1px solid var(--sn-ln)!important;border-radius:var(--r-md);background:#fff;overflow:auto}
+.app-shell .tower-row,.app-shell .cell-row{transition:background-color var(--t-fast) var(--ease)}
+.app-shell .tower-row:hover,.app-shell .cell-row:hover{background:var(--sn-s3)!important}
+.app-shell .analytics-card{min-height:0;display:flex;flex-direction:column}
+.app-shell .analytics-card>*:not(.panel-heading){padding-inline:var(--card-pad)}
+.app-shell .analytics-card>.cell-row,.app-shell .analytics-card>.cell-table-head,.app-shell .analytics-card .cell-table-head,
+.app-shell .analytics-card .cell-row{padding-inline:var(--card-pad)}
+.app-shell .analytics-card .panel-heading{padding-inline:var(--card-pad)}
+.app-shell .analytics-foot{padding:var(--sp-3) var(--card-pad)!important;border-top:1px solid var(--sn-line);margin-top:auto;color:var(--sn-t2)}
+.app-shell .chart-title{font:600 var(--fs-strong)/1.3 var(--sn-ui)!important;color:var(--sn-tx);margin-top:var(--sp-3)}
+.app-shell .chart-subtitle,.app-shell .chart-note{font-size:var(--fs-label)!important;color:var(--sn-t2)}
+.app-shell .incident{padding:var(--sp-3) var(--card-pad)!important;gap:var(--sp-3)}
+.app-shell .rail-footer{padding:var(--sp-3) var(--card-pad)!important;min-height:44px}
+.app-shell .alerts-rail{gap:var(--gap)}
+.app-shell .policy-panel .policy-description,.app-shell .policy-list{padding-inline:var(--card-pad)}
+.app-shell .count-badge{font-size:var(--fs-label)!important;font-weight:600;min-width:24px;text-align:center}
+/* ---------- controls: one button language ---------- */
+.app-shell button:not([class*=leaflet]){min-height:36px;min-width:36px;font-size:var(--fs-body);font-weight:600;line-height:1.2;
+  border-radius:var(--r-md);cursor:pointer;
+  transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),transform var(--t-fast) var(--ease)}
+.app-shell :where(.icon-button,.speed-button,.scenario-button,.roi-pill,.ai-toggle,.search-trigger){min-height:36px;border-radius:var(--r-md)}
+.app-shell button:not(.nav-item):not(.selected):not(.active):not(.tower-row):not(.segmented button):not(.timeframe-tabs button):not([class*=leaflet]):hover{
+  background:var(--sn-s1);border-color:var(--sn-link);box-shadow:0 2px 8px -3px rgba(20,121,196,.35)}
+.app-shell button:not([class*=leaflet]):active{transform:translateY(1px) scale(.985)}
+.app-shell :is(button,a,select,input,[tabindex]):focus-visible{outline:2px solid var(--sn-link);outline-offset:2px;box-shadow:var(--sn-focus)}
+.app-shell select,.app-shell input:not([type=checkbox]):not([type=radio]){min-height:36px;border-radius:var(--r-md);padding:0 var(--sp-3);
+  font-size:var(--fs-body);transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease)}
+.app-shell select:focus,.app-shell input:focus{border-color:var(--sn-link)!important;box-shadow:var(--sn-focus);outline:0}
+.app-shell .segmented,.app-shell .timeframe-tabs{border-radius:var(--r-md);padding:2px;background:var(--sn-s3);border:1px solid var(--sn-ln-soft);gap:2px}
+.app-shell .segmented button,.app-shell .timeframe-tabs button{min-height:30px;padding:0 var(--sp-3);border:0!important;border-radius:calc(var(--r-md) - 3px);
+  background:transparent!important;color:var(--sn-t2)}
+.app-shell .segmented button.selected,.app-shell .timeframe-tabs button.selected{background:var(--sn-link)!important;color:#fff;box-shadow:0 2px 6px -2px rgba(20,121,196,.6)}
+.app-shell .segmented button:not(.selected):hover,.app-shell .timeframe-tabs button:not(.selected):hover{background:rgba(20,121,196,.10)!important;color:var(--sn-tx)}
+/* navigation rail */
+.app-shell .nav-items{gap:var(--sp-2);margin-top:var(--sp-2)!important}
+.app-shell .nav-item{width:44px;height:44px;min-width:44px;min-height:44px;border-radius:var(--r-md);color:var(--sn-t2);
+  transition:background-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),transform var(--t-base) var(--ease)}
+.app-shell .nav-item svg{width:20px;height:20px;transition:transform var(--t-base) var(--ease)}
+.app-shell .nav-item:hover{background:var(--sn-s3)!important;color:var(--sn-link-strong)!important}
+.app-shell .nav-item:hover svg{transform:scale(1.08)}
+.app-shell .nav-item.active{background:var(--sn-link-wash)!important;color:var(--sn-link-strong)!important}
+.app-shell .nav-item.active:before{left:-14px;top:12px;height:20px;width:3px;background:var(--sn-link);box-shadow:none;border-radius:0 3px 3px 0}
+.app-shell .nav-item:after{font:600 var(--fs-caption) var(--sn-ui)!important;transition:opacity var(--t-fast) var(--ease),transform var(--t-base) var(--ease);
+  transform:translate(-4px,-50%)}
+.app-shell .nav-item:hover:after,.app-shell .nav-item:focus-visible:after{transform:translate(0,-50%)}
+.app-shell .nav-alert{background:var(--sn-crit);box-shadow:0 0 0 2px var(--sn-s1)}
+/* status language: one live dot, one severity palette */
+.app-shell .status-dot{border-radius:50%}
+.app-shell .severity{font-size:var(--fs-label)!important;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--sp-2);padding:3px var(--sp-2)}
+/* maps */
+.app-shell .map-stage{background:var(--sn-s3)}
+.app-shell .map-button,.app-shell .map-zoom button{min-width:36px;min-height:36px}
+.app-shell .map-zoom{box-shadow:var(--sh-1);border-radius:var(--r-md);overflow:hidden}
+.app-shell .map-location,.app-shell .map-mode,.app-shell .weather-chip{font-size:var(--fs-caption)!important;border-radius:var(--r-md);
+  background:rgba(246,250,255,.92)!important;border:1px solid var(--sn-ln);box-shadow:var(--sh-1);color:var(--sn-tx)}
+.app-shell .network-tooltip,.app-shell .chart-tooltip,.app-shell .ch-tip,.app-shell .speed-popover,.app-shell .layer-menu,.app-shell .search-results{
+  background:var(--sn-s2)!important;color:var(--sn-tx)!important;border:1px solid var(--sn-ln)!important;border-radius:var(--r-md);box-shadow:var(--sh-2);
+  font-size:var(--fs-caption)!important}
+.app-shell .district-label{font-size:var(--fs-label)!important;font-weight:600}
+/* dialogs: native <dialog> loses its auto margin under the CSS reset, so it sat in the top-left corner */
+dialog{margin:auto}
+.app-shell .dialog,dialog.dialog{margin:auto;position:fixed;inset:0;height:fit-content;border-radius:var(--r-lg)!important;
+  box-shadow:var(--sh-pop)!important;max-width:calc(100vw - 32px);max-height:min(86vh,860px);animation:sn-pop var(--t-slow) var(--ease) both}
+dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:sn-fade var(--t-base) ease both}
+.app-shell .dialog-content,.app-shell .impact-content{padding:var(--sp-6)}
+.app-shell .dialog-heading,.app-shell .impact-heading{gap:var(--sp-3);margin-bottom:var(--sp-4)}
+.app-shell .dialog-heading h3,.app-shell .impact-heading h3{font-family:var(--sn-display);font-weight:500;font-size:22px;letter-spacing:-.01em}
+.app-shell .fleet-grid{gap:var(--sp-3)}
+.app-shell .fleet-card{border-radius:var(--r-md);transition:border-color var(--t-fast) var(--ease),transform var(--t-base) var(--ease)}
+.app-shell .fleet-card:hover{border-color:var(--sn-link);transform:translateY(-1px)}
+.app-shell .toast{background:var(--sn-s2)!important;color:var(--sn-tx)!important;border:1px solid var(--sn-ln)!important;border-radius:var(--r-md);
+  font-size:var(--fs-body)!important;box-shadow:var(--sh-pop);animation:sn-toast var(--t-slow) var(--ease) both;bottom:calc(var(--sp-6) + env(safe-area-inset-bottom,0px))}
+/* ---------- data motion ---------- */
+.app-shell .load-bar,.app-shell .meter-track>*,.app-shell .range-fill,.app-shell .site-microbar>*{transition:width var(--t-slow) var(--ease),background-color var(--t-base) ease}
+.app-shell .sparkline path,.app-shell .traffic-chart path{transition:d var(--t-slow) var(--ease)}
+.app-shell .status-dot.pulse,.app-shell .live-line .status-dot{animation:sn-breathe 2.4s var(--ease-io) infinite}
+.app-shell .incident{transition:background-color var(--t-fast) var(--ease);animation:sn-slide var(--t-slow) var(--ease) both}
+.app-shell .incident:hover{background:var(--sn-s3)}
+/* entrance: a short, staggered settle. fill-mode "backwards" means nothing can stay hidden. */
+.app-shell .overview-heading,.app-shell .command-bar,.app-shell .kpi-card,.app-shell .primary-grid>*,.app-shell .section-label,
+.app-shell .analytics-card,.app-shell .towers-panel{animation:sn-rise var(--t-slow) var(--ease) backwards}
+.app-shell .command-bar{animation-delay:60ms}
+.app-shell .kpi-card:nth-child(1){animation-delay:100ms}.app-shell .kpi-card:nth-child(2){animation-delay:150ms}
+.app-shell .kpi-card:nth-child(3){animation-delay:200ms}.app-shell .kpi-card:nth-child(4){animation-delay:250ms}
+.app-shell .kpi-card:nth-child(5){animation-delay:300ms}.app-shell .kpi-card:nth-child(6){animation-delay:350ms}
+.app-shell .primary-grid>:nth-child(1){animation-delay:200ms}.app-shell .primary-grid>:nth-child(2){animation-delay:280ms}
+.app-shell .analytics-card:nth-child(1){animation-delay:60ms}.app-shell .analytics-card:nth-child(2){animation-delay:120ms}
+.app-shell .analytics-card:nth-child(3){animation-delay:180ms}.app-shell .analytics-card:nth-child(4){animation-delay:240ms}
+@keyframes sn-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes sn-slide{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+@keyframes sn-fade{from{opacity:0}to{opacity:1}}
+@keyframes sn-pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes sn-toast{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes sn-breathe{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,currentColor 40%,transparent)}50%{box-shadow:0 0 0 5px transparent}}
+/* ---------- breakpoints ---------- */
+@media (max-width:1280px){
+  :root{--gap:16px;--card-pad:18px}
+  .app-shell .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .app-shell .primary-grid{grid-template-columns:minmax(0,1fr) 320px}
+  .app-shell .analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:1024px){
+  :root{--nav-w:64px}
+  .app-shell .primary-grid{grid-template-columns:1fr}
+  .app-shell .alerts-rail{grid-template-columns:1fr 1fr;grid-template-rows:auto;max-height:none}
+}
+/* phones & small tablets: bottom bar, single column, thumb-size targets */
+@media (max-width:767px){
+  :root{--nav-w:0px;--header-h:56px;--gap:12px;--card-pad:16px;--pad-x:14px;--fs-display:30px}
+  .app-shell .navigation-rail{inset:auto 0 0 0;width:100%;z-index:1100;height:calc(64px + env(safe-area-inset-bottom,0px));padding:0 var(--sp-2) env(safe-area-inset-bottom,0px)!important;
+    flex-direction:row;border-right:0;border-top:1px solid var(--sn-ln-soft);background:var(--sn-s1);
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+  .app-shell .nav-item{flex:1 1 0;max-width:60px;height:48px}
+  .app-shell .nav-item:after{display:none}
+  .app-shell .nav-item.active:before{left:50%;top:0;width:20px;height:3px;transform:translateX(-50%);border-radius:0 0 3px 3px}
+  .app-shell .main-shell{margin-left:0!important;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  .app-shell .main-shell main#overview{padding:var(--sp-4) var(--pad-x) var(--sp-8)!important}
+  .app-shell .global-header{flex-wrap:nowrap;height:var(--header-h);min-height:var(--header-h);padding:0 var(--pad-x);gap:var(--sp-2)}
+  .app-shell .global-header .network-switch{min-width:0;flex:1 1 auto;overflow:hidden}
+  .app-shell .global-header .network-switch>div,.app-shell .global-header .network-switch span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .app-shell .global-header .wordmark{flex:0 0 auto}
+  .app-shell .global-header .header-spacer,.app-shell .global-header .header-divider,.app-shell .global-header .header-system,.app-shell .global-header .header-bell{display:none}
+  .app-shell .global-header .search-trigger{min-width:40px;width:40px;padding:0;justify-content:center}
+  .app-shell .global-header .search-trigger>span,.app-shell .global-header .search-trigger kbd{display:none}
+  .app-shell .phone-tools{display:flex;gap:var(--sp-1)}
+  .app-shell .phone-tools .icon-button{width:40px;height:40px}
+  .app-shell .overview-heading{align-items:flex-start;flex-direction:column;gap:var(--sp-2);margin-bottom:var(--sp-4)}
+  .app-shell .overview-meta{align-self:stretch;justify-content:space-between}
+  .app-shell .command-bar{flex-direction:column;align-items:stretch;gap:var(--sp-3);padding:var(--sp-3) 0}
+  .app-shell .command-context{display:none}
+  .app-shell .sim-controls{width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;margin-inline:calc(var(--pad-x)*-1);padding-inline:var(--pad-x);
+    -webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+  .app-shell .sim-controls::-webkit-scrollbar{display:none}
+  .app-shell .sim-controls{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+  .app-shell .sim-controls>*{flex:0 0 auto;scroll-snap-align:start}
+  .app-shell .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .app-shell .kpi-card{min-height:112px;padding:var(--sp-3) var(--sp-4)}
+  .app-shell .kpi-value{font-size:26px!important}
+  .app-shell .primary-grid,.app-shell .analytics-grid,.app-shell .alerts-rail{grid-template-columns:1fr}
+  .app-shell .alerts-rail{grid-template-rows:auto}
+  .app-shell .map-stage{min-height:420px}
+  .app-shell .map-top-overlay{flex-wrap:wrap;gap:var(--sp-2);right:var(--sp-2);left:var(--sp-2);top:var(--sp-2);width:auto;max-width:calc(100% - var(--sp-4))}
+  .app-shell .map-top-overlay select{flex:1 1 140px;min-width:0}
+  .app-shell .layer-control{margin-left:auto}
+  .app-shell .layer-control,.app-shell .map-top-overlay .segmented{flex:0 0 auto;position:static}
+  .app-shell .map-north{display:none}
+  .app-shell .map-mode{left:var(--sp-2);right:auto;max-width:calc(100% - 72px)}
+  .app-shell .map-location{display:none}
+  .app-shell .map-footer{flex-direction:column;align-items:flex-start}
+  .app-shell .towers-panel{padding-bottom:var(--sp-4)}
+  .app-shell .tower-table{max-height:380px}
+  .app-shell .dialog,dialog.dialog{width:calc(100vw - 24px);max-height:88dvh;border-radius:var(--r-lg)}
+  .app-shell .dialog-content,.app-shell .impact-content{padding:var(--sp-5)}
+  .app-shell .fleet-grid{grid-template-columns:1fr}
+  .app-shell button:not([class*=leaflet]),.app-shell select,.app-shell input:not([type=checkbox]):not([type=radio]){min-height:44px}
+  .app-shell .segmented button,.app-shell .timeframe-tabs button{min-height:36px}
+}
+@media (max-width:480px){
+  .app-shell .global-header .network-switch>div,.app-shell .global-header .network-switch>svg{display:none}
+  .app-shell .global-header .network-switch{flex:0 0 auto}
+}
+@media (max-width:420px){
+  .app-shell .kpi-card{padding:var(--sp-3)}
+  .app-shell .kpi-value{font-size:24px!important}
+}
+@media (pointer:coarse){
+  .app-shell button:not([class*=leaflet]){min-height:44px;min-width:44px}
+  .app-shell .segmented button,.app-shell .timeframe-tabs button{min-height:36px;min-width:0}
+}
+@media (min-width:1700px){
+  :root{--pad-x:40px;--gap:24px}
+}
+/* ---------- composition fixes ---------- */
+/* incidents rail fills the height of the map and scrolls inside, instead of clipping rows */
+.app-shell .alerts-rail{grid-template-rows:minmax(0,1.15fr) minmax(0,1fr);max-height:none;min-height:0;align-self:stretch}
+.app-shell .alerts-rail>*{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.app-shell .alerts-rail .incident-list{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
+.app-shell .alerts-rail .rail-subhead{padding:0 var(--card-pad) var(--sp-2);font-size:var(--fs-label)!important;letter-spacing:.04em;text-transform:uppercase;color:var(--sn-t2)}
+.app-shell .alerts-rail .rail-footer{margin-top:auto;border-top:1px solid var(--sn-line)!important;border-radius:0;background:transparent;border-left:0;border-right:0;border-bottom:0;width:100%}
+.app-shell .alerts-rail .policy-panel .policy-list,.app-shell .alerts-rail .policy-panel .policy-empty{flex:1 1 auto;min-height:0;overflow:auto}
+.app-shell .incident-target{min-height:28px;min-width:0;padding:2px var(--sp-2);border-radius:var(--sp-2);font-size:var(--fs-caption)}
+@media (min-width:1025px){
+  /* the rail takes its height from the map, not from its own content */
+  .app-shell .alerts-rail{contain:size}
+  .app-shell .map-stage{min-height:clamp(380px,50vh,540px)}
+  .app-shell .ring-list ul{grid-template-columns:repeat(2,minmax(0,1fr))!important;column-gap:var(--sp-8)}
+  .app-shell .ring-list li:nth-last-child(2){border-bottom:0}
+}
+.app-shell .alerts-rail .rail-subhead{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2)}
+.app-shell .alerts-rail .rail-subhead>span{display:inline-flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-shell .alerts-rail .rail-subhead select{flex:0 0 auto;width:auto;min-width:0;width:116px;padding-right:var(--sp-6);font-size:var(--fs-caption)}
+.app-shell button.incident-target:not([class*=leaflet]){min-height:28px;min-width:0;padding:2px var(--sp-2);font-size:var(--fs-caption)}
+.app-shell .incident{padding:var(--sp-3) var(--card-pad)!important;border-bottom:1px solid var(--sn-line)}
+.app-shell .incident:last-child{border-bottom:0}
+/* analytics: one tall card beside a 2x2 of compact ones, so no card is half empty */
+@media (min-width:1025px){
+  .app-shell .analytics-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr)}
+  .app-shell .analytics-grid .traffic-card{grid-row:span 2}
+  .app-shell .analytics-grid .cells-card{grid-column:2}
+  .app-shell .analytics-grid .oracle-card{grid-column:3}
+  .app-shell .analytics-grid .power-card{grid-column:2 / span 2}
+}
+@media (min-width:768px) and (max-width:1024px){
+  .app-shell .analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .app-shell .analytics-grid .traffic-card{grid-column:1 / -1}
+  .app-shell .analytics-grid .power-card{grid-column:1 / -1}
+}
+.app-shell .analytics-card>button,.app-shell .analytics-card>.analytics-foot>button{margin:var(--sp-3) var(--card-pad) var(--card-pad);width:calc(100% - var(--card-pad)*2)}
+.app-shell .analytics-card>button{justify-content:space-between}
+.app-shell .tower-head,.app-shell .tower-head *{font-size:var(--fs-label)!important;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--sn-t2)!important}
+.app-shell .tower-row{font-size:var(--fs-body)}
+.app-shell .map-mode button{min-height:28px;padding:0 var(--sp-3);font-size:var(--fs-caption);border-radius:var(--sp-2)}
+.app-shell .map-top-overlay{gap:var(--sp-2)}
+/* people who ask for less motion get none */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .app-shell *,.app-shell *::before,.app-shell *::after,dialog::backdrop{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
