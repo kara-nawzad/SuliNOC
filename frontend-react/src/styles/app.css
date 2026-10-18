@@ -4964,3 +4964,11 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 
 /* Gauge caption: two short lines inside the ring so it doesn't run over the arc */
 .app-shell .radial-value p{font-size:11px!important;line-height:1.25;max-width:84px;margin:5px auto 0;white-space:normal}
+
+/* Oracle outlook and A1 Commander share one panel; each keeps its own heading */
+.app-shell .oracle-combo .combo-divider{height:1px;background:var(--sn-ln,#d6e0ef);margin:var(--sp-4) 0}
+.app-shell .commander-slot{min-width:0}
+.app-shell .oracle-combo .commander-slot .policy-panel{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}
+.app-shell .oracle-combo .commander-slot .policy-panel .policy-list{max-height:none}
+/* Sticky header stays above the map's floating chips when the page scrolls */
+.app-shell .global-header{z-index:1000}

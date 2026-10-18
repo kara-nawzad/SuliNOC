@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Sparkles, Truck, Zap } from "lucide-react";
 import type { Config, Snapshot } from "../types/api";
@@ -9,16 +10,15 @@ export function AnalyticsRow({
   data,
   config,
   onSelect,
-  onFleet,
+  commander,
 }: {
   data: Snapshot;
   config: Config;
   onSelect: (id: string) => void;
-  onFleet: () => void;
+  commander?: ReactNode;
 }) {
-  const { top_cells: top, forecast, power, fleet } = data.dashboard;
+  const { top_cells: top, forecast } = data.dashboard;
   const p = config.presentation.palette;
-  let offset = 0;
   return (
     <section
       className="analytics-grid"
@@ -65,7 +65,7 @@ export function AnalyticsRow({
           Ranked by utilization · select a site to investigate
         </p>
       </article>
-      <article className="glass analytics-card oracle-card">
+      <article className="glass analytics-card oracle-card oracle-combo">
         <PanelHeading
           title="Oracle outlook"
           right={<Sparkles size={15} style={{ color: p.prediction }} />}
@@ -132,7 +132,27 @@ export function AnalyticsRow({
           <Dot color={p.warning} /> Action threshold{" "}
           <span className="mono">p &gt; {config.break_even_precision}</span>
         </div>
+        {commander && <div className="combo-divider" />}
+        {commander}
       </article>
+    </section>
+  );
+}
+
+export function PowerCard({
+  data,
+  config,
+  onFleet,
+}: {
+  data: Snapshot;
+  config: Config;
+  onFleet: () => void;
+}) {
+  const { power, fleet } = data.dashboard;
+  const p = config.presentation.palette;
+  let offset = 0;
+  return (
+    <>
       <article className="glass analytics-card power-card">
         <PanelHeading
           title="Site power & fleet"
@@ -216,6 +236,6 @@ export function AnalyticsRow({
           </span>
         </button>
       </article>
-    </section>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BellRing,
@@ -26,12 +26,16 @@ export function AlertsSidebar({
   onSelect,
   onActivity,
   execute,
+  part = "alarms",
+  children,
 }: {
   data: Snapshot;
   config: Config;
   onSelect: (id: string) => void;
   onActivity: () => void;
   execute: Execute;
+  part?: "alarms" | "commander";
+  children?: ReactNode;
 }) {
   const [filter, setFilter] = useState("all");
   const [hidden, setHidden] = useState<Set<number>>(new Set());
@@ -56,12 +60,14 @@ export function AlertsSidebar({
       });
   }
   const p = config.presentation.palette;
+  const Wrap = part === "alarms" ? "aside" : "div";
   return (
-    <aside
-      className="alerts-rail"
-      id="incidents"
-      aria-label="Alarms and policy recommendations"
+    <Wrap
+      className={part === "alarms" ? "alerts-rail" : "commander-slot"}
+      id={part === "alarms" ? "incidents" : undefined}
+      aria-label={part === "alarms" ? "Alarms and policy recommendations" : undefined}
     >
+      {part === "alarms" && (<>
       <section className="glass alarms-panel">
         <PanelHeading
           title="Active incidents"
@@ -173,6 +179,9 @@ export function AlertsSidebar({
           <History size={12} /> View event history <ChevronRight size={13} />
         </button>
       </section>
+      </>)}
+      {part === "alarms" && children}
+      {part === "commander" && (
       <section className="glass policy-panel" id="commander">
         <PanelHeading
           title="A1 Commander"
@@ -256,6 +265,7 @@ export function AlertsSidebar({
           <span>p* {config.break_even_precision}</span>
         </div>
       </section>
-    </aside>
+      )}
+    </Wrap>
   );
 }

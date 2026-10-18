@@ -10,7 +10,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { AnalyticsRow } from "./AnalyticsRow";
+import { PowerCard } from "./AnalyticsRow";
 import type { Config, PowerSource, Snapshot } from "../types/api";
 
 vi.mock("../services/api", () => ({
@@ -92,10 +92,9 @@ function legendCounts(container: HTMLElement) {
 
 function renderRow(mix: Partial<Record<PowerSource, number>>) {
   return render(
-    <AnalyticsRow
+    <PowerCard
       data={makeSnapshot(mix)}
       config={makeConfig()}
-      onSelect={vi.fn()}
       onFleet={vi.fn()}
     />,
   );
@@ -145,10 +144,9 @@ describe("Site power & fleet donut", () => {
 
     // grid faults push sites onto battery and the diesel plant
     rerender(
-      <AnalyticsRow
+      <PowerCard
         data={makeSnapshot({ Grid: 210, Battery: 60, Generator: 30 })}
         config={makeConfig()}
-        onSelect={vi.fn()}
         onFleet={vi.fn()}
       />,
     );

@@ -34,6 +34,7 @@ import { HeroFrame } from "./components/HeroFrame";
 import { NetworkMap } from "./components/NetworkMap";
 import { greetingFor } from "./utils/greeting";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
+import { PowerCard } from "./components/AnalyticsRow";
 import { AnalyticsRow } from "./components/AnalyticsRow";
 import { Inspector } from "./components/Inspector";
 import { HistoryModal } from "./components/HistoryModal";
@@ -431,7 +432,13 @@ function Console({
                 onSelect={selectNode}
                 onActivity={() => setDialog("activity")}
                 execute={execute}
-              />
+              >
+                <PowerCard
+                  data={data}
+                  config={config}
+                  onFleet={() => setDialog("fleet")}
+                />
+              </AlertsSidebar>
             </div>
             <div className="section-label">
               <span>
@@ -450,7 +457,17 @@ function Console({
                 selectNode(id);
                 navigate("network");
               }}
-              onFleet={() => setDialog("fleet")}
+              commander={
+                <AlertsSidebar
+                  key={`cmd-${data.run_id}`}
+                  part="commander"
+                  config={config}
+                  data={data}
+                  onSelect={selectNode}
+                  onActivity={() => setDialog("activity")}
+                  execute={execute}
+                />
+              }
             />
             <TowerList
               data={data}
