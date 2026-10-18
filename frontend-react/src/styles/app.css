@@ -4936,3 +4936,8 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 
 /* the welcome screen covers everything, including the phone bottom bar */
 .hero-frame{z-index:1200!important}
+
+/* phone: the incident list keeps its own scroll area instead of growing with every alarm */
+@media (max-width:767px){
+  .app-shell .alerts-rail .incident-list{flex:none;max-height:min(62vh,460px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+}
