@@ -324,6 +324,30 @@ function Console({
               <Bell size={18} />
               {data.dashboard.current.incidents > 0 && <i />}
             </button>
+            {/* Phones only (see phone-layout.css): these three live in the bottom bar on desktop. */}
+            <div className="phone-tools">
+              <button
+                className="icon-button"
+                aria-label="Welcome screen"
+                onClick={() => setHeroOpen(true)}
+              >
+                <Home size={18} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Simulation settings"
+                onClick={() => setDialog("settings")}
+              >
+                <Settings2 size={18} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="About this simulation"
+                onClick={() => setDialog("about")}
+              >
+                <CircleHelp size={18} />
+              </button>
+            </div>
             <span className="build-stamp mono" title="Build: commit and build time">
               build {__BUILD_STAMP__.sha}
             </span>

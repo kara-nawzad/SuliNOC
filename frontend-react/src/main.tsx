@@ -16,6 +16,9 @@ import "@fontsource/ibm-plex-mono/latin-400.css";
 import "./skin.css";
 import "./readable.css";
 import App from "./App";
+// Phone rules load last so they win over every desktop rule above.
+import "./phone.css";
+import "./phone-layout.css";
 
 console.info(
   `SuliNOC build ${__BUILD_STAMP__.sha} · built ${__BUILD_STAMP__.built}`,

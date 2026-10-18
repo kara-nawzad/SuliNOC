@@ -1,0 +1,105 @@
+/* Phone layout (max-width 600px). Hand-written; loaded after phone.css.
+ * Goals: no horizontal scrolling, every control at least 44 px, the bottom tab bar
+ * holds all seven sections, and the site inspector becomes a bottom sheet. */
+
+/* Desktop-only chrome, and the phone tools, which only show on phones. */
+.phone-tools {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .phone-tools {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+  .build-stamp,
+  .header-system,
+  .header-divider,
+  .network-switch > svg,
+  .navigation-rail .nav-bottom,
+  .operator-avatar {
+    display: none !important;
+  }
+
+  /* Header: wrap instead of overflowing. */
+  .global-header {
+    height: auto;
+    min-height: 62px;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 10px 12px;
+  }
+  .global-header .wordmark {
+    font-size: 17px;
+  }
+  .header-spacer {
+    flex: 1;
+  }
+  .search-trigger {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Bottom tab bar: seven sections across the full width, each a 44 px target. */
+  .navigation-rail .nav-items {
+    flex: 1;
+    display: flex;
+    justify-content: space-around;
+  }
+  .navigation-rail .nav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 64px;
+    min-height: 48px;
+  }
+  .main-shell {
+    padding-bottom: 76px;
+  }
+
+  /* Every button is at least 44 px on a phone, except inside the map. */
+  .app-shell button:not([class*="leaflet"]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Site inspector: a bottom sheet that scrolls, not a floating side panel. */
+  .inspector {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-height: 82vh;
+    border-radius: 18px 18px 0 0;
+    padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Content never runs past the screen edge. */
+  .app-shell main,
+  .app-shell section,
+  .app-shell .glass {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .app-shell img,
+  .app-shell svg:not(.leaflet-zoom-animated) {
+    max-width: 100%;
+  }
+}
+
+/* Leaflet's scale line and map labels are set more specifically than the generated rule. */
+@media (max-width: 600px) {
+  .leaflet-container .leaflet-control-scale-line,
+  .map-north span {
+    font-size: 12px;
+  }
+}
+
+/* Form fields are touch targets too. */
+@media (max-width: 600px) {
+  .app-shell select,
+  .app-shell input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 44px;
+  }
+}
