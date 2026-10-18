@@ -153,6 +153,8 @@ export function TrafficQualityCard({
     // and new ticks are appended. The chart cannot drop points, so the 30 min
     // view is redrawn instead (see below).
     // Fixed axis: QCI 9 traffic 20–50 Gbps; PRB stays automatic.
+    c.primary.setWindow(WINDOW_MINUTES[timeframe]);
+    c.drop?.setWindow(WINDOW_MINUTES[timeframe]);
     c.primary.setDomain(metric === "throughput_gbps" ? 20 : null, 50);
     // The 30 min view holds only a few points, so it is redrawn from the
     // trimmed window every time; otherwise old points would stay on the axis.
@@ -234,17 +236,6 @@ export function TrafficQualityCard({
             PRB
           </button>
         </div>
-      </div>
-      <div className="chart-coverage">
-        <span>
-          Showing {coverageMinutes} of {requestedMinutes} sim min recorded so far
-        </span>
-        <i
-          aria-hidden="true"
-          style={{
-            width: `${Math.min(100, (coverageMinutes / requestedMinutes) * 100)}%`,
-          }}
-        />
       </div>
       <h3 className="chart-title">{primaryLabel}</h3>
       <p className="chart-subtitle">{primaryUnit}</p>

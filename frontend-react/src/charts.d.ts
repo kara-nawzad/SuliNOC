@@ -6,6 +6,7 @@ export interface LineChart {
   setData(points: [number, number][]): void;
   append(point: [number, number]): void;
   setDomain(min: number | null, max?: number): void;
+  setWindow(minutes: number): void;
   destroy(): void;
 }
 export function lineChart(
