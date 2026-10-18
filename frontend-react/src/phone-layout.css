@@ -57,6 +57,11 @@
     padding-bottom: 76px;
   }
 
+  /* The desktop rail (72 px) is hidden on phones, so the content starts at the edge. */
+  .main-shell {
+    margin-left: 0 !important;
+  }
+
   /* Every button is at least 44 px on a phone, except inside the map. */
   .app-shell button:not([class*="leaflet"]) {
     min-height: 44px;
