@@ -155,6 +155,8 @@ export function TrafficQualityCard({
     // Fixed axis: QCI 9 traffic 20–50 Gbps; PRB stays automatic.
     c.primary.setWindow(WINDOW_MINUTES[timeframe]);
     c.drop?.setWindow(WINDOW_MINUTES[timeframe]);
+    // E-RAB drop proxy: fixed 0–3 % axis (three whole-percent ticks above zero).
+    c.drop?.setDomain(0, 3);
     c.primary.setDomain(metric === "throughput_gbps" ? 20 : null, 50);
     // The 30 min view holds only a few points, so it is redrawn from the
     // trimmed window every time; otherwise old points would stay on the axis.
