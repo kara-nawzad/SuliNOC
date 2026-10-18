@@ -5,21 +5,13 @@ import "@fontsource/manrope/latin-500.css";
 import "@fontsource/manrope/latin-600.css";
 import "@fontsource/manrope/latin-700.css";
 import "leaflet/dist/leaflet.css";
-import "./index.css";
 import "@fontsource/newsreader/latin-400.css";
 import "@fontsource/newsreader/latin-500.css";
 import "@fontsource/newsreader/latin-600.css";
 import "@fontsource/ibm-plex-mono/latin-400.css";
 import "@fontsource/ibm-plex-mono/latin-500.css";
-import "./skin.css";
-import "./readable.css";
-import "./desktop-type.css";
+import "./styles/app.css";
 import App from "./App";
-// Phone rules load last so they win over every desktop rule above.
-import "./phone.css";
-import "./phone-layout.css";
-// Design layer: loaded last so it settles every earlier override.
-import "./styles/design-layer.css";
 
 console.info(
   `SuliNOC build ${__BUILD_STAMP__.sha} · built ${__BUILD_STAMP__.built}`,

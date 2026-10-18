@@ -33,7 +33,6 @@ import { KpiGrid } from "./components/KpiGrid";
 import { HeroFrame } from "./components/HeroFrame";
 import { NetworkMap } from "./components/NetworkMap";
 import { greetingFor } from "./utils/greeting";
-import "./components/greeting.css";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
 import { AnalyticsRow } from "./components/AnalyticsRow";
 import { Inspector } from "./components/Inspector";
