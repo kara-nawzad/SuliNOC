@@ -5090,3 +5090,36 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 .history-tabs{background:#e4eefb!important;border-color:#a9c2e6!important}
 .history-tabs button{color:#33487a!important}
 .history-tabs button.selected{color:#10265c!important;background:#ffffff!important;border:1px solid #8eaac2!important;padding:7px 10px}
+
+/* Weather alert: top-left of the map, under the district picker; slides in when a storm appears */
+.app-shell .weather-chip,
+.weather-chip {
+  top: 58px !important;
+  left: 15px !important;
+  right: auto !important;
+  bottom: auto !important;
+  max-width: min(300px, calc(100% - 30px)) !important;
+  padding: 10px 13px !important;
+  animation: weather-slide-in 0.5s var(--e, ease-out) both;
+}
+.app-shell .weather-chip strong,
+.weather-chip strong {
+  font-size: 12px !important;
+  font-weight: 650 !important;
+}
+.app-shell .weather-chip span,
+.weather-chip span {
+  font-size: 11px !important;
+  margin-top: 3px !important;
+}
+@keyframes weather-slide-in {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: none; }
+}
+@media (max-width: 767px) {
+  .app-shell .weather-chip,
+  .weather-chip { top: 52px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .weather-chip { animation: none !important; }
+}
