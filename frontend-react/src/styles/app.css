@@ -5078,3 +5078,10 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
   .app-shell .alerts-rail .incident-list{flex:none;max-height:240px;overflow-y:auto;overflow-x:hidden}
   .app-shell .alerts-rail .power-card{overflow:visible}
 }
+
+/* History: completed-demo cards lighter than the dialog, text still readable */
+.run-summary-card{background:linear-gradient(135deg,#2a4263,#213652)!important;border-color:#8eaac246!important}
+.run-summary-grid>div{background:#33507a80!important;border-color:#c8dcf01f!important}
+.run-summary-eyebrow{color:#a9c3de!important}
+.run-summary-day,.run-summary-grid span,.run-summary-foot{color:#b7cbe0!important}
+.run-summary-grid strong,.run-summary-heading time{color:#f0f6fd!important}
