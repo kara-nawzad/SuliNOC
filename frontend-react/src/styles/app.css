@@ -220,25 +220,6 @@ input[type="checkbox"] {
   padding: 20px 0;
   z-index: 50;
 }
-.brand-mark {
-  height: 34px;
-  width: 35px;
-  display: grid;
-  place-content: center;
-  grid-auto-flow: column;
-  border-radius: 9px;
-  border: 1px solid #38bdf845;
-  background: linear-gradient(140deg, #0c2d3c, #132035);
-  box-shadow: inset 0 0 12px #06b6d414;
-  color: #73d6ec;
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: -2px;
-  padding-right: 2px;
-}
-.brand-mark span {
-  color: #d6ecf7;
-}
 .nav-items {
   display: flex;
   flex-direction: column;
@@ -284,18 +265,6 @@ input[type="checkbox"] {
   flex-direction: column;
   align-items: center;
   gap: 13px;
-}
-.operator-avatar {
-  height: 29px;
-  width: 29px;
-  border-radius: 50%;
-  border: 1px solid #50688744;
-  background: #233049;
-  color: #b4c3d9;
-  display: grid;
-  place-content: center;
-  font-size: 9px;
-  font-weight: 600;
 }
 .main-shell {
   margin-left: 72px;
@@ -421,19 +390,6 @@ main {
   gap: 18px;
   margin-bottom: 23px;
 }
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 7px;
-  letter-spacing: 1.5px;
-  color: #61728a;
-  font-weight: 500;
-  margin-bottom: 9px;
-}
-.breadcrumb svg {
-  color: #3a4b62;
-}
 h1 {
   font-size: 26px;
   letter-spacing: -0.9px;
@@ -443,13 +399,6 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-.overview-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--healthy);
-  box-shadow: 0 0 10px #10b98140;
 }
 .overview-heading p {
   color: #77879c;
@@ -1614,39 +1563,6 @@ h1 {
   color: #9ee0ed;
   background: #183045;
 }
-.chart-legend {
-  display: flex;
-  gap: 11px;
-  padding: 8px 16px 0;
-  flex-wrap: wrap;
-}
-.chart-legend span {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  font-size: 7px;
-  color: #74869e;
-}
-.chart-legend .status-dot {
-  width: 4px;
-  height: 4px;
-}
-.traffic-chart {
-  display: block;
-  width: calc(100% - 32px);
-  cursor: crosshair;
-  height: 110px;
-  margin: 7px 16px 0;
-  overflow: visible;
-}
-.chart-axis {
-  display: flex;
-  justify-content: space-between;
-  gap: 5px;
-  padding: 7px 16px 12px;
-  font-size: 6px;
-  color: #506781;
-}
 .timeframe-tabs {
   display: flex;
   align-items: center;
@@ -1673,53 +1589,6 @@ h1 {
   color: #b8ecf4;
   background: #163043;
   box-shadow: inset 0 -2px 0 #06b6d4;
-}
-.chart-scale-labels {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 5px 16px 0;
-  color: #607690;
-  font-size: 6px;
-}
-.chart-scale-labels span:first-child {
-  color: #40bfd2;
-}
-.chart-scale-labels span:last-child {
-  color: #a78bfa;
-  text-align: right;
-}
-.traffic-chart-wrap {
-  position: relative;
-}
-.chart-tooltip {
-  position: absolute;
-  z-index: 3;
-  top: 8px;
-  display: grid;
-  gap: 4px;
-  width: max-content;
-  max-width: min(190px, 82%);
-  padding: 8px 9px;
-  border: 1px solid #344b64;
-  border-radius: 6px;
-  background: #0b1422ed;
-  box-shadow: 0 5px 18px #0008;
-  color: #9fb4cc;
-  font-size: 7px;
-  line-height: 1.35;
-  pointer-events: none;
-  transform: translateX(-8%);
-}
-.chart-tooltip strong {
-  color: #e0edf8;
-  font-size: 8px;
-}
-.chart-tooltip span:nth-of-type(1) {
-  color: #67d5e3;
-}
-.chart-tooltip span:nth-of-type(2) {
-  color: #c4b5fd;
 }
 .chart-provenance {
   padding: 0 16px 11px;
@@ -1982,13 +1851,6 @@ h1 {
   width: 4px;
   height: 4px;
 }
-.footer-version {
-  font-size: 6px;
-  letter-spacing: 1px;
-  border-left: 1px solid var(--line);
-  padding-left: 10px;
-  margin-left: 3px;
-}
 
 /* Inspector: an independent, dismissible instrumentation surface. */
 .inspector {
@@ -2061,65 +1923,6 @@ h1 {
   padding-top: 20px;
   margin-top: 23px;
   margin-bottom: 12px;
-}
-.inspector-metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.inspector-metrics > div {
-  padding: 10px;
-  border: 1px solid #ffffff05;
-  background: #141f303f;
-  border-radius: 7px;
-}
-.inspector-metrics > div > span {
-  font-size: 8px;
-  color: #718baa;
-  display: block;
-}
-.inspector-metrics strong {
-  font-size: 18px;
-  font-weight: 500;
-  display: block;
-  margin-top: 8px;
-  font-variant-numeric: tabular-nums;
-}
-.inspector-metrics small {
-  font-size: 9px;
-  color: #5c7998;
-  margin-left: 4px;
-  font-weight: 400;
-}
-.power-architecture {
-  font-size: 9px;
-  color: #889bb6;
-  line-height: 1.7;
-}
-.power-architecture span {
-  display: block;
-  margin: 6px 0 14px;
-}
-.inspector-gauge {
-  margin: 13px 0;
-}
-.inspector-gauge > div:first-child {
-  display: flex;
-  justify-content: space-between;
-  font-size: 9px;
-  color: #8a9fb9;
-  margin-bottom: 7px;
-}
-.meter-track {
-  height: 4px;
-  background: #ffffff08;
-  border-radius: 3px;
-  overflow: hidden;
-}
-.meter-track i {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
 }
 .inline-warning {
   color: var(--tone);
@@ -2760,12 +2563,6 @@ h1 {
   padding: 30px;
   text-align: center;
 }
-.boot-screen .brand-mark {
-  width: 55px;
-  height: 55px;
-  font-size: 25px;
-  border-radius: 13px;
-}
 .boot-screen h1 {
   font-size: 24px;
 }
@@ -2877,9 +2674,6 @@ h1 {
   .cell-row {
     padding: 13px 18px;
   }
-  .traffic-chart {
-    height: 130px;
-  }
   .power-chart-row {
     padding-top: 17px;
     padding-bottom: 13px;
@@ -2958,10 +2752,6 @@ h1 {
     font-size: 6px;
     padding: 12px 10px;
   }
-  .chart-legend {
-    font-size: 6px;
-    gap: 7px;
-  }
   .cell-row,
   .cell-table-head {
     gap: 8px;
@@ -2972,9 +2762,6 @@ h1 {
   }
   .cell-row strong {
     font-size: 7px;
-  }
-  .chart-axis {
-    font-size: 5px;
   }
   .header-system {
     display: none;
@@ -3069,9 +2856,6 @@ h1 {
   }
   .cell-table-head {
     font-size: 7px;
-  }
-  .chart-axis {
-    font-size: 6px;
   }
   .overview-meta {
     flex-direction: column;
@@ -3186,19 +2970,10 @@ h1 {
   .app-footer > span:last-child {
     font-size: 6px;
   }
-  .footer-version {
-    display: none;
-  }
 }
 @media (max-width: 600px) {
   .navigation-rail {
     padding-top: 15px;
-  }
-  .brand-mark {
-    width: 29px;
-    height: 29px;
-    font-size: 12px;
-    border-radius: 7px;
   }
   .nav-item {
     width: 34px;
@@ -3218,10 +2993,6 @@ h1 {
   }
   .nav-bottom {
     gap: 12px;
-  }
-  .operator-avatar {
-    width: 24px;
-    height: 24px;
   }
   .network-switch .network-symbol,
   .network-switch div > span,
@@ -3411,9 +3182,6 @@ h1 {
   .chart-summary {
     padding-top: 5px;
   }
-  .traffic-chart {
-    height: 120px;
-  }
   .radial-wrap {
     height: 153px;
     max-width: 190px;
@@ -3536,9 +3304,6 @@ h1 {
   .analytics-card .panel-heading {
     padding-top: 13px;
   }
-  .traffic-chart {
-    height: 96px;
-  }
   .app-footer {
     padding: 14px 1px;
   }
@@ -3546,23 +3311,11 @@ h1 {
 
 /* MapLibre stays in Leaflet's background pane. No transforms/filters touch
    the server-colored operational markers, labels, or site click targets. */
-.street-basemap {
-  pointer-events: none;
-  transition: opacity 240ms ease;
-}
-.street-basemap .maplibregl-canvas {
-  outline: none;
-}
 .map-mode button {
   pointer-events: auto;
   text-decoration: underline;
   text-underline-offset: 3px;
   color: #c0d4e7;
-}
-@media (prefers-reduced-motion: reduce) {
-  .street-basemap {
-    transition: none;
-  }
 }
 
 /* Tower markers: the kit's `.tw` rules (SuliNOC-ui-kit theme.css), copied here
@@ -3641,8 +3394,7 @@ button.tower-row:hover{background:rgba(255,255,255,.04)}
   background: var(--s1);
   border-right: 1px solid var(--ln);
 }
-.nav-item,
-.brand-mark {
+.nav-item {
   color: var(--t2);
 }
 .nav-item.active,
@@ -3655,8 +3407,7 @@ main h2,
 .overview-heading h1,
 .glass h2,
 .glass h3,
-.kpi-value,
-.big {
+.kpi-value {
   font-family: var(--serif);
   font-weight: 500;
   letter-spacing: -0.02em;
@@ -3704,9 +3455,6 @@ code,
   color: var(--t2);
   border-top: 1px solid var(--ln);
 }
-.app-footer .footer-version {
-  font-family: var(--mono);
-}
 /* Tower and chart text stay readable on the light surface. */
 .network-tooltip {
   background: #ffffff !important;
@@ -3744,9 +3492,7 @@ input[type="text"] {
   color: var(--tx) !important;
 }
 /* Header and map on the light surface */
-.app-shell header,
-header.topbar,
-.topbar {
+.app-shell header {
   background: var(--s1) !important;
   border-bottom: 1px solid var(--ln) !important;
   color: var(--tx);
@@ -3843,7 +3589,6 @@ header.topbar,
     border-top: 1px solid var(--ln);
     z-index: 40;
   }
-  .navigation-rail .brand-mark,
   .navigation-rail .nav-bottom .nav-item:nth-child(n + 3) {
     display: none;
   }
@@ -3871,21 +3616,8 @@ header.topbar,
   .app-shell main {
     padding-bottom: 84px;
   }
-  .hero-copy {
-    left: 22px;
-    right: 22px;
-    top: 12%;
-  }
-  .hero-tower {
-    right: -6%;
-    height: 56%;
-    opacity: 0.9;
-  }
   .hero h1 {
     font-size: 34px;
-  }
-  .hero-sub {
-    font-size: 15px;
   }
 }
 
@@ -3900,7 +3632,6 @@ header.topbar,
 .map-location,
 .weather-chip,
 .play-controls,
-.operator-avatar,
 .leaflet-tooltip.district-label,
 .leaflet-control-scale-line,
 .leaflet-control-attribution,
@@ -3949,8 +3680,6 @@ header.topbar,
 .section-label span {
   color: #3d5585;
 }
-.mono-note,
-.awaiting-predictions,
 span.mono {
   color: #3d5585;
 }
@@ -3969,10 +3698,8 @@ span.mono {
 
 /* Header captions and the breadcrumb were 7–9px on desktop; 10px keeps the layout. */
 .wordmark > span,
-.breadcrumb,
 .network-switch span,
-.search-trigger kbd,
-.operator-avatar {
+.search-trigger kbd {
   font-size: 10px;
 }
 
@@ -4046,8 +3773,6 @@ button.wordmark {
 /* Desktop type and target floor (above the phone breakpoint; phone.css covers phones).
    Labels under 11 px and buttons under 36 px were too small to read or hit. */
 @media (min-width: 601px) {
-  .breadcrumb,
-  .breadcrumb * { font-size: 12px; }
   .connection,
   .search-trigger kbd,
   .search-trigger span,
@@ -4059,8 +3784,6 @@ button.wordmark {
   .command-context-sub { font-size: 12px; }
   .leaflet-control-scale-line,
   .map-north span { font-size: 12px; }
-  .overview-greeting,
-  .overview-greeting > span { font-size: 13px; }
   .icon-button,
   .speed-button,
   .scenario-button,
@@ -4072,25 +3795,6 @@ button.wordmark {
 }
 
 /* Brand: plain text wordmark, no frame. Replaces the boxed logo image. */
-.wordmark-text {
-  font-family: var(--sans);
-  font-weight: 800;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--tx);
-  white-space: nowrap;
-}
-.wordmark-text b {
-  font-weight: 800;
-  color: var(--live);
-}
-.boot-screen .wordmark-text {
-  display: block;
-  font-size: 48px;
-  margin: 0 auto 14px;
-  text-align: center;
-}
 
 /* The build stamp is hidden from the console (it stays in the source for tooling). */
 .build-stamp {
@@ -4128,9 +3832,6 @@ button.wordmark,
   background: transparent !important;
   box-shadow: none !important;
   padding: 0 !important;
-}
-.wordmark .wordmark-text {
-  font-size: 26px;
 }
 
 /* Logo: the file has a white background; multiply makes it disappear on the blue header. */
@@ -4396,10 +4097,6 @@ button.wordmark,
   .analytics-card .panel-heading .small-muted { font-size: 12px; }
   .chart-summary > div:first-child > span:last-child { font-size: 12px; }
   .segmented button { font-size: 12px; }
-  .chart-legend span { font-size: 12px; }
-  .chart-scale-labels { font-size: 12px; }
-  .chart-tooltip { font-size: 12px; }
-  .chart-tooltip strong { font-size: 12px; }
   .cell-load > span:first-child { font-size: 12px; }
   .cqi { font-size: 12px; }
   .analytics-foot { font-size: 12px; }
@@ -4410,15 +4107,10 @@ button.wordmark,
   .power-legend b { font-size: 12px; }
   .power-ats { font-size: 12px; }
   .power-ats strong { font-size: 12px; }
-  .footer-version { font-size: 12px; }
   .inspector-place { font-size: 12px; }
   .site-status { font-size: 12px; }
   .inspector-tags span { font-size: 12px; }
   .inspector h3 { font-size: 12px; }
-  .inspector-metrics > div > span { font-size: 12px; }
-  .inspector-metrics small { font-size: 12px; }
-  .power-architecture { font-size: 12px; }
-  .inspector-gauge > div:first-child { font-size: 12px; }
   .inline-warning { font-size: 12px; }
   .inspector-coords { font-size: 12px; }
   .dialog-heading .eyebrow { font-size: 12px; }
@@ -4463,14 +4155,11 @@ button.wordmark,
   .cell-row strong { font-size: 12px; }
   .cell-row small { font-size: 12px; }
   .cell-table-head { font-size: 12px; }
-  .chart-axis { font-size: 12px; }
   .network-switch div > span { font-size: 12px; }
   .app-footer > span:last-child { font-size: 12px; }
-  .operator-avatar { font-size: 12px; }
   .wordmark > span { font-size: 12px; }
   .network-switch strong { font-size: 12px; }
   .overview-heading p { font-size: 12px; }
-  .breadcrumb { font-size: 12px; }
   .connection { font-size: 12px; }
   .sim-clock { font-size: 12px; }
   .sim-clock .seed { font-size: 12px; }
@@ -4502,7 +4191,6 @@ button.wordmark,
   .policy-foot { font-size: 12px; }
   .impact-callout { font-size: 12px; }
   .timeframe-tabs button { font-size: 12px; }
-  .chart-legend { font-size: 12px; }
   .oracle-threshold { font-size: 12px; }
   .oracle-threshold .mono { font-size: 12px; }
   .app-footer { font-size: 12px; }
@@ -4511,23 +4199,14 @@ button.wordmark,
   .build-stamp { font-size: 12px; }
   /* readable.css */
   .wordmark > span,
-.breadcrumb,
 .network-switch span,
-.search-trigger kbd,
-.operator-avatar { font-size: 12px; }
+.search-trigger kbd { font-size: 12px; }
 }
 
 /* ==================================================================
  * Overview greeting (components/greeting.css)
  * ================================================================== */
 /* Overview greeting: "Good morning, operator." in the heading's sub-line. */
-.overview-greeting {
-  color: #10265c;
-  font-size: 15px;
-}
-.overview-greeting > span {
-  color: #4b6192;
-}
 
 /* ==================================================================
  * Range gauge (components/range-gauge.css)
@@ -4686,10 +4365,6 @@ button.wordmark,
   .analytics-card .panel-heading .small-muted { font-size: 12px; }
   .chart-summary > div:first-child > span:last-child { font-size: 12px; }
   .segmented button { font-size: 12px; }
-  .chart-legend span { font-size: 12px; }
-  .chart-scale-labels { font-size: 12px; }
-  .chart-tooltip { font-size: 12px; }
-  .chart-tooltip strong { font-size: 12px; }
   .cell-load > span:first-child { font-size: 12px; }
   .cqi { font-size: 12px; }
   .analytics-foot { font-size: 12px; }
@@ -4700,15 +4375,10 @@ button.wordmark,
   .power-legend b { font-size: 12px; }
   .power-ats { font-size: 12px; }
   .power-ats strong { font-size: 12px; }
-  .footer-version { font-size: 12px; }
   .inspector-place { font-size: 12px; }
   .site-status { font-size: 12px; }
   .inspector-tags span { font-size: 12px; }
   .inspector h3 { font-size: 12px; }
-  .inspector-metrics > div > span { font-size: 12px; }
-  .inspector-metrics small { font-size: 12px; }
-  .power-architecture { font-size: 12px; }
-  .inspector-gauge > div:first-child { font-size: 12px; }
   .inline-warning { font-size: 12px; }
   .inspector-coords { font-size: 12px; }
   .dialog-heading .eyebrow { font-size: 12px; }
@@ -4753,14 +4423,11 @@ button.wordmark,
   .cell-row strong { font-size: 12px; }
   .cell-row small { font-size: 12px; }
   .cell-table-head { font-size: 12px; }
-  .chart-axis { font-size: 12px; }
   .network-switch div > span { font-size: 12px; }
   .app-footer > span:last-child { font-size: 12px; }
-  .operator-avatar { font-size: 12px; }
   .wordmark > span { font-size: 12px; }
   .network-switch strong { font-size: 12px; }
   .overview-heading p { font-size: 12px; }
-  .breadcrumb { font-size: 12px; }
   .connection { font-size: 12px; }
   .sim-clock { font-size: 12px; }
   .sim-clock .seed { font-size: 12px; }
@@ -4792,7 +4459,6 @@ button.wordmark,
   .policy-foot { font-size: 12px; }
   .impact-callout { font-size: 12px; }
   .timeframe-tabs button { font-size: 12px; }
-  .chart-legend { font-size: 12px; }
   .oracle-threshold { font-size: 12px; }
   .oracle-threshold .mono { font-size: 12px; }
   .app-footer { font-size: 12px; }
@@ -4801,10 +4467,8 @@ button.wordmark,
   .build-stamp { font-size: 12px; }
   /* readable.css */
   .wordmark > span,
-.breadcrumb,
 .network-switch span,
-.search-trigger kbd,
-.operator-avatar { font-size: 12px; }
+.search-trigger kbd { font-size: 12px; }
 }
 
 /* ==================================================================
@@ -4829,8 +4493,7 @@ button.wordmark,
   .header-system,
   .header-divider,
   .network-switch > svg,
-  .navigation-rail .nav-bottom,
-  .operator-avatar {
+  .navigation-rail .nav-bottom {
     display: none !important;
   }
 
@@ -4996,7 +4659,7 @@ body{font-family:var(--sn-ui);font-size:var(--fs-body);line-height:1.5;backgroun
   border-bottom:1px solid var(--sn-ln-soft)!important;position:sticky;top:0;z-index:45}
 .app-shell .header-divider{background:var(--sn-ln-soft);height:24px}
 .app-shell .overview-heading{margin-bottom:var(--sp-5);gap:var(--sp-4);align-items:flex-end}
-.app-shell .overview-heading h1,.app-shell .overview-greeting{font-family:var(--sn-display)!important;font-weight:500;
+.app-shell .overview-heading h1{font-family:var(--sn-display)!important;font-weight:500;
   font-size:var(--fs-display)!important;line-height:1.08;letter-spacing:-.015em;color:var(--sn-tx)}
 .app-shell .overview-heading p{font-size:var(--fs-caption)!important;letter-spacing:0;color:var(--sn-t2);margin-top:var(--sp-2)}
 .app-shell .command-bar{margin-bottom:var(--sp-5);padding:var(--sp-3) 0;gap:var(--sp-3);border-top:0;border-bottom:1px solid var(--sn-line)}
