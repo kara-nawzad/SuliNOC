@@ -248,3 +248,107 @@ button.wordmark,
 .wordmark .wordmark-text {
   font-size: 26px;
 }
+
+/* Logo: the file has a white background; multiply makes it disappear on the blue header. */
+.brand-logo {
+  display: block;
+  height: 30px;
+  width: auto;
+  mix-blend-mode: multiply;
+}
+.boot-screen .brand-logo {
+  height: 56px;
+  margin: 0 auto 14px;
+}
+
+/* Rail: no empty band above Overview; light hover and light tooltip (no navy). */
+.nav-items {
+  margin-top: 6px !important;
+}
+.navigation-rail {
+  padding-top: 14px !important;
+}
+.nav-item:hover {
+  background: #e3eefb !important;
+  color: #0c6e8f !important;
+}
+.nav-item.active {
+  background: #d5f1f7 !important;
+  color: #0c6e8f !important;
+}
+.nav-item::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ffffff;
+  color: var(--tx);
+  border: 1px solid var(--ln);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: 600 12px var(--sans);
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(16, 38, 92, 0.14);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+.nav-item:hover::after,
+.nav-item:focus-visible::after {
+  opacity: 1;
+}
+
+/* Header search: light chip instead of grey. */
+.search-trigger {
+  background: #ffffff !important;
+  border-color: var(--ln) !important;
+  color: var(--muted-text) !important;
+}
+.search-trigger kbd {
+  background: #eef4fc !important;
+  color: var(--muted-text) !important;
+  border: 1px solid var(--ln) !important;
+}
+
+/* AI toggle: light track; teal when on. */
+.toggle-track {
+  background: #c9d8ea !important;
+}
+.enabled .toggle-track {
+  background: var(--live) !important;
+}
+
+/* Fibre rings: aligned columns, light rules. */
+.ring-list {
+  border-top: 1px solid var(--line) !important;
+}
+.ring-list ul {
+  gap: 0 !important;
+}
+.ring-list li {
+  display: grid !important;
+  grid-template-columns: 76px 84px 84px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--tx);
+}
+.ring-list li:last-child {
+  border-bottom: 0;
+}
+
+/* AI Commander: a full-height card, not a short strip. */
+.policy-panel {
+  min-height: 300px;
+}
+
+/* Maintenance fleet cards: white and fully opaque, not grey. */
+.fleet-card {
+  background: #ffffff !important;
+  border: 1px solid var(--ln) !important;
+  color: var(--tx);
+  opacity: 1 !important;
+}

@@ -92,6 +92,7 @@ function towerIcon(cls: string, halo: boolean): L.DivIcon {
 const Towers = memo(function Towers({
   nodes,
   config,
+  aiOn,
   selectedId,
   onSelect,
 }: {
@@ -99,6 +100,7 @@ const Towers = memo(function Towers({
   config: Config;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  aiOn: boolean;
 }) {
   return (
     <>
@@ -107,8 +109,9 @@ const Towers = memo(function Towers({
           node.status,
         );
         const faulty = node.status !== config.presentation.healthy_status;
-        const cls = node.warn ? "ai" : offline ? "crit" : faulty ? "warn" : "";
-        const halo = node.id === selectedId || faulty || !!node.warn;
+        const aiFlag = !!node.warn && aiOn;
+        const cls = aiFlag ? "ai" : offline ? "crit" : faulty ? "warn" : "";
+        const halo = node.id === selectedId || faulty || aiFlag;
         return (
           <Marker
             key={node.id}
@@ -320,12 +323,13 @@ export function NetworkMap({
               nodes={data.nodes}
               config={config}
               selectedId={selectedId}
+              aiOn={data.ai.ai_enabled}
               onSelect={onSelect}
             />
           )}
           {layers.sites &&
             data.nodes
-              .filter((n) => n.warn)
+              .filter((n) => n.warn && data.ai.ai_enabled)
               .map((n) => (
                 <CircleMarker
                   key={`prediction-${n.id}`}

@@ -188,7 +188,7 @@ function Console({
     if (heroOpen) return null;
     return (
       <div className="boot-screen">
-        <span className="wordmark-text" aria-hidden="true">Suli<b>NOC</b></span>
+        <img className="brand-logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC" />
         <h1>
           SuliNOC<span> / NETWORK COMMAND</span>
         </h1>
@@ -237,8 +237,8 @@ function Console({
               <button
                 key={id}
                 className={`nav-item ${section === id ? "active" : ""}`}
-                title={label}
                 aria-label={label}
+                data-tip={label}
                 aria-current={section === id ? "page" : undefined}
                 onClick={() => navigate(id)}
               >
@@ -283,7 +283,7 @@ function Console({
               onClick={() => navigate("overview")}
               aria-label="SuliNOC overview"
             >
-              <span className="wordmark-text" aria-hidden="true">Suli<b>NOC</b></span>
+              <img className="brand-logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC" />
             </button>
             <span className="header-divider" />
             <div className="network-switch">
