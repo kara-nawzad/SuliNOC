@@ -43,8 +43,9 @@ pnpm-debug.log*
 /autonoc/web/dist/
 
 # Browser-test output
-/frontend/test-results/
-/frontend/playwright-report/
+**/test-results/
+**/playwright-report/
+**/blob-report/
 
 # IDE and operating-system files
 .vscode/
@@ -62,4 +63,3 @@ Thumbs.db
 # Trained artifacts under models/ (including the required .npz scalers) are
 # intentionally committed for reproducible local and Fly.io startup.
 /data/
-frontend-react/standalone/out/

@@ -4,16 +4,16 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Vanilla JS](https://img.shields.io/badge/UI-vanilla%20JS%20%2B%20Vite-1479C4)](https://vitejs.dev/)
+[![React + TypeScript](https://img.shields.io/badge/UI-React%20%2B%20TypeScript-3178C6)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![O-RAN inspired](https://img.shields.io/badge/architecture-O--RAN%20inspired-5b6abf)](#architecture)
-[![Fly.io deploy workflow](https://github.com/kara-nawzad/AutoNOC_Project/actions/workflows/ci.yml/badge.svg)](https://github.com/kara-nawzad/AutoNOC_Project/actions/workflows/ci.yml)
+[![CI & Deploy](https://github.com/kara-nawzad/SuliNOC/actions/workflows/ci.yml/badge.svg)](https://github.com/kara-nawzad/SuliNOC/actions/workflows/ci.yml)
 
 **AutoNOC is a deterministic simulation of a 300-site LTE network scenario centered on Sulaymaniyah,
 Iraq; the site positions and telemetry are modeled, not live operator data.** A pure-Python engine
 generates radio, traffic, weather, power, fault, and crew state; an XGBoost Doctor diagnoses current
 faults, a PyTorch GRU Oracle scores 60-minute failure risk, and an expected-value Commander applies
-simulated actions. A FastAPI service feeds the SuliNOC operations console (plain JavaScript, no framework), while
+simulated actions. A FastAPI service feeds the SuliNOC React/TypeScript operations console, while
 matched-seed experiments compare policies and keep model-cost proxies separate from explicitly
 assumption-based dollar scenarios.
 
@@ -22,7 +22,7 @@ assumption-based dollar scenarios.
 > trained and evaluated on simulator-generated data.
 
 **[Open the live demo](https://autonoc-project.fly.dev/)** · [Frontend guide](frontend/README.md) ·
-[Design vision](docs/DESIGN_VISION.md)
+[Contributing](CONTRIBUTING.md) · [Assets](docs/ASSETS.md) · [Design vision](docs/DESIGN_VISION.md)
 
 ---
 
@@ -47,8 +47,8 @@ assumption-based dollar scenarios.
 
 - A seeded, five-minute-tick simulation of **300 modeled LTE sites**, ten districts, fiber rings,
   and a ten-team maintenance fleet.
-- A SuliNOC command center (vanilla JavaScript + Vite) for network state, incidents, site inspection, crew
-  movement, AI actions, traffic, power, and current-run history.
+- A SuliNOC command center (React + TypeScript + Vite) for network state, incidents, site inspection,
+  crew movement, AI actions, traffic, power, and current-run history.
 - Repeatable scenario controls: pause, resume, step, speed, AI enable/disable, supported fault
   injection, and a fiber-cut demonstration.
 - An ML pipeline with separate diagnosis and prediction roles, plus an expected-value policy layer.
@@ -56,17 +56,16 @@ assumption-based dollar scenarios.
   model-cost proxy.
 - Isolated, anonymous browser sessions: each visitor receives a server-issued cookie and an
   independent in-memory simulation, controls, AI state, approvals, telemetry, and run history.
-- A MapLibre vector basemap using OpenFreeMap-hosted OpenMapTiles/OpenStreetMap data, rendered
-  beneath Leaflet overlays. A schematic fallback is available when the street layer cannot load;
-  online street tiles require network access.
+- An Esri World Street Map raster basemap rendered by Leaflet beneath the network overlays. Esri tiles
+  require network access; the local schematic remains visible when they cannot load, with a status
+  indicator and retry control.
 
 At 1× speed, the server advances about one simulation tick per second; one tick represents five
 simulated minutes. The simulation defaults to seed `42` with AI disabled. Seed `131` is used by the
 included Windows demo launchers.
 
-**Stack:** Python 3.12, FastAPI, and Uvicorn; vanilla JavaScript bundled with Vite; XGBoost and
-PyTorch; pytest; multi-stage
-Docker deployment to Fly.io.
+**Stack:** Python 3.12, FastAPI, and Uvicorn; React/TypeScript bundled with Vite; XGBoost and
+PyTorch; pytest; multi-stage Docker deployment to Fly.io.
 
 ## Architecture
 
@@ -90,8 +89,8 @@ Docker deployment to Fly.io.
              └────────────┬─────────────┘
                           │ relative HTTP requests
              ┌────────────▼─────────────┐
-             │ frontend/                │
-             │ SuliNOC console (JS)     │
+             │ frontend/          │
+             │ SuliNOC console (React)  │
              └──────────────────────────┘
 ```
 
@@ -151,6 +150,10 @@ availability includes the report's 95% confidence interval.
 | **B** | Advisory; 2-tick approval delay | 98.31% ± 0.03 |               73,104 |                   0 |              0.73 |              1,001.30 |                   103,849.67 |
 | **C** | Autonomous Commander            | 98.42% ± 0.03 |               68,147 |             423.10 |            147.00 |              1,005.66 |                    90,463.50 |
 | **D** | Predictive upper bound          | 98.52% ± 0.03 |               63,948 |             489.83 |              1.03 |              1,037.20 |                    82,828.67 |
+
+> These UI and README values come directly from the committed JSON. The M7 study was not regenerated
+> during this cleanup; rerun and review it against the current engine before presenting it as a newly
+> validated result.
 
 For **C versus A**, the report records:
 
@@ -219,7 +222,7 @@ an actual incident saved $684.
 - A full registry still answers HTTP 503 with `code: session_capacity`, but it is transient: the
   dashboard retries with an `X-AutoNOC-Retry` marker, which tells the server a visitor is waiting,
   and receives a reclaimed slot instead of a second refusal. `/api/health` reports the live gauge
-  under `sessions`. See [docs/SESSION_CAPACITY_FIX.md](docs/SESSION_CAPACITY_FIX.md).
+  under `sessions`. See [the archived session-capacity investigation](docs/archive/SESSION_CAPACITY_FIX.md).
 - The model bundle is loaded once per process and shared read-only by inference workers. These
   limits keep the design appropriate for the existing 1 shared CPU / 1 GB Fly machine.
 - Completed-run History is separate: the API stores aggregate completion summaries in SQLite under
@@ -242,27 +245,28 @@ From the repository root:
 python -m venv venv
 ```
 
-Activate it, then install dependencies. On Windows PowerShell:
+Activate it, then install the pinned Python 3.12 development/test dependencies (including the
+CPU-only PyTorch wheel) from either shell:
 
 ```powershell
+# Windows PowerShell
 .\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
-
-On macOS/Linux:
 
 ```bash
+# macOS/Linux
 source venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
 
-Installing CPU PyTorch first avoids selecting the larger default PyPI build where the CPU wheel is
-suitable. The committed XGBoost, GRU, scaler, and feature metadata artifacts mean you do **not**
-need to regenerate training datasets just to launch the app.
+`requirements.txt` contains runtime packages; `requirements-dev.txt` adds pytest and HTTPX. Both use
+`constraints-py312.txt`, whose exact transitive pins target Python 3.12. CPU-only PyTorch is selected
+from the official PyTorch CPU wheel index in `requirements.txt`, so Docker, CI, and local installs
+use the same backend. The committed XGBoost, GRU, scaler, and feature metadata artifacts mean you do
+**not** need to regenerate training datasets just to launch the app.
 
 Build the frontend and start the API:
 
@@ -305,41 +309,58 @@ API documentation is at <http://127.0.0.1:8000/docs>.
 
 ## Windows demo and diagnostic scripts
 
-The root scripts are intentionally retained for demo users:
+The Windows launchers and diagnostic helper live under `scripts/`:
 
-- **`Start-Demo.ps1`** starts a detached local server, sets seed `131` and AI on, writes
-  `server.log` / `server.err`, and opens the dashboard. It looks for `venv\Scripts\python.exe`, then
-  falls back to `python` on `PATH`.
-- **`Start-Demo.bat`** runs the server in its window and opens the dashboard. It expects the project
-  `venv` to exist.
-- **`Stop-Demo.bat`** stops the local server listening on port `8000`; it is the matching stop
-  helper for both launchers.
-- **`diag.ps1`** checks the console source/build files, model artifacts, the backend health endpoint,
-  tick advancement, and Python import status. Run it from PowerShell with `.\diag.ps1` after
-  activating the project environment.
+- **`scripts/Start-Demo.ps1`** starts a detached local server, sets seed `131` and AI on, writes
+  `server.log` / `server.err` in the repository root, and opens the dashboard. It looks for
+  `venv\Scripts\python.exe`, then falls back to `python` on `PATH`.
+- **`scripts/Start-Demo.bat`** runs the server in its window and opens the dashboard. It expects the
+  project `venv` to exist.
+- **`scripts/Stop-Demo.bat`** stops AutoNOC's Uvicorn process on port `8000`. It checks the process
+  command line and refuses to kill an unrelated service that happens to own the port; it is the
+  matching stop helper for both launchers.
+- **`scripts/diag.ps1`** checks the console source/build files, model artifacts, the backend health
+  endpoint, tick advancement, and Python import status. Run it from PowerShell with
+  `.\scripts\diag.ps1` after activating the project environment.
 
-Create the expected Windows environment with the quickstart above before using `Start-Demo.bat`. For
-the detached PowerShell launcher, allow scripts in the current PowerShell process if needed:
+Create the expected Windows environment with the quickstart above before using the launcher. For the
+detached PowerShell launcher, allow scripts in the current PowerShell process if needed:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\Start-Demo.ps1
+.\scripts\Start-Demo.ps1
 ```
 
 ## Tests and reproducibility
 
-Run the Python and frontend suites from the repository root:
+Install Python development dependencies once with `python -m pip install -r requirements-dev.txt`,
+then run the Python and frontend unit/build/format gates from the repository root:
 
 ```bash
 python -m pytest tests/ -q
+npm ci --prefix frontend
+npm run format:check --prefix frontend
 npm test --prefix frontend
 npm run build --prefix frontend
-npm run format:check --prefix frontend
 ```
 
-The CI workflow builds the console and runs the Python suite. The active
-[GitHub Actions workflow](.github/workflows/ci.yml) is **deploy-focused; it does not run these test
-suites**.
+For the isolated Esri status/retry browser smoke test, install Chromium once and run:
+
+```bash
+cd frontend
+npx playwright install chromium
+cd ..
+npm run test:e2e --prefix frontend -- e2e/map-status.spec.ts
+```
+
+The Playwright config starts the local API automatically unless `AUTONOC_TEST_URL` points it at an
+already-running test server. The Prettier format check is also enforced in CI.
+
+The active [GitHub Actions workflow](.github/workflows/ci.yml) runs the frontend format check,
+Vitest suite, production build, the welcome-screen/Esri map status-and-retry Playwright smoke test,
+the Python suite, and a Docker image build with no push on pull requests targeting `main` and pushes
+to `main`. Pull requests are validation-only; deployment runs only after the test job succeeds on a
+`main` push.
 
 Optional dataset/model and study commands:
 
@@ -391,11 +412,11 @@ Fly.io app is built from the repository's multi-stage `Dockerfile`: Node 22 buil
 then a Python 3.12 runtime serves FastAPI and the bundled frontend. `fly.toml` configures the `ams`
 primary region, one shared-CPU / 1 GB machine, and the `/data` volume for completed-run summaries.
 
-The active [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs `flyctl deploy --remote-only`
-on pushes to `main` and pull requests targeting `main`, and enforces a single primary-region
-simulation machine. PR-triggered runs use the existing Fly app; they are deployments, not staging
-checks. Despite the workflow's name, it is **not** a Python/frontend test gate. Tests should be run
-separately before merging.
+The active [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the Python suite, frontend
+format check and Vitest suite, production build, welcome-screen/Esri status-and-retry Playwright
+smoke test, and a Docker image build with no push on pushes to `main` and pull requests targeting
+`main`. Pull requests do not deploy. Only a successful `main` push runs `flyctl deploy --remote-only`;
+the deploy job also enforces a single primary-region simulation machine.
 
 ## Repository layout
 
@@ -405,18 +426,18 @@ autonoc/
   ai/                 Feature pipeline, Doctor, Oracle, and inference worker
   api/                FastAPI routes, schemas, telemetry projections, run summaries
   scripts/            Sanity check, counterfactual, seed-casting, and export tools
-  web/                Legacy static fallback; current UI is built from frontend/
+  web/                Static fallback served when the React build is absent
 frontend/
-  src/                Console modules: API client, store, map, views, panels, styles
-  public/assets/      Logo and hero images used by the console
+  src/                React components, map, data, services, unit tests, and styles
+  e2e/                Playwright browser tests
+  public/assets/      Hero imagery, logo, and locally bundled fonts
 models/               Tracked trained model, scaler, and metadata artifacts
 reports/              Tracked counterfactual CSV and JSON summary
 tests/                Python engine, AI, lifecycle, and API contract tests
-docs/                 Project and design documentation
-Start-Demo.ps1        Windows detached demo launcher
-Start-Demo.bat        Windows console demo launcher
-Stop-Demo.bat         Windows local server stop helper
-diag.ps1              Windows environment and live-server diagnostic
+docs/                 Current guidance, asset licenses, and design docs
+  archive/            Dated reviews and superseded investigations
+CONTRIBUTING.md       Contributor workflow and verification gates
+scripts/              Windows demo launchers and local diagnostic helper
 ```
 
 ## Honest limitations and interpretation
@@ -441,8 +462,8 @@ diag.ps1              Windows environment and live-server diagnostic
   separate.
 - **Not a secure operator service.** Demo control endpoints do not implement user authentication or
   authorization. Do not expose a writable instance to an untrusted network.
-- **Street basemap requires external access.** The vector tiles are not bundled; if the provider or
-  WebGL is unavailable, the UI falls back to its schematic map.
+- **Street basemap requires external access.** Esri raster tiles are not bundled; if the provider is
+  unavailable, the UI keeps its local schematic map visible and offers a retry.
 
 ## License
 

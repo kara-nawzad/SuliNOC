@@ -24,12 +24,13 @@ htmlcov
 
 # Node dependencies and generated frontend/test output
 **/node_modules
-frontend/.vite
-frontend/.npm
-frontend/dist
+**/.vite
+**/.npm
+**/dist
 autonoc/web/dist
 **/test-results
 **/playwright-report
+**/blob-report
 *.tsbuildinfo
 
 # Local secrets and environment-specific configuration

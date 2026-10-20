@@ -162,10 +162,15 @@ At 1× speed one tick ≈ 1 wall-clock second, so the acts fall at roughly
               └────────────────┬────────────────┘
                                │ HTTP / tick-cursor deltas
                     ┌──────────▼──────────┐
-                    │  autonoc/web        │
-                    │  Leaflet dashboard  │
-                    │  renders, never     │
-                    │  computes (I6)      │
+                    │  frontend/ React UI │
+                    │  React + Leaflet    │
+                    │  build →            │
+                    │  autonoc/web/dist   │
+                    └──────────┬──────────┘
+                               │ if no React build
+                    ┌──────────▼──────────┐
+                    │ autonoc/web fallback│
+                    │ Leaflet static UI   │
                     └─────────────────────┘
 ```
 
@@ -178,10 +183,11 @@ At 1× speed one tick ≈ 1 wall-clock second, so the acts fall at roughly
   torch / xgboost / sklearn / pandas. Never calls `engine.step()`.
 - **api/** — FastAPI. Owns the production clock (a lifespan task), the
   process lock, the cursor-delta protocol, and the control surface.
-- **web/** — a single-page Leaflet dashboard (bundled, offline-capable). It
-  renders whatever the API sends and computes nothing: no status names, no
-  colours, no thresholds in JavaScript — all of it comes from
-  `GET /api/config` (invariant I5).
+- **frontend/** — the canonical React/Leaflet UI. Its Vite build is written
+  to `autonoc/web/dist` and served by FastAPI.
+- **autonoc/web/** — the retained static Leaflet fallback used only when the
+  React build is absent. Both interfaces render API data; neither reimplements
+  engine decisions.
 
 ### 7. The twelve invariants
 
@@ -747,7 +753,7 @@ same fleet, travel, and repair constraints:
 | **A** | no AI — reactive dispatch only (status quo) | — |
 | **B** | advisory — Oracle suggests; a human approves pre-dispatches; **no automatic tier-1** | 2 ticks (10 min) |
 | **C** | autonomous — Commander acts: tier-1 instant, tier-2 approved fast (high-trust operator) | 1 tick (5 min) |
-| **D** | clairvoyant — perfect knowledge of every *gradual* fault, zero false positives, dispatch timed so crews are on site at activation (travel-aware, never parking crews for hours) | 0 |
+| **D** | clairvoyant — predictive upper bound for gradual faults; travel-aware dispatch with no approval delay | 0 |
 
 **The honest bound:** instant (unpredictable) faults are not pre-empted in
 *any* arm, including D — a lightning strike is an exogenous shock. D
@@ -763,7 +769,7 @@ dispatch). The headline comparison (autonomous vs clairvoyant) uses **downtime
 saved** — the physical outcome — not the flat cost model.
 
 **Results, 30 seeds × 10 days** (from `reports/counterfactual_summary.json`,
-the most recent committed run):
+last regenerated 2026-10-15; the study was not rerun during this cleanup):
 
 | Arm | Availability | Downtime (tower-min) | Activated | Pre-empted | False | Crew-h | MTTR (min) | Cost |
 |-----|-------------|----------------------|-----------|------------|-------|--------|------------|------|
@@ -771,6 +777,8 @@ the most recent committed run):
 | B advisory | 98.31 ± 0.03 | 73,104 ± 1,381 | 1,154 | 0 | 0.7 | 1,001 | 103.2 | 103,850 |
 | **C autonomous** | **98.42 ± 0.03** | **68,147 ± 1,491** | **736** | **423** | 147.0 | 1,006 | 103.3 | **90,464** |
 | D clairvoyant | 98.52 ± 0.03 | 63,948 ± 1,401 | 675 | 490 | 1.0 | 1,037 | 109.1 | 82,829 |
+
+The committed report records **1.03 mean false dispatches per D run**; the observed result should not be described as zero false dispatches.
 
 (Regenerated 2026-10-15 on the corrected noise/power semantics and the
 evaluation-honesty engine: validation-fitted calibration, no truth-gate, and
@@ -784,14 +792,14 @@ constraints.
 
 **Findings:**
 
-- **Advisory is not better than no-AI** — its 167 tower-minutes of downtime
-  saved sit inside the noise band while its cost proxy is a rounding error
-  *worse* (−23): approval latency plus standby expiries eat the entire
-  predictive advantage. The argument is for autonomy, not suggestion.
-- Autonomous saves ~13,400 tower-minutes of cost per seed-run while using
-  about the same crew-hours — the value comes from **fewer, shorter
-  outages**, not more crew work. The honest false-dispatch charge (147 per
-  run) is included in that figure.
+- **Advisory B's mean downtime is 166.84 tower-minutes below A**, while its
+  mean cost proxy is 22.67 units higher and it records no pre-emptions. Those
+  differences are descriptive means, not a separate statistical-significance
+  test.
+- Autonomous C reduces the M7 cost proxy by **13,363.50 units per ten-day
+  run** versus A while using about the same crew-hours. These model units are
+  not downtime minutes or dollars; C's 147 false dispatches are included in
+  the proxy.
 - Even D's MTTR *rises* (103.3 → 109.1): pre-positioned crews occasionally
   wait, and the mix of repairs shifts. Availability still improves — the
   physical outcome is what the headline uses.
@@ -806,7 +814,7 @@ python -m autonoc.scripts.counterfactual --rules    # rules verdicts, no models
 
 ### 21. Testing
 
-**87 test functions** across 7 files:
+**Historical inventory at the time this section was written:** 87 test functions across 7 files. The current checkout collects 146 Python test items in 12 files (`python -m pytest --collect-only -q`, 2026-10-20); this older table is not a complete inventory. The React suite currently has 39 Vitest tests in 14 files, plus a CI-gated Playwright smoke test that checks the welcome assets and Esri map-status/retry path.
 
 | File | Tests | What they guard |
 |------|-------|-----------------|
@@ -822,12 +830,14 @@ Four tests are gated on the gitignored `data/` directory and skip on a fresh
 clone (that is deliberate — `@needs_data`). `test_model_is_not_memorising_geography`
 was missing that gate (audit §29 #10) and now carries it.
 
-**CI:** the committed workflow "CI & Deploy" is still deploy-only — GitHub
-rejected the update from this branch's app token (no `workflows` permission).
-A test-gated replacement (ubuntu-latest, Python 3.12, CPU-only torch wheel
-for speed, fly.io deploy `needs: test`) is committed ready-to-use at
-`docs/ci-proposed.yml`; copying it over `.github/workflows/ci.yml` with a
-human account activates it.
+**CI (updated 2026-10-20):** `.github/workflows/ci.yml` installs the pinned
+Python 3.12 development dependencies and frontend packages, runs Python tests,
+the frontend format and Vitest checks, builds React, runs the welcome-asset
+and Esri map status/retry Playwright smoke test, and builds a Docker image
+without pushing on pull requests targeting `main` and pushes to `main`. Fly
+deploy runs only after a successful, green push to `main`; pull requests are
+validation-only. The former proposal remains archived at
+`docs/archive/ci-proposed.yml`.
 
 ---
 
@@ -843,7 +853,7 @@ forever and the client silently desyncs).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | Serves the Leaflet dashboard |
+| GET | `/` | Serves the built React UI, or the retained static Leaflet fallback if the build is absent |
 | GET | `/api/config` | Single source of truth (status names/colours, thresholds, map, EPC, depot, agg sites, break-even) |
 | GET | `/api/data` | Full resync snapshot |
 | GET | `/api/delta?since=<tick>` | Cursor-based state deltas — read-only, idempotent; resyncs if lag > 60 ticks |
@@ -924,8 +934,7 @@ Framer Motion + deck.gl componentisation) is recorded in DESIGN_VISION.md.
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-pip install torch --index-url https://download.pytorch.org/whl/cpu   # slimmer CPU build (optional)
+python -m pip install -r requirements-dev.txt
 
 python -m autonoc.scripts.sanity_check    # headless physics report
 python -m autonoc.ai.dataset              # ~3 min -> data/*.csv
@@ -940,12 +949,10 @@ Run everything **from the repo root** — `models/` and `data/` are resolved
 relative to the working directory. If `RULES MODE` appears in the AI panel,
 the model artifacts are missing (see §29) — re-run the pipeline.
 
-One-line note on `requirements.txt`: the `torch` line's trailing
-`--index-url https://pytorch.org` is **ignored by pip's requirements-file
-parser** (file options must be on their own line); torch is installed from
-PyPI — which is the CUDA build, so expect a large download even on CPU-only
-machines. The separate `pip install torch --index-url
-https://download.pytorch.org/whl/cpu` line above is the slimmer path.
+`requirements.txt` pins the runtime packages and selects the CPU-only PyTorch
+wheel through the official CPU index. `requirements-dev.txt` adds pytest and
+HTTPX; both use the checked-in Python 3.12 constraints in
+`constraints-py312.txt`.
 
 ### 25. The model pipeline and its artifacts
 
@@ -963,18 +970,21 @@ the live server needs — see the audit note on which are and aren't committed
 
 ### 26. Deployment (fly.io)
 
-- `Dockerfile`: two-stage build on `python:3.12.14` → slim, venv,
-  `pip install -r requirements.txt`, `COPY . .`, CMD uvicorn on
-  `0.0.0.0:8080`.
+- `Dockerfile`: Node 22 builds the React assets; a Python 3.12.14 builder
+  installs the locked runtime requirements (including CPU-only PyTorch), then
+  a slim Python runtime receives the app, committed model files, and
+  `autonoc/web/dist` at `0.0.0.0:8080`. The source `autonoc/web/` fallback is
+  preserved for non-Docker runs where the built `dist` directory is absent.
 - `fly.toml`: app `autonoc-project`, region `ams`, 1 shared CPU, 1024 MB,
-  force HTTPS, machines auto-start/stop (scale to zero).
-- **Auto-deploy:** the CI workflow runs `flyctl deploy --remote-only` on
-  every push/PR to `main`. A fresh build from the GitHub source therefore
-  contains exactly what is committed — including, once committed, the model
-  artifacts. `.dockerignore` excludes only `fly.toml`, `.git/`,
-  `__pycache__/`, `.envrc`, `.venv/` — note it does **not** exclude
-  `models/`, so a *local* `fly deploy` also bakes in untracked local model
-  files.
+  force HTTPS, and a persistent `/data` volume for completed-run summaries.
+- **CI and deployment:** CI validates pull requests targeting `main` and
+  pushes to `main` with the Python suite, frontend format/unit/build checks,
+  Playwright smoke test, and a Docker image build that does not push. Only a
+  successful push to `main` runs `flyctl deploy --remote-only`; pull requests
+  do not deploy. The workflow pins the Flyctl setup action to a commit SHA.
+  `.dockerignore` excludes local environments, caches, tests, and docs while
+  retaining the committed model files and counterfactual JSON required by the
+  build.
 
 ### 27. The demo, step by step
 
@@ -984,8 +994,10 @@ $env:AUTONOC_AI = 1
 python -m uvicorn autonoc.api.main:app --port 8000
 ```
 
-or `Start-Demo.ps1` / `Start-Demo.bat` (background server, AI auto-on,
-relative paths — work from any clone).
+or `scripts/Start-Demo.ps1` (detached) / `scripts/Start-Demo.bat` (runs in its
+window), both with AI auto-on and paths relative to the script location. Neither
+start helper kills an existing port-8000 process; `scripts/Stop-Demo.bat` stops
+only an AutoNOC Uvicorn process and leaves unrelated listeners alone.
 
 1. Open `http://localhost:8000`. At 1× speed one tick ≈ 1 s of demo time.
 2. ~1:00 (Act 1): SLY-eNB-080 (Salim St) starts degrading. The AI panel
@@ -1039,32 +1051,34 @@ relative paths — work from any clone).
 
 ### 29. Known issues and inconsistencies (audited against the code, 2026-08; resolutions marked)
 
-1. ~~**`requirements.txt` missing `pandas`/`scikit-learn`/`xgboost`.**~~
-   **RESOLVED:** all three are committed in `requirements.txt`; the training
-   pipeline runs from a fresh clone and `test_docs_and_dependencies_exist`
-   passes. (The trailing `--index-url https://pytorch.org` on the torch line
-   is still silently dropped by pip's requirements parser — documented in the
-   file itself and kept because the working fly.io deploy uses that exact
-   line. CI installs a CPU-only torch wheel first to stay fast.)
+1. ~~**Runtime dependencies were incomplete/unpinned and Torch used a malformed index option.**~~
+   **RESOLVED (2026-10-20):** Python 3.12 runtime pins now live in
+   `requirements.txt` and `constraints-py312.txt`; CPU-only PyTorch is selected
+   with a standalone official CPU-index option and an exact `+cpu` version.
+   `requirements-dev.txt` adds pytest and HTTPX. CI and Docker install the same
+   runtime set; the Python 3.12 CI job is the installation/runtime validation.
 2. ~~**Model artifacts split between committed and gitignored.**~~
    **RESOLVED:** `doctor_scaler.npz`, `oracle_gru.pt` and `oracle_stats.npz`
    are committed alongside `doctor_xgb.json` / `feature_order.json`, so a
    fresh clone — and any CI auto-deploy from `main` — boots in **ML mode**,
    and `test_cast_seed_is_verified_by_models` runs instead of skipping.
-3. ~~**README test count is stale ("64").**~~ **RESOLVED:** README now says
-   **87** (invariants 11, regressions 20, telecom 17, AI 12, commander 14,
-   counterfactual 7, polish 6) matching `pytest --collect-only`.
-4. ~~**README CI claim ("Linux and Windows") did not match a deploy-only
-   workflow.**~~ **RESOLVED (2026-10-15):** `.github/workflows/ci.yml` now
-   runs the full test job (frontend build + Vitest, pytest, Playwright smoke)
-   and gates the Fly deploy, which fires only on pushes to `main`. The
-   earlier workflow-write permission blocker no longer applies; the
-   historical proposal remains at `docs/ci-proposed.yml`.
-5. ~~**README M7 table was from an older 8×5 run.**~~ **RESOLVED:** README
-   now quotes the committed 30 seeds × 10 days summary (98.75 / 98.75 /
-   98.30-98.52 availability; C saves 5,124 downtime tower-min and 12.9% of
-   the cost proxy; 55.0% of the clairvoyant bound — superseded 2026-10-15 by
-   the regenerated evaluation-honesty run).
+3. **Historical README test-count correction.** An earlier README count of
+   64 was changed to 87 at the time. The current README deliberately avoids a
+   fixed count; `pytest --collect-only` found 146 Python test items on
+   2026-10-20.
+4. ~~**README CI claim ("Linux and Windows") did not match the workflow.**~~
+   **RESOLVED (2026-10-20):** `.github/workflows/ci.yml` runs Python tests,
+   the frontend format and unit checks, builds the React app, and verifies the
+   welcome assets plus Esri map status/retry in Playwright on pull requests
+   targeting `main` and pushes to `main`. Pull requests are validation-only;
+   Fly deploys only after a successful `main` push. The superseded proposal
+   remains at `docs/archive/ci-proposed.yml`.
+5. **Historical M7 table (superseded 2026-10-15).** An earlier README draft
+   quoted an 8×5 run (98.75 / 98.75 availability). The current README and UI
+   use the committed 30-seed × 10-day report: availability 98.30–98.52%; C
+   saves 5,124 downtime tower-minutes and 12.9% of the cost proxy; 55.0% of the
+   clairvoyant downtime-reduction headroom. That report was not regenerated
+   during the present cleanup.
 6. **`TRUE_PREVALENCE` config vs measured.** `config.py` documents
    `TRUE_PREVALENCE = 0.022` (from review #2), while the committed Doctor
    test-set measure is 1.32% prevalence. The constant is documentation-grade
@@ -1086,7 +1100,7 @@ relative paths — work from any clone).
     = 30 min" while `APPROVE_LATENCY["B"] == 2`.**~~ **RESOLVED (v2.1):**
     docstring corrected to 2 ticks = 10 min, matching §32 and the code.
 
-### 29a. Correctness pass, 2026-10-15 (see docs/PROJECT_STUDY_2026-10-15.md)
+### 29a. Correctness pass, 2026-10-15 (see docs/archive/PROJECT_STUDY_2026-10-15.md)
 
 Changes applied after the whole-project audit, all covered by tests:
 

@@ -1,6 +1,6 @@
 # The 90-Second Executive Pitch
 
-*AutoNOC — a Non-RT RIC that pays for itself.*
+*AutoNOC — a network-operations simulation with modeled results, not measured savings.*
 Spoken script; stage directions in italics. Rehearsed runtime: 85–95 s.
 
 ---
@@ -19,16 +19,17 @@ Spoken script; stage directions in italics. Rehearsed runtime: 85–95 s.
 ## 0:15 — THE PROOF, IN NUMBERS  (~20 s)
 
 > "Thirty seeds, ten simulated days each, identical fault schedules per arm.
-> Against a pure rule-engine NOC, AutoNOC cuts **5,124 tower-minutes of
-> downtime** and **12.9% of the cost proxy** — and it reaches **55.0% of a
-> clairvoyant dispatcher**: two thirds of what a crystal ball would get you,
-> with zero false alarms at the site. The advisory arm — AI that waits for a
-> human to click approve — scores exactly zero benefit. Latency eats it.
-> That is the argument for autonomous, tiered policy."
+> In this simulator, autonomous AutoNOC cuts **5,124 tower-minutes of downtime**
+> and **12.9% of the cost proxy** — model units, not dollars. It captures
+> **55.0% of the A-to-D downtime-reduction headroom**, not two thirds. Arm C
+> records **147 false dispatches per ten-day run**, and they are charged in the
+> proxy. Advisory B has 167 fewer mean downtime tower-minutes than A, but its
+> cost proxy is 23 units higher and it records no pre-emptions. These are
+> modeled results, not a measured operator ROI."
 
 ## 0:35 — LIVE DEMO  (~35 s)
 
-*Run: `Start-Demo.bat` (or uvicorn), seed 131, 'Storm over Goizha'.*
+*Run: `scripts/Start-Demo.bat` (or uvicorn), seed 131, 'Storm over Goizha'.*
 
 > "Watch the mountain ridge — Goizha, off-grid **Type C** solar sites.
 > The PdM rApp raises an amber sonar warning **45 minutes before** the first
@@ -47,12 +48,12 @@ Spoken script; stage directions in italics. Rehearsed runtime: 85–95 s.
 
 ## 1:10 — CLOSE / ROI  (~20 s)
 
-> "So the ask is small and the arithmetic is public: every number you saw
-> is reproduced by a deterministic simulation with 87 passing tests and a
-> four-arm counterfactual you can rerun yourself — no vendor black box.
-> 5,124 tower-minutes back on air, 12.9% off the cost proxy, and 30 alarms
-> instead of 30 phone calls. I'd like two pilots: Goizha for predictive
-> dispatch, Bakrajo for power and fuel integrity. Shall we pick the seeds?"
+> "So the ask is small and the arithmetic is public: these are results from
+> a deterministic simulation and a four-arm counterfactual, not a vendor
+> black box or a measured production claim. The study reports 5,124 fewer
+> tower-minutes of downtime and a 12.9% reduction in its cost proxy. I'd like
+> to validate the scenarios with operators before making a deployment or
+> savings claim. Shall we pick the pilot sites?"
 
 ---
 

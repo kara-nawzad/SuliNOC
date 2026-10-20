@@ -242,20 +242,68 @@ function makeDistrictRow(a) {
 }
 
 /* ------------------------------------------------------------ map */
+const ESRI_STREET_TILES =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+let streetLayer = null;
+let streetAttempt = 0;
+let streetTimer = null;
+
+function setStreetStatus(message, retry = false) {
+  setTxt('map-status-text', message);
+  $('map-retry').classList.toggle('hidden', !retry);
+}
+
+function loadStreetLayer() {
+  if (!map) return;
+  const attempt = ++streetAttempt;
+  if (streetTimer) clearTimeout(streetTimer);
+  if (streetLayer && map.hasLayer(streetLayer)) map.removeLayer(streetLayer);
+
+  let loaded = false;
+  let unavailableShown = false;
+  let tileErrors = 0;
+  const showUnavailable = () => {
+    if (attempt !== streetAttempt || loaded || unavailableShown) return;
+    unavailableShown = true;
+    if (streetTimer) clearTimeout(streetTimer);
+    setStreetStatus('Streets unavailable · network view', true);
+    $('mapfade').style.opacity = 0;
+  };
+
+  setStreetStatus('Loading Esri streets…');
+  const layer = L.tileLayer(ESRI_STREET_TILES, {
+    maxZoom: 19,
+    attribution: 'Tiles &copy; <a href="https://www.esri.com">Esri</a>, HERE, Garmin, USGS'
+  });
+  streetLayer = layer;
+  layer.on('tileload', () => {
+    if (attempt !== streetAttempt || loaded) return;
+    loaded = true;
+    if (streetTimer) clearTimeout(streetTimer);
+    setStreetStatus('Street map · Esri');
+    $('mapfade').style.opacity = 0;
+  });
+  layer.on('tileerror', () => {
+    if (attempt !== streetAttempt || loaded) return;
+    if (++tileErrors >= 4) showUnavailable();
+  });
+  layer.addTo(map);
+  streetTimer = setTimeout(showUnavailable, 10000);
+}
+
 function initMap() {
   try {
     map = L.map('map', { zoomControl: false, preferCanvas: true })
           .setView([35.5613, 45.4309], 12.6);
     canvas = L.canvas({ padding: .4 });
     svgRen = L.svg({ padding: .4 });
-    /* CartoDB Dark Matter: charcoal basemap so the neon layer reads */
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19, subdomains: 'abcd',
-      attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    }).on('load', () => { $('mapfade').style.opacity = 0; }).addTo(map);
-    setTimeout(() => { $('mapfade').style.opacity = 0; }, 2600);
     map.on('click', () => closeDrawer());
+    $('map-retry').addEventListener('click', event => {
+      event.stopPropagation();
+      loadStreetLayer();
+    });
     mapOk = true;
+    loadStreetLayer();
   } catch (e) { onScreenError('map init failed: ' + e); }
 }
 

@@ -1,0 +1,18 @@
+# Source inputs for the Python 3.12 dependency constraints.
+# CPU-only torch itself is pinned in requirements.txt and installed from the official
+# PyTorch CPU wheel index; its non-CUDA runtime dependencies are listed below.
+fastapi[standard]==0.151.0
+uvicorn==0.54.0
+numpy==2.4.6
+pandas==3.0.6
+scikit-learn==1.9.1
+xgboost==3.2.0
+pytest==9.1.1
+httpx==0.28.1
+filelock
+typing-extensions>=4.10.0
+setuptools>=77.0.3
+sympy>=1.13.3
+networkx>=2.5.1
+jinja2
+fsspec>=0.8.5

@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#081426" />
+    <title>SuliNOC · Network operations</title>
+    <link rel="preload" as="image" href="/assets/hero-city-sunset.jpg" />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/assets/fonts/newsreader-latin-600-normal.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/assets/fonts/manrope-latin-500-normal.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/assets/fonts/ibm-plex-mono-latin-500-normal.woff2"
+    />
+    <style>
+      @font-face {
+        font-family: Manrope;
+        src: url("/assets/fonts/manrope-latin-400-normal.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: Manrope;
+        src: url("/assets/fonts/manrope-latin-500-normal.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: Newsreader;
+        src: url("/assets/fonts/newsreader-latin-600-normal.woff2")
+          format("woff2");
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "IBM Plex Mono";
+        src: url("/assets/fonts/ibm-plex-mono-latin-500-normal.woff2")
+          format("woff2");
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+      }
+      :root {
+        color-scheme: dark;
+        font-family: Manrope, sans-serif;
+        background: #081426;
+        color: #f6f8fc;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        min-width: 320px;
+        min-height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+      button {
+        font: inherit;
+      }
+      #hero {
+        position: relative;
+        display: grid;
+        width: 100%;
+        height: 100%;
+        min-height: 100dvh;
+        overflow: hidden;
+        isolation: isolate;
+        background: #081426;
+        transition:
+          opacity 280ms ease,
+          visibility 280ms ease;
+      }
+      #hero.off {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .hero-background,
+      .hero-shade {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        user-select: none;
+      }
+      .hero-background {
+        z-index: -3;
+        object-fit: cover;
+        object-position: center 56%;
+      }
+      .hero-shade {
+        z-index: -2;
+        background:
+          linear-gradient(
+            90deg,
+            rgb(5 15 31 / 82%) 0%,
+            rgb(5 15 31 / 58%) 43%,
+            rgb(5 15 31 / 8%) 100%
+          ),
+          linear-gradient(0deg, rgb(5 15 31 / 54%) 0%, transparent 48%),
+          linear-gradient(180deg, rgb(5 15 31 / 34%) 0%, transparent 32%);
+      }
+      .hero-topbar {
+        position: absolute;
+        z-index: 1;
+        top: max(28px, env(safe-area-inset-top));
+        left: clamp(24px, 5vw, 76px);
+        right: clamp(24px, 5vw, 76px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        animation: appear 700ms 100ms both;
+      }
+      .wordmark {
+        font-size: 19px;
+        font-weight: 500;
+        letter-spacing: -0.055em;
+      }
+      .wordmark span {
+        color: #83e6d7;
+      }
+      .top-meta,
+      .eyebrow,
+      .hero-footnote {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+      .top-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: rgb(246 248 252 / 78%);
+      }
+      .top-meta::before {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #83e6d7;
+        box-shadow: 0 0 13px rgb(131 230 215 / 70%);
+        content: "";
+      }
+      .hero-copy {
+        position: absolute;
+        z-index: 1;
+        left: clamp(24px, 8.3vw, 128px);
+        bottom: max(clamp(46px, 11vh, 112px), env(safe-area-inset-bottom));
+        width: min(690px, calc(100vw - 48px));
+        animation: appear 850ms 180ms both;
+      }
+      .eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 22px;
+        color: #a8eee2;
+      }
+      .eyebrow::before {
+        display: inline-block;
+        width: 29px;
+        height: 1px;
+        background: currentColor;
+        content: "";
+      }
+      h1 {
+        max-width: 670px;
+        margin: 0;
+        font-family: Newsreader, Georgia, serif;
+        font-size: clamp(48px, 7.3vw, 98px);
+        font-weight: 600;
+        line-height: 0.97;
+        letter-spacing: -0.055em;
+        text-wrap: balance;
+        text-shadow: 0 2px 26px rgb(5 15 31 / 20%);
+      }
+      .lede {
+        max-width: 480px;
+        margin: 22px 0 0;
+        color: rgb(246 248 252 / 83%);
+        font-size: clamp(14px, 1.35vw, 17px);
+        line-height: 1.7;
+      }
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 32px;
+      }
+      .hero-button {
+        display: inline-flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 0 20px;
+        border: 1px solid transparent;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        transition:
+          transform 180ms ease,
+          background-color 180ms ease,
+          border-color 180ms ease;
+      }
+      .hero-button:hover {
+        transform: translateY(-2px);
+      }
+      .hero-button:focus-visible {
+        outline: 2px solid #a8eee2;
+        outline-offset: 3px;
+      }
+      #enter {
+        color: #081426;
+        background: #eaf9f6;
+      }
+      #enter:hover {
+        background: #fff;
+      }
+      #enter svg {
+        width: 16px;
+        height: 16px;
+        transition: transform 180ms ease;
+      }
+      #enter:hover svg {
+        transform: translateX(3px);
+      }
+      #skip {
+        border-color: rgb(246 248 252 / 38%);
+        color: #f6f8fc;
+        background: rgb(5 15 31 / 16%);
+      }
+      #skip:hover {
+        border-color: rgb(246 248 252 / 72%);
+        background: rgb(5 15 31 / 36%);
+      }
+      .hero-footnote {
+        margin: 27px 0 0;
+        color: rgb(246 248 252 / 66%);
+        font-size: 9px;
+        letter-spacing: 0.08em;
+      }
+      @keyframes appear {
+        from {
+          opacity: 0;
+          transform: translateY(9px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @media (max-width: 700px) {
+        .hero-background {
+          object-position: 68% center;
+        }
+        .hero-shade {
+          background:
+            linear-gradient(90deg, rgb(5 15 31 / 58%), rgb(5 15 31 / 12%)),
+            linear-gradient(
+              0deg,
+              rgb(5 15 31 / 90%) 0%,
+              rgb(5 15 31 / 58%) 48%,
+              transparent 100%
+            );
+        }
+        .hero-topbar {
+          top: max(20px, env(safe-area-inset-top));
+          left: 22px;
+          right: 22px;
+        }
+        .top-meta {
+          font-size: 8px;
+          letter-spacing: 0.06em;
+        }
+        .hero-copy {
+          bottom: max(34px, env(safe-area-inset-bottom));
+          left: 24px;
+          width: calc(100vw - 48px);
+        }
+        .eyebrow {
+          margin-bottom: 16px;
+          font-size: 9px;
+        }
+        h1 {
+          max-width: 560px;
+          font-size: clamp(46px, 12vw, 68px);
+        }
+        .lede {
+          max-width: 420px;
+          margin-top: 16px;
+          font-size: 14px;
+          line-height: 1.55;
+        }
+        .hero-actions {
+          gap: 9px;
+          margin-top: 22px;
+        }
+        .hero-button {
+          min-height: 46px;
+          padding: 0 15px;
+        }
+        .hero-footnote {
+          margin-top: 19px;
+          font-size: 8px;
+        }
+      }
+      @media (max-height: 560px) and (min-width: 701px) {
+        .hero-copy {
+          bottom: 24px;
+        }
+        .eyebrow {
+          margin-bottom: 12px;
+        }
+        h1 {
+          font-size: clamp(42px, 8vh, 58px);
+        }
+        .lede {
+          margin-top: 12px;
+        }
+        .hero-actions {
+          margin-top: 17px;
+        }
+        .hero-footnote {
+          margin-top: 12px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 1ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 1ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="hero" aria-labelledby="hero-title">
+      <img
+        class="hero-background"
+        src="/assets/hero-city-sunset.jpg"
+        alt=""
+        fetchpriority="high"
+      />
+      <div class="hero-shade" aria-hidden="true"></div>
+      <header class="hero-topbar">
+        <div class="wordmark" aria-label="SuliNOC">Suli<span>NOC</span></div>
+        <div class="top-meta">SIMULATED NETWORK · 300 MODELED SITES</div>
+      </header>
+      <section class="hero-copy">
+        <p class="eyebrow">SULAYMANIYAH · NETWORK OPERATIONS</p>
+        <h1 id="hero-title">A clearer view of a connected city.</h1>
+        <p class="lede">
+          Explore a deterministic telecom simulation where signals, sites, and
+          field teams come together in one operations console.
+        </p>
+        <div class="hero-actions">
+          <button class="hero-button" id="enter" type="button">
+            Enter workspace
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4.75 12h14.5m-6-6 6 6-6 6"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button class="hero-button" id="skip" type="button">
+            Skip intro
+          </button>
+        </div>
+        <p class="hero-footnote">
+          SIMULATION ONLY · NO LIVE OPERATOR NETWORK DATA
+        </p>
+      </section>
+    </main>
+    <script>
+      document.addEventListener(
+        "click",
+        (event) => {
+          const target =
+            event.target instanceof Element
+              ? event.target.closest("#enter, #skip")
+              : null;
+          if (!target) return;
+          event.preventDefault();
+          window.parent.postMessage(
+            { type: "sulinoc:enter" },
+            window.location.origin,
+          );
+        },
+        true,
+      );
+    </script>
+  </body>
+</html>

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/leaflet.css?v=8"/>
-<link rel="stylesheet" href="/static/styles.css?v=8"/>
+<link rel="stylesheet" href="/static/styles.css?v=9"/>
 </head>
 <body>
 <div id="shell">
@@ -105,6 +105,10 @@
         <div class="ct">CITY NETWORK MAP — SULAYMANIYAH
           <span class="va" id="map-hint">click a node for the inspector</span></div>
         <div id="map"><div id="mapfade"></div>
+          <div id="map-status" role="status" aria-live="polite">
+            <span id="map-status-text">Loading Esri streets…</span>
+            <button id="map-retry" class="hidden" type="button">Retry streets</button>
+          </div>
           <div id="legend">
             <b>SITE STATUS</b>
             <div class="li"><span class="sw" style="background:var(--green)"></span>In Service</div>
@@ -204,6 +208,6 @@
 <div id="booterr" class="hidden"></div>
 
 <script src="/static/leaflet.js?v=8"></script>
-<script src="/static/app.js?v=8"></script>
+<script src="/static/app.js?v=9"></script>
 </body>
 </html>

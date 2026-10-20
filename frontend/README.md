@@ -1,47 +1,75 @@
-# SuliNOC console (frontend)
+# AutoNOC React command center
 
-A plain JavaScript single-page console, bundled by Vite into `autonoc/web/dist` and served by
-the FastAPI backend. There is no framework: `src/` holds small ES modules.
+The canonical web UI lives in `frontend/`. It uses React 18, TypeScript, Vite, Tailwind CSS 4,
+Framer Motion, Lucide, and React Leaflet. Fonts are bundled locally. Operational telemetry is read
+from the API; the M7 study display imports the committed `reports/counterfactual_summary.json`
+directly so its displayed metrics do not drift from the report.
 
+## Build and run
+
+From the repository root, install the pinned Python 3.12 development dependencies and frontend packages:
+
+```sh
+python -m pip install -r requirements-dev.txt
+npm ci --prefix frontend
+npm run build --prefix frontend
+python -m uvicorn autonoc.api.main:app --host 0.0.0.0 --port 8000
 ```
-index.html          Shell, hero intro, sidebar, top bar, modal and toast containers
-src/main.js         Boot, navigation, top-bar sim controls, search, delegated actions
-src/store.js        Polls /api/delta every second; notifies views on snapshot or run change
-src/api.js          Client for /api/config, /api/delta, /api/control/*, history, telemetry
-src/views.js        Overview, Live network, Towers, Topology, Incidents, AI, Analytics, Maintenance, Settings
-src/panels.js       Node inspector, scenario builder, counterfactual report, run history, about
-src/map.js          Schematic SVG network map projected from the engine's lat/lon bounds
-src/components.js   Sparklines, donut, gauges, chips
-src/data/           counterfactual_summary.json (copied from reports/ when regenerated)
-public/assets/      Logo and hero images
+
+Open `http://localhost:8000`. Vite writes the production build to `autonoc/web/dist`, which FastAPI
+serves at `/`; the existing `autonoc/web/` app remains a fallback if no React build is present. The
+Dockerfile builds the UI in its Node stage and copies only the built files into the Python runtime.
+It also copies the canonical M7 JSON into the frontend build stage so the same import works in Docker.
+
+For hot reload, keep the API on port 8000 and run this in another terminal:
+
+```sh
+npm run dev --prefix frontend
 ```
 
-## Develop
+Open Vite's URL (normally port 5173). Browser API requests use relative `/api` paths and Vite proxies
+them to the API. The Vite server binds to `0.0.0.0` for preview environments.
 
-```bash
+## Main interactions
+
+- Header: pause/resume, paused single-step, 0.25–10× speed, fiber-cut demo, supported node faults,
+  and AI enable/disable.
+- Map: Esri World Street Map raster tiles under Leaflet network overlays. The local schematic stays
+  available; the map shows loading/ready/unavailable status and offers a retry if initial tile loads
+  fail. Esri tiles require network access. Attribution remains visible.
+- Search, incident list, active and completed-run history, site inspection, analytics, and fleet
+  status are driven by API snapshots/configuration. Formatting, search, filtering, and map marker
+  geometry are client presentation logic—not operational predictions.
+- The counterfactual modal shows A-vs-C outcomes from the committed M7 JSON, including confidence
+  intervals and model-cost units. The separate live dollar scenario is illustrative and uses stated
+  assumptions; it is not an observed saving. The JSON was not regenerated during this cleanup.
+- Dialogs use native focus management and Escape handling; controls have accessible names and visible
+  focus styles. Reduced-motion preferences disable decorative movement.
+
+The API and demo controls are unauthenticated by design for the public simulation. This is not a
+production operator service; do not expose writable instances to untrusted networks.
+
+## Verification
+
+```sh
+npm test --prefix frontend
+npm run build --prefix frontend
+python -m pytest tests/ -q
+```
+
+The Prettier check is part of CI and covers `src/`, `e2e/`, and the frontend root configuration.
+
+Playwright requires Chromium. The config starts a local API automatically unless `AUTONOC_TEST_URL`
+is set to an existing test server. The CI-gated smoke test first verifies the welcome hero's local
+images and font files, then exercises Esri tile failure status and retry:
+
+```sh
 cd frontend
-npm install
-npm run dev      # Vite on 0.0.0.0; /api is proxied to http://127.0.0.1:8000
-npm run build    # writes autonoc/web/dist for the backend to serve
+npx playwright install chromium
+npm run test:e2e -- e2e/map-status.spec.ts
 ```
 
-Run the backend in another terminal: `python -m uvicorn autonoc.api.main:app --port 8000`.
-
-## What the console does
-
-- **Overview:** availability, throughput, drop rate, offline and degraded sites, incidents, crews,
-  AI actionable count, the site-power donut and fleet status, recent alerts.
-- **Live network:** the map of sites, fibre rings, crews and routes; district and status filters;
-  click a site to open its inspector. Pan with drag, zoom with the wheel.
-- **Tower inventory:** searchable, filterable site table; rows open the inspector.
-- **Topology:** each fibre ring with its state; a double cut is a two-click confirm.
-- **Incidents:** active incidents and the severity-filtered event log.
-- **AI predictions:** Commander on/off, precision against break-even, pending tier-2 actions with
-  approve and veto, auto-approve delay, highest-risk sites.
-- **Analytics:** 30 min / 24 h / 7 d telemetry charts, the counterfactual impact table, run history.
-- **Maintenance:** crew states, targets, ETAs and the work queue.
-- **Settings:** simulation speed, run details, and the scenario builders.
-
-Top-bar controls (pause/resume, step, speed, cut fibre, inject fault, AI) work from every view.
-
-All telemetry, positions, incidents and crew movements are simulated by the backend engine.
+The active GitHub Actions workflow runs the format check, Vitest, production build, this
+welcome-screen/map-status smoke test, the Python suite, and a Docker image build without pushing on
+pull requests targeting `main` and pushes to `main`; only a successful push to `main` deploys. See
+the root README for the API, deployment, and study interpretation.
