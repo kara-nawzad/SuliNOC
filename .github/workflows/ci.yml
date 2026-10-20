@@ -35,7 +35,27 @@ jobs:
           pip install -r requirements.txt
           pip install httpx
       - name: Test engine and API contracts
-        run: python -m pytest tests/ -q
+        id: python-tests
+        continue-on-error: true
+        run: python -m pytest tests/ -q --junitxml=python-test-results.xml
+      - name: Report Python test failures
+        if: steps.python-tests.outcome == 'failure'
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+
+          root = ET.parse("python-test-results.xml").getroot()
+          for case in root.iter("testcase"):
+              issue = case.find("failure")
+              if issue is None:
+                  issue = case.find("error")
+              if issue is None:
+                  continue
+              message = " ".join((issue.get("message") or issue.text or "").split())
+              message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+              print(f"::error title=pytest failure::{case.get('name')}: {message[:3000]}")
+          PY
+          exit 1
       - name: Install frontend dependencies
         run: npm ci --prefix frontend
       - name: Test frontend unit suite
