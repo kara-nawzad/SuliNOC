@@ -1,6 +1,6 @@
 # AutoNOC React command center
 
-The canonical web UI lives in `frontend-react/`. It uses React 18, TypeScript, Vite, Tailwind CSS 4,
+The canonical web UI lives in `frontend/`. It uses React 18, TypeScript, Vite, Tailwind CSS 4,
 Framer Motion, Lucide, and React Leaflet. Fonts are bundled locally. Operational telemetry is read
 from the API; the M7 study display imports the committed `reports/counterfactual_summary.json`
 directly so its displayed metrics do not drift from the report.
@@ -10,8 +10,8 @@ directly so its displayed metrics do not drift from the report.
 From the repository root, with the Python dependencies installed:
 
 ```sh
-npm ci --prefix frontend-react
-npm run build --prefix frontend-react
+npm ci --prefix frontend
+npm run build --prefix frontend
 python -m uvicorn autonoc.api.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -23,7 +23,7 @@ It also copies the canonical M7 JSON into the frontend build stage so the same i
 For hot reload, keep the API on port 8000 and run this in another terminal:
 
 ```sh
-npm run dev --prefix frontend-react
+npm run dev --prefix frontend
 ```
 
 Open Vite's URL (normally port 5173). Browser API requests use relative `/api` paths and Vite proxies
@@ -51,8 +51,8 @@ production operator service; do not expose writable instances to untrusted netwo
 ## Verification
 
 ```sh
-npm test --prefix frontend-react
-npm run build --prefix frontend-react
+npm test --prefix frontend
+npm run build --prefix frontend
 python -m pytest tests/ -q
 ```
 
@@ -62,7 +62,7 @@ not part of CI.
 Playwright tests require a separately started API and an installed Chromium browser:
 
 ```sh
-cd frontend-react
+cd frontend
 npx playwright install chromium
 npm run test:e2e
 ```

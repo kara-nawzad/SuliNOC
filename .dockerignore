@@ -28,7 +28,7 @@ htmlcov
 **/.npm
 **/dist
 autonoc/web/dist
-frontend-react/standalone/out
+frontend/standalone/out
 **/test-results
 **/playwright-report
 *.tsbuildinfo

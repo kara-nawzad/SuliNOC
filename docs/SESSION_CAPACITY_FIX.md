@@ -17,7 +17,7 @@ AutoNOC is at capacity (8 active browser sessions). Close an idle dashboard and 
 
 That refusal is produced by `autonoc/api/sessions.py` (`SessionRegistry.get`) and returned by the
 `browser_session` middleware in `autonoc/api/main.py`. The frontend banner that shows the
-`detail` text is `frontend-react/src/App.tsx`.
+`detail` text is `frontend/src/App.tsx`.
 
 ## Root causes
 
@@ -64,7 +64,7 @@ Every session writes its completed-run summaries to its own SQLite directory und
 | `get_or_default` retry path | `autonoc/api/sessions.py`, `autonoc/api/main.py` | A request marked `X-AutoNOC-Retry: 1` is a visitor who is waiting, so it adopts the oldest session instead of being refused. The refusal is now transient by construction. |
 | Capacity defaults | `autonoc/api/main.py` | `AUTONOC_MAX_SESSIONS` default 16 (was 8); `AUTONOC_SESSION_IDLE_SECONDS` default 180 s (was 1800 s). One `engine.step()` costs ~2 ms and 8 live engines hold ~100 MB RSS, so the old bound was far below what the machine can serve. |
 | Deadline-based pacing | `autonoc/api/main.py` | The simulation clock advances one tick per `BASE_TICK_SECONDS` regardless of how many sessions are live; overruns resync instead of banking debt. |
-| Retry on refusal | `frontend-react/src/services/api.ts` | On `503 / session_capacity` the dashboard waits for `Retry-After` and repeats the request once with the retry marker. A 503 never reaches the engine, so this is safe for POST controls too. |
+| Retry on refusal | `frontend/src/services/api.ts` | On `503 / session_capacity` the dashboard waits for `Retry-After` and repeats the request once with the retry marker. A 503 never reaches the engine, so this is safe for POST controls too. |
 | Capacity gauge | `autonoc/api/main.py` (`/api/health`) | `sessions: {active, max, idle_timeout_seconds, reclaim_grace_seconds, reclaim_enabled, reclaimed}` makes saturation observable before a visitor is affected. |
 | Session cleanup | `autonoc/api/main.py`, `autonoc/api/sessions.py` | Retiring a session stops its inference worker and removes its summary directory (`on_drop`). |
 | Cookie hardening | `autonoc/api/main.py` | The session cookie is `Secure` whenever the request arrived over TLS (`AUTONOC_COOKIE_SECURE=auto`, forced with `1`/`0`). |

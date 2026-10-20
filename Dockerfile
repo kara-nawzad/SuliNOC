@@ -1,9 +1,9 @@
 # Reproducible React assets; Node is not present in the runtime image.
 FROM node:22-bookworm-slim AS frontend
 WORKDIR /app/frontend
-COPY frontend-react/package.json frontend-react/package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
-COPY frontend-react/ ./
+COPY frontend/ ./
 COPY reports/counterfactual_summary.json /app/reports/counterfactual_summary.json
 RUN npm run build
 

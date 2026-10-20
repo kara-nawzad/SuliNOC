@@ -21,12 +21,12 @@ $files = @(
   "autonoc\api\main.py",
   "autonoc\engine\engine.py",
   "autonoc\engine\config.py",
-  "frontend-react\package.json",
-  "frontend-react\package-lock.json",
-  "frontend-react\src\App.tsx",
-  "frontend-react\src\components\NetworkMap.tsx",
-  "frontend-react\src\components\TileBasemap.tsx",
-  "frontend-react\src\data\counterfactualStudy.ts",
+  "frontend\package.json",
+  "frontend\package-lock.json",
+  "frontend\src\App.tsx",
+  "frontend\src\components\NetworkMap.tsx",
+  "frontend\src\components\TileBasemap.tsx",
+  "frontend\src\data\counterfactualStudy.ts",
   "reports\counterfactual_summary.json",
   "models\doctor_xgb.json",
   "models\doctor_scaler.npz",
@@ -47,7 +47,7 @@ $distIndex = Join-Path $root "autonoc\web\dist\index.html"
 if (Test-Path $distIndex) {
   Write-Host "  OK   autonoc\web\dist\index.html"
 } else {
-  Write-Host "  INFO React bundle is not built yet. Run npm ci --prefix frontend-react, then npm run build --prefix frontend-react."
+  Write-Host "  INFO React bundle is not built yet. Run npm ci --prefix frontend, then npm run build --prefix frontend."
 }
 
 Write-Host ""

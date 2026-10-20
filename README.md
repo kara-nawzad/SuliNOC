@@ -21,7 +21,7 @@ assumption-based dollar scenarios.
 > an integration with a live mobile network, or an O-RAN-certified implementation. Its models are
 > trained and evaluated on simulator-generated data.
 
-**[Open the live demo](https://autonoc-project.fly.dev/)** · [Frontend guide](frontend-react/README.md) ·
+**[Open the live demo](https://autonoc-project.fly.dev/)** · [Frontend guide](frontend/README.md) ·
 [Design vision](docs/DESIGN_VISION.md)
 
 ---
@@ -89,7 +89,7 @@ PyTorch; pytest; multi-stage Docker deployment to Fly.io.
              └────────────┬─────────────┘
                           │ relative HTTP requests
              ┌────────────▼─────────────┐
-             │ frontend-react/          │
+             │ frontend/          │
              │ SuliNOC console (React)  │
              └──────────────────────────┘
 ```
@@ -270,8 +270,8 @@ need to regenerate training datasets just to launch the app.
 Build the frontend and start the API:
 
 ```bash
-npm ci --prefix frontend-react
-npm run build --prefix frontend-react
+npm ci --prefix frontend
+npm run build --prefix frontend
 python -m uvicorn autonoc.api.main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -279,11 +279,11 @@ Open <http://127.0.0.1:8000>. The production build is written to `autonoc/web/di
 it at `/`. For hot reload, keep the API running and use a second terminal:
 
 ```bash
-npm run dev --prefix frontend-react
+npm run dev --prefix frontend
 ```
 
 Open the Vite URL shown in the terminal (normally port `5173`). Vite proxies relative `/api`
-requests to the local API. See [`frontend-react/README.md`](frontend-react/README.md) for frontend controls,
+requests to the local API. See [`frontend/README.md`](frontend/README.md) for frontend controls,
 contracts, and browser-test setup.
 
 To start the seed-131 demo with AI enabled manually (PowerShell):
@@ -335,11 +335,11 @@ Run the Python and frontend suites from the repository root:
 
 ```bash
 python -m pytest tests/ -q
-npm test --prefix frontend-react
-npm run build --prefix frontend-react
+npm test --prefix frontend
+npm run build --prefix frontend
 ```
 
-`npm run format:check --prefix frontend-react` currently reports pre-existing formatting debt in 16 files; it is not a CI gate.
+`npm run format:check --prefix frontend` currently reports pre-existing formatting debt in 16 files; it is not a CI gate.
 
 The active [GitHub Actions workflow](.github/workflows/ci.yml) runs `npm ci` and the React production
 build plus the Python test suite on pull requests and pushes to `main`. Deployment runs only after a
@@ -409,7 +409,7 @@ autonoc/
   api/                FastAPI routes, schemas, telemetry projections, run summaries
   scripts/            Sanity check, counterfactual, seed-casting, and export tools
   web/                Static fallback served when the React build is absent
-frontend-react/
+frontend/
   src/                React components, map, data, services, tests, and styles
   public/assets/      Hero imagery, logos, and locally bundled fonts
 models/               Tracked trained model, scaler, and metadata artifacts
