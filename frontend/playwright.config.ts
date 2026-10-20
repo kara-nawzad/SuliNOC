@@ -1,4 +1,12 @@
 import { defineConfig } from "@playwright/test";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const repositoryRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+
 export default defineConfig({
   testDir: "./tests",
   timeout: 45_000,
@@ -22,4 +30,14 @@ export default defineConfig({
       : {},
     trace: "retain-on-failure",
   },
+  webServer: process.env.AUTONOC_TEST_URL
+    ? undefined
+    : {
+        command:
+          "python -m uvicorn autonoc.api.main:app --host 127.0.0.1 --port 8000",
+        cwd: repositoryRoot,
+        url: "http://127.0.0.1:8000/api/health",
+        reuseExistingServer: !process.env.CI,
+        timeout: 180_000,
+      },
 });
