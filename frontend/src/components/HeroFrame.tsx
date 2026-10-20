@@ -27,18 +27,19 @@ export function HeroFrame({
     (event: SyntheticEvent<HTMLIFrameElement>) => {
       const doc = event.currentTarget.contentDocument;
       if (!doc) return;
-      doc.addEventListener(
-        "click",
-        (ev) => {
-          const target = ev.target as Element | null;
-          if (!target?.closest?.("#enter, #skip")) return;
-          ev.preventDefault();
-          ev.stopImmediatePropagation();
-          ev.stopPropagation();
-          onEnter();
-        },
-        true,
-      );
+      for (const action of doc.querySelectorAll<HTMLButtonElement>(
+        "#enter, #skip",
+      )) {
+        action.addEventListener(
+          "click",
+          (ev) => {
+            ev.preventDefault();
+            ev.stopImmediatePropagation();
+            onEnter();
+          },
+          { once: true },
+        );
+      }
       sync();
     },
     [onEnter, sync],

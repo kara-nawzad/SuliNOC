@@ -27,10 +27,13 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   );
 
   await page.goto("/");
+  const welcomeFrame = page.locator('iframe[title="SuliNOC welcome"]');
   await page
     .frameLocator('iframe[title="SuliNOC welcome"]')
     .getByRole("button", { name: "Enter workspace" })
     .click();
+  await expect(welcomeFrame).toHaveCSS("visibility", "hidden");
+  await expect(welcomeFrame).toHaveCSS("pointer-events", "none");
 
   const mapStatus = page.locator(".map-mode");
   await expect(mapStatus).toBeVisible();
