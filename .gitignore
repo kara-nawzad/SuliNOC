@@ -29,9 +29,9 @@ htmlcov/
 
 # Node, Vite, and package-manager output
 **/node_modules/
-/frontend/dist/
-/frontend/.vite/
-/frontend/.npm/
+/frontend-react/dist/
+/frontend-react/.vite/
+/frontend-react/.npm/
 .npm/
 npm-debug.log*
 yarn-debug.log*
@@ -43,8 +43,8 @@ pnpm-debug.log*
 /autonoc/web/dist/
 
 # Browser-test output
-/frontend/test-results/
-/frontend/playwright-report/
+**/test-results/
+**/playwright-report/
 
 # IDE and operating-system files
 .vscode/

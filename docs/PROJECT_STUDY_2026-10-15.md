@@ -17,7 +17,7 @@ produce it.
 | Backend suite (`pytest`, Python 3.11, torch 2.14 CPU wheel) | **117 passed, 6 skipped, 0 failed** |
 | Skipped tests | data-dependent (`@needs_data` / `needs_seq`): `data/` is gitignored and regenerable |
 | Frontend suite (`npm test`, Vitest) | **29 passed (8 files)** |
-| Playwright config | present (`frontend/playwright.config.ts`), exercised via `docs/ci-proposed.yml` |
+| Playwright config | present (`frontend-react/playwright.config.ts`), exercised via `docs/ci-proposed.yml` |
 | Model artifacts | committed and loadable (`doctor_xgb.json`, `doctor_scaler.npz`, `oracle_gru.pt`, `oracle_stats.npz`) — the live server boots in ML mode |
 | Working tree | clean |
 
@@ -35,7 +35,7 @@ contract**, **CI/deployment**, and **hygiene/docs**.
 | P1: shared simulation, no isolation | Per-browser session engines with cookies, capacity, idle expiry (`api/sessions.py`, `tests/test_sessions.py`), plus the `SESSION_CAPACITY_FIX` iteration |
 | P2: finite schedule silently expired | Day-30 tick completes a run summary and resets under a new `run_id` (`main.py:288-292`, `api/run_history.py`) |
 | P2: worker restart/lifecycle chaos | `InferenceWorker` has stop/run-id generation tokens; scoring results from a stale run are discarded (`serve.py:225-236`) |
-| P3: legacy vanilla JS UI concentration | React 18 + TypeScript app in `frontend/` is the served UI (Docker builds `frontend/` into `autonoc/web/dist`); 29 Vitest tests plus component tests |
+| P3: legacy vanilla JS UI concentration | React 18 + TypeScript app in `frontend-react/` is the served UI (Docker builds it into `autonoc/web/dist`); 29 Vitest tests plus component tests |
 
 ## 3. Changes we still have to make
 

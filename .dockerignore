@@ -24,10 +24,11 @@ htmlcov
 
 # Node dependencies and generated frontend/test output
 **/node_modules
-frontend/.vite
-frontend/.npm
-frontend/dist
+**/.vite
+**/.npm
+**/dist
 autonoc/web/dist
+frontend-react/standalone/out
 **/test-results
 **/playwright-report
 *.tsbuildinfo
