@@ -358,8 +358,9 @@ already-running test server. The Prettier format check is also enforced in CI.
 
 The active [GitHub Actions workflow](.github/workflows/ci.yml) runs the frontend format check,
 Vitest suite, production build, the welcome-screen/Esri map status-and-retry Playwright smoke test,
-and the Python suite on pull requests targeting `main` and pushes to `main`. Pull requests are
-validation-only; deployment runs only after the test job succeeds on a `main` push.
+the Python suite, and a Docker image build with no push on pull requests targeting `main` and pushes
+to `main`. Pull requests are validation-only; deployment runs only after the test job succeeds on a
+`main` push.
 
 Optional dataset/model and study commands:
 
@@ -411,11 +412,11 @@ Fly.io app is built from the repository's multi-stage `Dockerfile`: Node 22 buil
 then a Python 3.12 runtime serves FastAPI and the bundled frontend. `fly.toml` configures the `ams`
 primary region, one shared-CPU / 1 GB machine, and the `/data` volume for completed-run summaries.
 
-The active [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the Python suite, the frontend
-format check and Vitest suite, a production build, and the welcome-screen/Esri status-and-retry
-Playwright smoke test on pushes to `main` and pull requests targeting `main`. Pull requests do not
-deploy. Only a successful `main` push runs `flyctl deploy --remote-only`; the deploy job also enforces
-a single primary-region simulation machine.
+The active [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the Python suite, frontend
+format check and Vitest suite, production build, welcome-screen/Esri status-and-retry Playwright
+smoke test, and a Docker image build with no push on pushes to `main` and pull requests targeting
+`main`. Pull requests do not deploy. Only a successful `main` push runs `flyctl deploy --remote-only`;
+the deploy job also enforces a single primary-region simulation machine.
 
 ## Repository layout
 

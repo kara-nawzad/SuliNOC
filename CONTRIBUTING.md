@@ -36,7 +36,7 @@ npx playwright install chromium
 npm run test:e2e -- e2e/map-status.spec.ts
 ```
 
-Playwright starts the API automatically when `AUTONOC_TEST_URL` is unset. Setting that variable opts into an already-running test server instead. GitHub Actions runs the Python suite, frontend format/unit/build gates, and this browser smoke test on pull requests targeting `main` and pushes to `main`. Pull requests are validation-only; deployment is limited to successful pushes to `main`.
+Playwright starts the API automatically when `AUTONOC_TEST_URL` is unset. Setting that variable opts into an already-running test server instead. GitHub Actions runs the Python suite, frontend format/unit/build gates, this browser smoke test, and a Docker image build without pushing the image on pull requests targeting `main` and pushes to `main`. Pull requests are validation-only; deployment is limited to successful pushes to `main`.
 
 ## Data, models, and generated output
 

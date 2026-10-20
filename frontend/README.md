@@ -69,7 +69,7 @@ npx playwright install chromium
 npm run test:e2e -- e2e/map-status.spec.ts
 ```
 
-The active GitHub Actions workflow runs the format check, Vitest, the production build, this
-welcome-screen/map-status smoke test, and the Python suite on pull requests targeting `main` and pushes
-to `main`; only a successful push to `main` deploys. See the root README for the API, deployment,
-and study interpretation.
+The active GitHub Actions workflow runs the format check, Vitest, production build, this
+welcome-screen/map-status smoke test, the Python suite, and a Docker image build without pushing on
+pull requests targeting `main` and pushes to `main`; only a successful push to `main` deploys. See
+the root README for the API, deployment, and study interpretation.

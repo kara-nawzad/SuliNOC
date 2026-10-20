@@ -832,11 +832,12 @@ was missing that gate (audit §29 #10) and now carries it.
 
 **CI (updated 2026-10-20):** `.github/workflows/ci.yml` installs the pinned
 Python 3.12 development dependencies and frontend packages, runs Python tests,
-the frontend format and Vitest checks, builds React, and runs the welcome-asset
-and Esri map status/retry Playwright smoke test on pull requests targeting
-`main` and pushes to `main`. Fly deploy runs only after a successful, green
-push to `main`; pull requests are validation-only. The former proposal remains
-archived at `docs/archive/ci-proposed.yml`.
+the frontend format and Vitest checks, builds React, runs the welcome-asset
+and Esri map status/retry Playwright smoke test, and builds a Docker image
+without pushing on pull requests targeting `main` and pushes to `main`. Fly
+deploy runs only after a successful, green push to `main`; pull requests are
+validation-only. The former proposal remains archived at
+`docs/archive/ci-proposed.yml`.
 
 ---
 
@@ -978,11 +979,12 @@ the live server needs — see the audit note on which are and aren't committed
   force HTTPS, and a persistent `/data` volume for completed-run summaries.
 - **CI and deployment:** CI validates pull requests targeting `main` and
   pushes to `main` with the Python suite, frontend format/unit/build checks,
-  and Playwright smoke test. Only a successful push to `main` runs
-  `flyctl deploy --remote-only`; pull requests do not deploy. The workflow
-  pins the Flyctl setup action to a commit SHA. `.dockerignore` excludes
-  local environments, caches, tests, and docs while retaining the committed
-  model files and counterfactual JSON required by the build.
+  Playwright smoke test, and a Docker image build that does not push. Only a
+  successful push to `main` runs `flyctl deploy --remote-only`; pull requests
+  do not deploy. The workflow pins the Flyctl setup action to a commit SHA.
+  `.dockerignore` excludes local environments, caches, tests, and docs while
+  retaining the committed model files and counterfactual JSON required by the
+  build.
 
 ### 27. The demo, step by step
 
