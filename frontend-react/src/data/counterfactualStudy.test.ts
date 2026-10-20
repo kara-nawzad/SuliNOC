@@ -26,6 +26,15 @@ it("projects every arm and headline directly from the committed M7 report", () =
     expect(displayed.costCi95).toBe(source.cost_tower_min.ci95);
   }
 
+  expect(counterfactualDeltas.preemptedEpisodes).toBe(
+    report.arms.C.pre_empted.mean - report.arms.A.pre_empted.mean,
+  );
+  expect(counterfactualDeltas.falseDispatches).toBe(
+    report.arms.C.false_dispatches.mean - report.arms.A.false_dispatches.mean,
+  );
+  expect(counterfactualDeltas.crewHours).toBe(
+    report.arms.C.crew_hours.mean - report.arms.A.crew_hours.mean,
+  );
   expect(counterfactualDeltas.costTowerMinutes).toBe(
     report.arms.A.cost_tower_min.mean - report.arms.C.cost_tower_min.mean,
   );

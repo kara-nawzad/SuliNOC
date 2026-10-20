@@ -154,9 +154,19 @@ export function CounterfactualModal({
                   {c.availabilityPct.toFixed(2)}% ±{" "}
                   {c.availabilityCi95.toFixed(2)}
                 </td>
-                <td className="positive">
-                  +
-                  {counterfactualDeltas.availabilityPercentagePoints.toFixed(2)}{" "}
+                <td
+                  className={
+                    counterfactualDeltas.availabilityPercentagePoints >= 0
+                      ? "positive"
+                      : "caution"
+                  }
+                >
+                  {counterfactualDeltas.availabilityPercentagePoints >= 0
+                    ? "+"
+                    : "−"}
+                  {Math.abs(
+                    counterfactualDeltas.availabilityPercentagePoints,
+                  ).toFixed(2)}{" "}
                   percentage points
                 </td>
               </tr>
@@ -164,11 +174,21 @@ export function CounterfactualModal({
                 <th scope="row">Aggregate tower downtime</th>
                 <td>{towerHours(a.downtimeTowerMinutes)} tower-hours</td>
                 <td>{towerHours(c.downtimeTowerMinutes)} tower-hours</td>
-                <td className="positive">
-                  −{towerHours(counterfactualDeltas.downtimeTowerMinutes)} h (
-                  {counterfactualDeltas.downtimeTowerMinutes.toLocaleString(
-                    "en-US",
+                <td
+                  className={
+                    counterfactualDeltas.downtimeTowerMinutes >= 0
+                      ? "positive"
+                      : "caution"
+                  }
+                >
+                  {counterfactualDeltas.downtimeTowerMinutes >= 0 ? "−" : "+"}
+                  {towerHours(
+                    Math.abs(counterfactualDeltas.downtimeTowerMinutes),
                   )}{" "}
+                  h (
+                  {Math.abs(
+                    counterfactualDeltas.downtimeTowerMinutes,
+                  ).toLocaleString("en-US")}{" "}
                   tower-min)
                 </td>
               </tr>
@@ -176,14 +196,24 @@ export function CounterfactualModal({
                 <th scope="row">Pre-empted episodes · mean</th>
                 <td>{a.preemptedEpisodes.toFixed(1)}</td>
                 <td>{c.preemptedEpisodes.toFixed(1)}</td>
-                <td>+{c.preemptedEpisodes.toFixed(1)} episodes</td>
+                <td>
+                  {counterfactualDeltas.preemptedEpisodes >= 0 ? "+" : "−"}
+                  {Math.abs(counterfactualDeltas.preemptedEpisodes).toFixed(
+                    1,
+                  )}{" "}
+                  episodes
+                </td>
               </tr>
               <tr>
                 <th scope="row">False dispatches · mean</th>
                 <td>{a.falseDispatches.toFixed(1)}</td>
                 <td>{c.falseDispatches.toFixed(1)}</td>
                 <td className="caution">
-                  +{c.falseDispatches.toFixed(1)} false dispatches
+                  {counterfactualDeltas.falseDispatches >= 0 ? "+" : "−"}
+                  {Math.abs(counterfactualDeltas.falseDispatches).toFixed(
+                    1,
+                  )}{" "}
+                  false dispatches
                 </td>
               </tr>
               <tr>
@@ -194,18 +224,38 @@ export function CounterfactualModal({
                 <td>
                   {c.crewHours.toFixed(1)} ± {c.crewHoursCi95.toFixed(1)} h
                 </td>
-                <td className="caution">
-                  +{counterfactualDeltas.crewHours.toFixed(1)} h used · not
-                  saved
+                <td
+                  className={
+                    counterfactualDeltas.crewHours >= 0 ? "caution" : "positive"
+                  }
+                >
+                  {counterfactualDeltas.crewHours >= 0 ? "+" : "−"}
+                  {Math.abs(counterfactualDeltas.crewHours).toFixed(1)} h{" "}
+                  {counterfactualDeltas.crewHours >= 0
+                    ? "more occupied"
+                    : "less occupied"}
                 </td>
               </tr>
               <tr>
                 <th scope="row">M7 cost-model proxy</th>
                 <td>{money(a.costTowerMinutes)} tower-min units</td>
                 <td>{money(c.costTowerMinutes)} tower-min units</td>
-                <td className="positive">
-                  {money(counterfactualDeltas.costTowerMinutes)} units lower ·{" "}
-                  {counterfactualDeltas.costReductionPct.toFixed(1)}%
+                <td
+                  className={
+                    counterfactualDeltas.costTowerMinutes >= 0
+                      ? "positive"
+                      : "caution"
+                  }
+                >
+                  {money(Math.abs(counterfactualDeltas.costTowerMinutes))} units{" "}
+                  {counterfactualDeltas.costTowerMinutes >= 0
+                    ? "lower"
+                    : "higher"}{" "}
+                  · {Math.abs(counterfactualDeltas.costReductionPct).toFixed(1)}
+                  %{" "}
+                  {counterfactualDeltas.costTowerMinutes >= 0
+                    ? "lower"
+                    : "higher"}
                 </td>
               </tr>
             </tbody>

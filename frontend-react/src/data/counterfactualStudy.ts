@@ -44,6 +44,8 @@ const { A, B, C } = counterfactualStudy.arms;
 export const counterfactualDeltas = {
   availabilityPercentagePoints: C.availabilityPct - A.availabilityPct,
   downtimeTowerMinutes: A.downtimeTowerMinutes - C.downtimeTowerMinutes,
+  preemptedEpisodes: C.preemptedEpisodes - A.preemptedEpisodes,
+  falseDispatches: C.falseDispatches - A.falseDispatches,
   crewHours: C.crewHours - A.crewHours,
   costTowerMinutes: A.costTowerMinutes - C.costTowerMinutes,
   costReductionPct:

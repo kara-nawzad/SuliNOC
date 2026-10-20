@@ -47,7 +47,7 @@ it("shows the canonical paired study with non-currency units and closes accessib
 
   expect(
     screen.getByText(
-      `${Math.round(costSaved).toLocaleString("en-US")} units lower · ${costReductionPct.toFixed(1)}%`,
+      `${Math.round(costSaved).toLocaleString("en-US")} units lower · ${costReductionPct.toFixed(1)}% lower`,
     ),
   ).toBeInTheDocument();
   expect(
@@ -56,7 +56,7 @@ it("shows the canonical paired study with non-currency units and closes accessib
     ),
   ).toBeInTheDocument();
   expect(
-    screen.getByText(`+${crewHoursUsed.toFixed(1)} h used · not saved`),
+    screen.getByText(`+${crewHoursUsed.toFixed(1)} h more occupied`),
   ).toBeInTheDocument();
   expect(
     screen.getByText((_, element) =>
