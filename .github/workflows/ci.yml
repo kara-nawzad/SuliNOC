@@ -46,7 +46,7 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: frontend
       - name: Test Esri map status and retry
-        run: npm run test:e2e -- tests/map-status.spec.ts
+        run: npm run test:e2e -- tests/map-status.spec.ts --reporter=github
         working-directory: frontend
       - name: Preserve Playwright failure trace
         if: failure()
