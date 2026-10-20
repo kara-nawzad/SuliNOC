@@ -27,6 +27,7 @@ export function CounterfactualModal({
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const a = study.arms.A;
+  const b = study.arms.B;
   const c = study.arms.C;
   const estimate = estimateIllustrativeRoi(
     data.ai.pre_empted,
@@ -203,8 +204,8 @@ export function CounterfactualModal({
                 <td>{money(a.costTowerMinutes)} tower-min units</td>
                 <td>{money(c.costTowerMinutes)} tower-min units</td>
                 <td className="positive">
-                  {money(counterfactualDeltas.costTowerMinutes)} units lower ·
-                  18.6%
+                  {money(counterfactualDeltas.costTowerMinutes)} units lower ·{" "}
+                  {counterfactualDeltas.costReductionPct.toFixed(1)}%
                 </td>
               </tr>
             </tbody>
@@ -212,10 +213,24 @@ export function CounterfactualModal({
         </div>
 
         <blockquote className="impact-callout">
-          “Autonomous A1 captured {study.clairvoyantDowntimeHeadroomCapturedPct}
-          % of the clairvoyant downtime-reduction headroom in this study. The
-          tested advisory arm was indistinguishable from no-AI: its human
-          approval latency erased the predictive advantage.”
+          “Autonomous A1 captured{" "}
+          {study.clairvoyantDowntimeHeadroomCapturedPct.toFixed(1)}% of the
+          clairvoyant downtime-reduction headroom in this study. Advisory B
+          recorded {b.preemptedEpisodes.toFixed(1)} pre-emptions; its mean
+          downtime was{" "}
+          {Math.abs(counterfactualDeltas.advisoryDowntimeTowerMinutes).toFixed(
+            1,
+          )}{" "}
+          tower-minutes{" "}
+          {counterfactualDeltas.advisoryDowntimeTowerMinutes >= 0
+            ? "lower"
+            : "higher"}{" "}
+          than no-AI, while its cost proxy was{" "}
+          {money(Math.abs(counterfactualDeltas.advisoryCostTowerMinutes))} units{" "}
+          {counterfactualDeltas.advisoryCostTowerMinutes >= 0
+            ? "higher"
+            : "lower"}
+          . Cost-proxy units are not dollars.”
         </blockquote>
 
         <div className="impact-notes">

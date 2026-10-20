@@ -1,68 +1,53 @@
-/**
- * Checked-in M7 counterfactual report summary.
- * Source: reports/counterfactual_summary.json (30 matched seeds x 10 simulated days).
- * Keep these values in sync when that committed report is regenerated.
- */
+import report from "../../../reports/counterfactual_summary.json";
+
+type ArmName = keyof typeof report.arms;
+
+const labels: Record<ArmName, string> = {
+  A: "No AI · reactive dispatch",
+  B: "Advisory · human approval",
+  C: "Autonomous · AutoNOC Commander",
+  D: "Clairvoyant · predictive upper bound",
+};
+
+function readArm(name: ArmName) {
+  const arm = report.arms[name];
+  return {
+    label: labels[name],
+    availabilityPct: arm.availability.mean,
+    availabilityCi95: arm.availability.ci95,
+    downtimeTowerMinutes: arm.downtime_tower_min.mean,
+    preemptedEpisodes: arm.pre_empted.mean,
+    falseDispatches: arm.false_dispatches.mean,
+    crewHours: arm.crew_hours.mean,
+    crewHoursCi95: arm.crew_hours.ci95,
+    costTowerMinutes: arm.cost_tower_min.mean,
+    costCi95: arm.cost_tower_min.ci95,
+  };
+}
+
+/** Display projection of the committed M7 report; metrics stay in the JSON source. */
 export const counterfactualStudy = {
-  seeds: 30,
-  simulatedDaysPerSeed: 10,
-  clairvoyantDowntimeHeadroomCapturedPct: 61.7,
+  seeds: report.meta.n_seeds,
+  simulatedDaysPerSeed: report.meta.days,
+  clairvoyantDowntimeHeadroomCapturedPct:
+    report.headline.pct_of_clairvoyant_downtime_reduction,
   arms: {
-    A: {
-      label: "No AI · reactive dispatch",
-      availabilityPct: 98.75,
-      availabilityCi95: 0.02,
-      downtimeTowerMinutes: 54_033,
-      preemptedEpisodes: 0,
-      falseDispatches: 0,
-      crewHours: 773.33,
-      crewHoursCi95: 13.48,
-      costTowerMinutes: 104_229,
-      costCi95: 1_200.72,
-    },
-    B: {
-      label: "Advisory · human approval",
-      availabilityPct: 98.75,
-      downtimeTowerMinutes: 54_070,
-      preemptedEpisodes: 0,
-      falseDispatches: 4.37,
-      crewHours: 778.9,
-      costTowerMinutes: 104_384.83,
-    },
-    C: {
-      label: "Autonomous · AutoNOC Commander",
-      availabilityPct: 98.88,
-      availabilityCi95: 0.02,
-      downtimeTowerMinutes: 48_369,
-      preemptedEpisodes: 448.03,
-      falseDispatches: 3.77,
-      crewHours: 781.89,
-      crewHoursCi95: 13.71,
-      costTowerMinutes: 84_811.33,
-      costCi95: 1_006.49,
-    },
-    D: {
-      label: "Clairvoyant · predictive upper bound",
-      availabilityPct: 98.96,
-      downtimeTowerMinutes: 44_856.5,
-      preemptedEpisodes: 490.63,
-      falseDispatches: 0.03,
-      crewHours: 813.4,
-      costTowerMinutes: 83_120.67,
-    },
+    A: readArm("A"),
+    B: readArm("B"),
+    C: readArm("C"),
+    D: readArm("D"),
   },
 } as const;
 
+const { A, B, C } = counterfactualStudy.arms;
+
 export const counterfactualDeltas = {
-  availabilityPercentagePoints:
-    counterfactualStudy.arms.C.availabilityPct -
-    counterfactualStudy.arms.A.availabilityPct,
-  downtimeTowerMinutes:
-    counterfactualStudy.arms.A.downtimeTowerMinutes -
-    counterfactualStudy.arms.C.downtimeTowerMinutes,
-  crewHours:
-    counterfactualStudy.arms.C.crewHours - counterfactualStudy.arms.A.crewHours,
-  costTowerMinutes:
-    counterfactualStudy.arms.A.costTowerMinutes -
-    counterfactualStudy.arms.C.costTowerMinutes,
+  availabilityPercentagePoints: C.availabilityPct - A.availabilityPct,
+  downtimeTowerMinutes: A.downtimeTowerMinutes - C.downtimeTowerMinutes,
+  crewHours: C.crewHours - A.crewHours,
+  costTowerMinutes: A.costTowerMinutes - C.costTowerMinutes,
+  costReductionPct:
+    ((A.costTowerMinutes - C.costTowerMinutes) / A.costTowerMinutes) * 100,
+  advisoryDowntimeTowerMinutes: A.downtimeTowerMinutes - B.downtimeTowerMinutes,
+  advisoryCostTowerMinutes: B.costTowerMinutes - A.costTowerMinutes,
 } as const;

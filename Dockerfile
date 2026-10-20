@@ -4,9 +4,7 @@ WORKDIR /app/frontend
 COPY frontend-react/package.json frontend-react/package-lock.json ./
 RUN npm ci
 COPY frontend-react/ ./
-# CARTO basemap key for the Voyager tiles, passed in from the deploy (never committed).
-ARG VITE_CARTO_KEY=""
-ENV VITE_CARTO_KEY=$VITE_CARTO_KEY
+COPY reports/counterfactual_summary.json /app/reports/counterfactual_summary.json
 RUN npm run build
 
 FROM python:3.12.14 AS builder
