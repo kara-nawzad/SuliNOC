@@ -29,7 +29,7 @@ Spoken script; stage directions in italics. Rehearsed runtime: 85–95 s.
 
 ## 0:35 — LIVE DEMO  (~35 s)
 
-*Run: `Start-Demo.bat` (or uvicorn), seed 131, 'Storm over Goizha'.*
+*Run: `scripts/Start-Demo.bat` (or uvicorn), seed 131, 'Storm over Goizha'.*
 
 > "Watch the mountain ridge — Goizha, off-grid **Type C** solar sites.
 > The PdM rApp raises an amber sonar warning **45 minutes before** the first

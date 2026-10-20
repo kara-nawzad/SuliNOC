@@ -75,14 +75,20 @@ def test_cast_seed_is_verified_by_models():
 
 
 def test_docs_and_dependencies_exist():
-    """M8 deliverables: README with honest limitations + requirements.txt."""
+    """Runtime and test dependencies are separated and CPU Torch is pinned."""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     reqs = (ROOT / "requirements.txt").read_text(encoding="utf-8")
+    dev_reqs = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
+    constraints = (ROOT / "constraints-py312.txt").read_text(encoding="utf-8")
     assert "honest limitations" in readme.lower()
     assert "fastapi" in reqs
     assert "xgboost" in reqs
-    assert "torch" in reqs
-    assert "pytest" in reqs
+    assert "torch==2.14.1+cpu" in reqs
+    assert "download.pytorch.org/whl/cpu" in reqs
+    assert "pytest==" in dev_reqs
+    assert "httpx==" in dev_reqs
+    assert "pytest==" in constraints
+    assert "--index-url https://pytorch.org" not in reqs
 
 
 def test_main_respects_autonoc_seed_env(monkeypatch):

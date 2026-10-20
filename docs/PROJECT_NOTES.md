@@ -814,7 +814,7 @@ python -m autonoc.scripts.counterfactual --rules    # rules verdicts, no models
 
 ### 21. Testing
 
-**Historical inventory at the time this section was written:** 87 test functions across 7 files. The current checkout collects 146 Python test items in 12 files (`python -m pytest --collect-only -q`, 2026-10-20); this older table is not a complete inventory. The React suite currently has 39 Vitest tests in 14 files, plus a CI-gated Esri map-status/retry Playwright smoke test.
+**Historical inventory at the time this section was written:** 87 test functions across 7 files. The current checkout collects 146 Python test items in 12 files (`python -m pytest --collect-only -q`, 2026-10-20); this older table is not a complete inventory. The React suite currently has 39 Vitest tests in 14 files, plus a CI-gated Playwright smoke test that checks the welcome assets and Esri map-status/retry path.
 
 | File | Tests | What they guard |
 |------|-------|-----------------|
@@ -830,12 +830,13 @@ Four tests are gated on the gitignored `data/` directory and skip on a fresh
 clone (that is deliberate — `@needs_data`). `test_model_is_not_memorising_geography`
 was missing that gate (audit §29 #10) and now carries it.
 
-**CI (updated 2026-10-20):** `.github/workflows/ci.yml` installs the
-frontend and Python dependencies, runs Python tests and Vitest, builds React,
-and runs the Esri map status/retry Playwright smoke test on pull requests and
-pushes to `main`. Fly deploy runs only after a successful, green push to
-`main`. The former proposal remains archived at
-`docs/archive/ci-proposed.yml`.
+**CI (updated 2026-10-20):** `.github/workflows/ci.yml` installs the pinned
+Python 3.12 development dependencies and frontend packages, runs Python tests,
+the frontend format and Vitest checks, builds React, and runs the welcome-asset
+and Esri map status/retry Playwright smoke test on pull requests targeting
+`main` and pushes to `main`. Fly deploy runs only after a successful, green
+push to `main`; pull requests are validation-only. The former proposal remains
+archived at `docs/archive/ci-proposed.yml`.
 
 ---
 
@@ -932,8 +933,7 @@ Framer Motion + deck.gl componentisation) is recorded in DESIGN_VISION.md.
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-pip install torch --index-url https://download.pytorch.org/whl/cpu   # slimmer CPU build (optional)
+python -m pip install -r requirements-dev.txt
 
 python -m autonoc.scripts.sanity_check    # headless physics report
 python -m autonoc.ai.dataset              # ~3 min -> data/*.csv
@@ -948,12 +948,10 @@ Run everything **from the repo root** — `models/` and `data/` are resolved
 relative to the working directory. If `RULES MODE` appears in the AI panel,
 the model artifacts are missing (see §29) — re-run the pipeline.
 
-One-line note on `requirements.txt`: the `torch` line's trailing
-`--index-url https://pytorch.org` is **ignored by pip's requirements-file
-parser** (file options must be on their own line); torch is installed from
-PyPI — which is the CUDA build, so expect a large download even on CPU-only
-machines. The separate `pip install torch --index-url
-https://download.pytorch.org/whl/cpu` line above is the slimmer path.
+`requirements.txt` pins the runtime packages and selects the CPU-only PyTorch
+wheel through the official CPU index. `requirements-dev.txt` adds pytest and
+HTTPX; both use the checked-in Python 3.12 constraints in
+`constraints-py312.txt`.
 
 ### 25. The model pipeline and its artifacts
 
@@ -971,18 +969,20 @@ the live server needs — see the audit note on which are and aren't committed
 
 ### 26. Deployment (fly.io)
 
-- `Dockerfile`: two-stage build on `python:3.12.14` → slim, venv,
-  `pip install -r requirements.txt`, `COPY . .`, CMD uvicorn on
-  `0.0.0.0:8080`.
+- `Dockerfile`: Node 22 builds the React assets; a Python 3.12.14 builder
+  installs the locked runtime requirements (including CPU-only PyTorch), then
+  a slim Python runtime receives the app, committed model files, and
+  `autonoc/web/dist` at `0.0.0.0:8080`. The source `autonoc/web/` fallback is
+  preserved for non-Docker runs where the built `dist` directory is absent.
 - `fly.toml`: app `autonoc-project`, region `ams`, 1 shared CPU, 1024 MB,
-  force HTTPS, machines auto-start/stop (scale to zero).
-- **Auto-deploy:** the CI workflow runs `flyctl deploy --remote-only` on
-  every push/PR to `main`. A fresh build from the GitHub source therefore
-  contains exactly what is committed — including, once committed, the model
-  artifacts. `.dockerignore` excludes only `fly.toml`, `.git/`,
-  `__pycache__/`, `.envrc`, `.venv/` — note it does **not** exclude
-  `models/`, so a *local* `fly deploy` also bakes in untracked local model
-  files.
+  force HTTPS, and a persistent `/data` volume for completed-run summaries.
+- **CI and deployment:** CI validates pull requests targeting `main` and
+  pushes to `main` with the Python suite, frontend format/unit/build checks,
+  and Playwright smoke test. Only a successful push to `main` runs
+  `flyctl deploy --remote-only`; pull requests do not deploy. The workflow
+  pins the Flyctl setup action to a commit SHA. `.dockerignore` excludes
+  local environments, caches, tests, and docs while retaining the committed
+  model files and counterfactual JSON required by the build.
 
 ### 27. The demo, step by step
 
@@ -992,8 +992,10 @@ $env:AUTONOC_AI = 1
 python -m uvicorn autonoc.api.main:app --port 8000
 ```
 
-or `Start-Demo.ps1` / `Start-Demo.bat` (background server, AI auto-on,
-relative paths — work from any clone).
+or `scripts/Start-Demo.ps1` (detached) / `scripts/Start-Demo.bat` (runs in its
+window), both with AI auto-on and paths relative to the script location. Neither
+start helper kills an existing port-8000 process; `scripts/Stop-Demo.bat` stops
+only an AutoNOC Uvicorn process and leaves unrelated listeners alone.
 
 1. Open `http://localhost:8000`. At 1× speed one tick ≈ 1 s of demo time.
 2. ~1:00 (Act 1): SLY-eNB-080 (Salim St) starts degrading. The AI panel
@@ -1047,13 +1049,12 @@ relative paths — work from any clone).
 
 ### 29. Known issues and inconsistencies (audited against the code, 2026-08; resolutions marked)
 
-1. ~~**`requirements.txt` missing `pandas`/`scikit-learn`/`xgboost`.**~~
-   **RESOLVED:** all three are committed in `requirements.txt`; the training
-   pipeline runs from a fresh clone and `test_docs_and_dependencies_exist`
-   passes. (The trailing `--index-url https://pytorch.org` on the torch line
-   is still silently dropped by pip's requirements parser — documented in the
-   file itself and kept because the working fly.io deploy uses that exact
-   line. CI installs a CPU-only torch wheel first to stay fast.)
+1. ~~**Runtime dependencies were incomplete/unpinned and Torch used a malformed index option.**~~
+   **RESOLVED (2026-10-20):** Python 3.12 runtime pins now live in
+   `requirements.txt` and `constraints-py312.txt`; CPU-only PyTorch is selected
+   with a standalone official CPU-index option and an exact `+cpu` version.
+   `requirements-dev.txt` adds pytest and HTTPX. CI and Docker install the same
+   runtime set; the Python 3.12 CI job is the installation/runtime validation.
 2. ~~**Model artifacts split between committed and gitignored.**~~
    **RESOLVED:** `doctor_scaler.npz`, `oracle_gru.pt` and `oracle_stats.npz`
    are committed alongside `doctor_xgb.json` / `feature_order.json`, so a
@@ -1064,11 +1065,12 @@ relative paths — work from any clone).
    fixed count; `pytest --collect-only` found 146 Python test items on
    2026-10-20.
 4. ~~**README CI claim ("Linux and Windows") did not match the workflow.**~~
-   **RESOLVED (2026-10-20):** `.github/workflows/ci.yml` runs Python and
-   frontend unit tests, builds the React frontend, and exercises the Esri map
-   status/retry flow in Playwright on pull requests and pushes to `main`; Fly
-   deploys only after a successful `main` push. The superseded proposal remains
-   at `docs/archive/ci-proposed.yml`.
+   **RESOLVED (2026-10-20):** `.github/workflows/ci.yml` runs Python tests,
+   the frontend format and unit checks, builds the React app, and verifies the
+   welcome assets plus Esri map status/retry in Playwright on pull requests
+   targeting `main` and pushes to `main`. Pull requests are validation-only;
+   Fly deploys only after a successful `main` push. The superseded proposal
+   remains at `docs/archive/ci-proposed.yml`.
 5. **Historical M7 table (superseded 2026-10-15).** An earlier README draft
    quoted an 8×5 run (98.75 / 98.75 availability). The current README and UI
    use the committed 30-seed × 10-day report: availability 98.30–98.52%; C

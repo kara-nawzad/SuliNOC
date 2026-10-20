@@ -3,18 +3,24 @@
 # ============================================================
 #  The server runs in the background and keeps running even if
 #  you close every PowerShell window. Nothing you type can stop
-#  it. To stop it later, double-click Stop-Demo.bat in the project folder.
+#  it. To stop it later, run scripts\Stop-Demo.bat from the project folder.
 #
-#  RUN (in any PowerShell, from anywhere):
+#  RUN from the repository root (the script also resolves its root from its path):
 #     Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-#     .\Start-Demo.ps1
+#     .\scripts\Start-Demo.ps1
+#  From another directory, invoke this script by its full path.
 # ============================================================
 
 $ErrorActionPreference = "Continue"
-# Resolve the project root relative to this script's own location, so the
-# launcher works from any clone/path. Fall back to PWD if $PSScriptRoot is empty
-# (e.g. Windows PowerShell < 3, or when invoked from an older host).
-$root = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+# Resolve the repository root relative to this script, so it works from any
+# clone/path and does not depend on the caller's current directory.
+$scriptPath = if ($PSScriptRoot) {
+    Join-Path $PSScriptRoot "Start-Demo.ps1"
+} else {
+    $MyInvocation.MyCommand.Path
+}
+$scriptDir = Split-Path -Parent $scriptPath
+$root = Split-Path -Parent $scriptDir
 $py = Join-Path $root "venv\Scripts\python.exe"
 
 if (-not (Test-Path $py)) {
@@ -25,12 +31,29 @@ if (-not (Test-Path $py)) {
 
 Write-Host "=== AutoNOC demo launcher ===" -ForegroundColor Cyan
 
-# 1. stop any leftover server on port 8000
-$busy = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
-if ($busy) {
-    Write-Host "  closing old server on port 8000..." -ForegroundColor Yellow
-    $busy | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
-    Start-Sleep -Milliseconds 800
+# 1. Refuse to take over a port owned by any existing process.
+$busy = @(
+    Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty OwningProcess -Unique
+)
+if ($busy.Count -gt 0) {
+    $autoNocRunning = $false
+    foreach ($ownerPid in $busy) {
+        $process = Get-CimInstance Win32_Process `
+            -Filter "ProcessId = $ownerPid" `
+            -ErrorAction SilentlyContinue
+        if ($process -and $process.CommandLine -match '(?i)\buvicorn(?:\.exe)?\s+autonoc\.api\.main:app\b') {
+            $autoNocRunning = $true
+        }
+    }
+    if ($autoNocRunning) {
+        Write-Host "  AutoNOC is already listening on port 8000." -ForegroundColor Yellow
+        Write-Host "  Open http://127.0.0.1:8000 or stop it with scripts\Stop-Demo.bat."
+    } else {
+        Write-Host "  Port 8000 is occupied by another process; it was left untouched." -ForegroundColor Red
+        Write-Host "  Free port 8000 before starting this demo."
+    }
+    return
 }
 
 # 2. demo seed + auto-enable the AI (inherited by the child process)
@@ -76,5 +99,5 @@ Write-Host "  If it does not, open http://127.0.0.1:8000 yourself."
 Write-Host "  IMPORTANT: if the page still looks empty, press Ctrl+F5 once"
 Write-Host "  to force the browser to drop its old cached copy."
 Write-Host "  You can close ALL PowerShell windows now - the server"
-Write-Host "  keeps running. To stop it, double-click Stop-Demo.bat in the project folder."
+Write-Host "  keeps running. To stop it, run scripts\Stop-Demo.bat from the project folder."
 Write-Host "======================================================"

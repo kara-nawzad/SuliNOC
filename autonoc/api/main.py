@@ -53,7 +53,7 @@ RUN_TICKS = C.TICKS_PER_DAY * RUN_DAYS
 # safety rail against runaway concurrency, not the hardware ceiling. Orphaned
 # sessions (a visitor who lost their cookie) are reclaimed rather than locked
 # out, and idle ones expire quickly, so raising the cap does not weaken the
-# protection it was added for. See docs/SESSION_CAPACITY_FIX.md.
+# protection it was added for. See docs/archive/SESSION_CAPACITY_FIX.md.
 DEFAULT_MAX_SESSIONS = 16
 DEFAULT_SESSION_IDLE_SECONDS = 180.0
 # A dashboard silent for this long may have its slot handed to a new visitor.

@@ -11,9 +11,8 @@ FROM python:3.12.14 AS builder
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 RUN python -m venv .venv
-COPY requirements.txt ./
-RUN .venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu \
-    && .venv/bin/pip install -r requirements.txt
+COPY requirements.txt constraints-py312.txt ./
+RUN .venv/bin/pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.12.14-slim
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1

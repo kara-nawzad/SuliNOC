@@ -7,9 +7,10 @@ directly so its displayed metrics do not drift from the report.
 
 ## Build and run
 
-From the repository root, with the Python dependencies installed:
+From the repository root, install the pinned Python 3.12 development dependencies and frontend packages:
 
 ```sh
+python -m pip install -r requirements-dev.txt
 npm ci --prefix frontend
 npm run build --prefix frontend
 python -m uvicorn autonoc.api.main:app --host 0.0.0.0 --port 8000
@@ -56,18 +57,19 @@ npm run build --prefix frontend
 python -m pytest tests/ -q
 ```
 
-The existing Prettier check is advisory only: it currently finds formatting debt in 16 files and is
-not part of CI.
+The Prettier check is part of CI and covers `src/`, `e2e/`, and the frontend root configuration.
 
 Playwright requires Chromium. The config starts a local API automatically unless `AUTONOC_TEST_URL`
-is set to an existing test server. The CI-gated smoke test exercises Esri tile failure status and retry:
+is set to an existing test server. The CI-gated smoke test first verifies the welcome hero's local
+images and font files, then exercises Esri tile failure status and retry:
 
 ```sh
 cd frontend
 npx playwright install chromium
-npm run test:e2e -- tests/map-status.spec.ts
+npm run test:e2e -- e2e/map-status.spec.ts
 ```
 
-The active GitHub Actions workflow runs Vitest, the production build, this map-status smoke test, and
-the Python suite on pull requests and pushes to `main`. See the root README for the API, deployment,
+The active GitHub Actions workflow runs the format check, Vitest, the production build, this
+welcome-screen/map-status smoke test, and the Python suite on pull requests targeting `main` and pushes
+to `main`; only a successful push to `main` deploys. See the root README for the API, deployment,
 and study interpretation.

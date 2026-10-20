@@ -28,10 +28,40 @@ test("Esri tile failures show a visible schematic status and retry can recover",
 
   await page.goto("/");
   const welcomeFrame = page.locator('iframe[title="SuliNOC welcome"]');
-  await page
-    .frameLocator('iframe[title="SuliNOC welcome"]')
-    .getByRole("button", { name: "Enter workspace" })
-    .click();
+  const welcome = page.frameLocator('iframe[title="SuliNOC welcome"]');
+  await expect(
+    welcome.getByRole("heading", {
+      name: "A clearer view of a connected city.",
+    }),
+  ).toBeVisible();
+
+  for (const selector of [".hero-background", ".hero-tower"]) {
+    await expect
+      .poll(() =>
+        welcome
+          .locator(selector)
+          .evaluate((element) => {
+            const image = element as HTMLImageElement;
+            return image.complete && image.naturalWidth > 0;
+          }),
+      )
+      .toBe(true);
+  }
+
+  const loadedFonts = await welcome.locator("body").evaluate(async () => {
+    const faces = await Promise.all(
+      [
+        "400 12px Manrope",
+        "500 12px Manrope",
+        "600 12px Newsreader",
+        '500 12px "IBM Plex Mono"',
+      ].map((font) => document.fonts.load(font)),
+    );
+    return faces.map((loaded) => loaded.length > 0);
+  });
+  expect(loadedFonts).toEqual([true, true, true, true]);
+
+  await welcome.getByRole("button", { name: "Enter workspace" }).click();
   await expect(welcomeFrame).toHaveCSS("visibility", "hidden");
   await expect(welcomeFrame).toHaveCSS("pointer-events", "none");
 

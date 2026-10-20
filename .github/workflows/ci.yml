@@ -28,12 +28,14 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            constraints-py312.txt
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -r requirements.txt
-          pip install httpx
+          python -m pip install -r requirements-dev.txt
       - name: Test engine and API contracts
         id: python-tests
         continue-on-error: true
@@ -58,6 +60,8 @@ jobs:
           exit 1
       - name: Install frontend dependencies
         run: npm ci --prefix frontend
+      - name: Check frontend formatting
+        run: npm run format:check --prefix frontend
       - name: Test frontend unit suite
         run: npm test --prefix frontend
       - name: Build frontend
@@ -65,8 +69,8 @@ jobs:
       - name: Install Chromium for Playwright smoke
         run: npx playwright install --with-deps chromium
         working-directory: frontend
-      - name: Test Esri map status and retry
-        run: npm run test:e2e -- tests/map-status.spec.ts --reporter=github
+      - name: Test welcome assets and Esri map status/retry
+        run: npm run test:e2e -- e2e/map-status.spec.ts --reporter=github
         working-directory: frontend
       - name: Preserve Playwright failure trace
         if: failure()
@@ -92,7 +96,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Flyctl
-        uses: superfly/flyctl-actions/setup-flyctl@master
+        uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1.6
 
       - name: Prepare persistent summary volume and one primary machine
         run: |

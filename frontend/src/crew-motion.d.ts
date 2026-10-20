@@ -1,4 +1,4 @@
-// Types for the kit's crew-motion.js (SuliNOC-ui-kit). The JS file is kept unchanged.
+// Types for the local crew-motion.js module. The implementation is kept unchanged.
 export interface CrewRender {
   x: number;
   y: number;

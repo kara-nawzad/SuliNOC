@@ -1,7 +1,12 @@
-# AutoNOC diagnostic - run from PowerShell with: .\diag.ps1
+# AutoNOC diagnostic - run from PowerShell with: .\scripts\diag.ps1
 # Checks the current React frontend, backend, committed model artifacts, and a local server.
 $ErrorActionPreference = "Continue"
-$root = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+$scriptDir = if ($PSScriptRoot) {
+  $PSScriptRoot
+} else {
+  Split-Path -Parent $MyInvocation.MyCommand.Path
+}
+$root = Split-Path -Parent $scriptDir
 
 Write-Host "=== AutoNOC DIAGNOSTIC ===" -ForegroundColor Cyan
 Write-Host "Project: $root"
@@ -27,6 +32,14 @@ $files = @(
   "frontend\src\components\NetworkMap.tsx",
   "frontend\src\components\TileBasemap.tsx",
   "frontend\src\data\counterfactualStudy.ts",
+  "frontend\public\assets\hero-source.html",
+  "frontend\e2e\map-status.spec.ts",
+  "scripts\Start-Demo.bat",
+  "scripts\Start-Demo.ps1",
+  "scripts\Stop-Demo.bat",
+  "scripts\Stop-Demo.ps1",
+  "scripts\diag.ps1",
+  "requirements-dev.txt",
   "reports\counterfactual_summary.json",
   "models\doctor_xgb.json",
   "models\doctor_scaler.npz",

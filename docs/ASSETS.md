@@ -3,10 +3,9 @@
 ## Where assets live
 
 - `frontend/public/assets/` contains files served at `/assets/` without bundler imports.
-- `frontend/public/assets/hero-source.html` is the deliberately small welcome page loaded by `HeroFrame`; it is not a second copy of the application. Its visible composition uses `hero-city-sunset.jpg` and `hero-tower-cutout.webp` plus the locally bundled Manrope, Newsreader, and IBM Plex Mono font weights it references.
-- `frontend/public/assets/suli-noc-logo-dark.png` is used by the React header. `frontend/public/favicon.svg` is the browser icon.
+- `frontend/public/assets/hero-source.html` is the small, self-contained welcome page loaded by `HeroFrame`; it contains only the intro composition, buttons, and enter/skip message hook—not a second copy of the React application. Its live image assets are `hero-city-sunset.jpg` and `hero-tower-cutout.webp`. It references the local Manrope 400/500, Newsreader 600, and IBM Plex Mono 500 WOFF2 files under `frontend/public/assets/fonts/`.
+- The React app imports its Manrope, Newsreader, and IBM Plex Mono weights from the `@fontsource` npm packages in `frontend/src/main.tsx`; these are bundled by Vite. `frontend/public/assets/suli-noc-logo-dark.png` is used in the React header, and `frontend/public/favicon.svg` is the browser icon. The hero page uses a text wordmark and does not need a separate logo image.
 - The former MapLibre map-label font bundle is no longer used; its historical note is archived under `docs/archive/map-label-fonts/` and its OFL notice under `docs/licenses/NOTO-OFL-1.1.txt`.
-- `frontend/standalone/` contains the optional single-file builder and its fixtures. `SuliNOC-UI.html` is generated on demand and is ignored; do not commit its output.
 
 ## Licensing and provenance
 

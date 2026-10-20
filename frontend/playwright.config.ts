@@ -8,7 +8,7 @@ const repositoryRoot = path.resolve(
 );
 
 export default defineConfig({
-  testDir: "./tests",
+  testDir: "./e2e",
   timeout: 45_000,
   fullyParallel: false,
   workers: 1,

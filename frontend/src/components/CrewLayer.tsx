@@ -27,7 +27,7 @@ export class SubpixelCrewMarker extends L.Marker {
   }
 }
 
-/** Crew motion uses the kit's CrewMotion (src/crew-motion.js). Backend updates
+/** Crew motion uses the shared local CrewMotion module. Backend updates
  * go in through motion.set() with a route and progress from the server; the RAF
  * loop only renders positions. Projection: EPSG3857 before set(), unproject() in
  * render(). Markers are created once per team and moved with setLatLng(). */

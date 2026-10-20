@@ -222,7 +222,7 @@ an actual incident saved $684.
 - A full registry still answers HTTP 503 with `code: session_capacity`, but it is transient: the
   dashboard retries with an `X-AutoNOC-Retry` marker, which tells the server a visitor is waiting,
   and receives a reclaimed slot instead of a second refusal. `/api/health` reports the live gauge
-  under `sessions`. See [docs/SESSION_CAPACITY_FIX.md](docs/SESSION_CAPACITY_FIX.md).
+  under `sessions`. See [the archived session-capacity investigation](docs/archive/SESSION_CAPACITY_FIX.md).
 - The model bundle is loaded once per process and shared read-only by inference workers. These
   limits keep the design appropriate for the existing 1 shared CPU / 1 GB Fly machine.
 - Completed-run History is separate: the API stores aggregate completion summaries in SQLite under
@@ -245,27 +245,28 @@ From the repository root:
 python -m venv venv
 ```
 
-Activate it, then install dependencies. On Windows PowerShell:
+Activate it, then install the pinned Python 3.12 development/test dependencies (including the
+CPU-only PyTorch wheel) from either shell:
 
 ```powershell
+# Windows PowerShell
 .\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
-
-On macOS/Linux:
 
 ```bash
+# macOS/Linux
 source venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
 
-Installing CPU PyTorch first avoids selecting the larger default PyPI build where the CPU wheel is
-suitable. The committed XGBoost, GRU, scaler, and feature metadata artifacts mean you do **not**
-need to regenerate training datasets just to launch the app.
+`requirements.txt` contains runtime packages; `requirements-dev.txt` adds pytest and HTTPX. Both use
+`constraints-py312.txt`, whose exact transitive pins target Python 3.12. CPU-only PyTorch is selected
+from the official PyTorch CPU wheel index in `requirements.txt`, so Docker, CI, and local installs
+use the same backend. The committed XGBoost, GRU, scaler, and feature metadata artifacts mean you do
+**not** need to regenerate training datasets just to launch the app.
 
 Build the frontend and start the API:
 
@@ -308,34 +309,37 @@ API documentation is at <http://127.0.0.1:8000/docs>.
 
 ## Windows demo and diagnostic scripts
 
-The root scripts are intentionally retained for demo users:
+The Windows launchers and diagnostic helper live under `scripts/`:
 
-- **`Start-Demo.ps1`** starts a detached local server, sets seed `131` and AI on, writes
-  `server.log` / `server.err`, and opens the dashboard. It looks for `venv\Scripts\python.exe`, then
-  falls back to `python` on `PATH`.
-- **`Start-Demo.bat`** runs the server in its window and opens the dashboard. It expects the project
-  `venv` to exist.
-- **`Stop-Demo.bat`** stops the local server listening on port `8000`; it is the matching stop
-  helper for both launchers.
-- **`diag.ps1`** checks the console source/build files, model artifacts, the backend health endpoint,
-  tick advancement, and Python import status. Run it from PowerShell with `.\diag.ps1` after
-  activating the project environment.
+- **`scripts/Start-Demo.ps1`** starts a detached local server, sets seed `131` and AI on, writes
+  `server.log` / `server.err` in the repository root, and opens the dashboard. It looks for
+  `venv\Scripts\python.exe`, then falls back to `python` on `PATH`.
+- **`scripts/Start-Demo.bat`** runs the server in its window and opens the dashboard. It expects the
+  project `venv` to exist.
+- **`scripts/Stop-Demo.bat`** stops AutoNOC's Uvicorn process on port `8000`. It checks the process
+  command line and refuses to kill an unrelated service that happens to own the port; it is the
+  matching stop helper for both launchers.
+- **`scripts/diag.ps1`** checks the console source/build files, model artifacts, the backend health
+  endpoint, tick advancement, and Python import status. Run it from PowerShell with
+  `.\scripts\diag.ps1` after activating the project environment.
 
-Create the expected Windows environment with the quickstart above before using `Start-Demo.bat`. For
-the detached PowerShell launcher, allow scripts in the current PowerShell process if needed:
+Create the expected Windows environment with the quickstart above before using the launcher. For the
+detached PowerShell launcher, allow scripts in the current PowerShell process if needed:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\Start-Demo.ps1
+.\scripts\Start-Demo.ps1
 ```
 
 ## Tests and reproducibility
 
-Run the Python and frontend unit/build gates from the repository root:
+Install Python development dependencies once with `python -m pip install -r requirements-dev.txt`,
+then run the Python and frontend unit/build/format gates from the repository root:
 
 ```bash
 python -m pytest tests/ -q
 npm ci --prefix frontend
+npm run format:check --prefix frontend
 npm test --prefix frontend
 npm run build --prefix frontend
 ```
@@ -346,16 +350,16 @@ For the isolated Esri status/retry browser smoke test, install Chromium once and
 cd frontend
 npx playwright install chromium
 cd ..
-npm run test:e2e --prefix frontend -- tests/map-status.spec.ts
+npm run test:e2e --prefix frontend -- e2e/map-status.spec.ts
 ```
 
 The Playwright config starts the local API automatically unless `AUTONOC_TEST_URL` points it at an
-already-running test server. `npm run format:check --prefix frontend` currently reports pre-existing
-formatting debt in 16 files; it is advisory, not a CI gate.
+already-running test server. The Prettier format check is also enforced in CI.
 
-The active [GitHub Actions workflow](.github/workflows/ci.yml) runs frontend Vitest, the production
-build, the Esri map status/retry Playwright smoke test, and the Python suite on pull requests and
-pushes to `main`. Deployment runs only after a successful `main` push.
+The active [GitHub Actions workflow](.github/workflows/ci.yml) runs the frontend format check,
+Vitest suite, production build, the welcome-screen/Esri map status-and-retry Playwright smoke test,
+and the Python suite on pull requests targeting `main` and pushes to `main`. Pull requests are
+validation-only; deployment runs only after the test job succeeds on a `main` push.
 
 Optional dataset/model and study commands:
 
@@ -407,11 +411,11 @@ Fly.io app is built from the repository's multi-stage `Dockerfile`: Node 22 buil
 then a Python 3.12 runtime serves FastAPI and the bundled frontend. `fly.toml` configures the `ams`
 primary region, one shared-CPU / 1 GB machine, and the `/data` volume for completed-run summaries.
 
-The active [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs Python tests, frontend Vitest,
-builds the React app, and checks the Esri status/retry path in Playwright on pushes to `main` and pull
-requests targeting `main`. Only a successful push to `main` deploys with `flyctl deploy --remote-only`;
-pull requests are not deployments. The deploy job also enforces a single primary-region simulation
-machine.
+The active [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the Python suite, the frontend
+format check and Vitest suite, a production build, and the welcome-screen/Esri status-and-retry
+Playwright smoke test on pushes to `main` and pull requests targeting `main`. Pull requests do not
+deploy. Only a successful `main` push runs `flyctl deploy --remote-only`; the deploy job also enforces
+a single primary-region simulation machine.
 
 ## Repository layout
 
@@ -423,18 +427,16 @@ autonoc/
   scripts/            Sanity check, counterfactual, seed-casting, and export tools
   web/                Static fallback served when the React build is absent
 frontend/
-  src/                React components, map, data, services, tests, and styles
-  public/assets/      Hero imagery, logos, and locally bundled fonts
+  src/                React components, map, data, services, unit tests, and styles
+  e2e/                Playwright browser tests
+  public/assets/      Hero imagery, logo, and locally bundled fonts
 models/               Tracked trained model, scaler, and metadata artifacts
 reports/              Tracked counterfactual CSV and JSON summary
 tests/                Python engine, AI, lifecycle, and API contract tests
 docs/                 Current guidance, asset licenses, and design docs
   archive/            Dated reviews and superseded investigations
 CONTRIBUTING.md       Contributor workflow and verification gates
-Start-Demo.ps1        Windows detached demo launcher
-Start-Demo.bat        Windows console demo launcher
-Stop-Demo.bat         Windows local server stop helper
-diag.ps1              Windows environment and live-server diagnostic
+scripts/              Windows demo launchers and local diagnostic helper
 ```
 
 ## Honest limitations and interpretation

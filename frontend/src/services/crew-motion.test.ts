@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CrewMotion, type CrewFrame } from "./crewMotion";
+import { CrewMotion, type CrewFrame } from "./crew-motion";
 
 function frame(
   tick: number,

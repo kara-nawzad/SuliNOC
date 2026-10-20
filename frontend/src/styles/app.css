@@ -3318,7 +3318,7 @@ h1 {
   color: var(--sn-link-strong);
 }
 
-/* Tower markers: the kit's `.tw` rules (SuliNOC-ui-kit theme.css), copied here
+/* Tower markers: component-specific `.tw` rules, maintained here
  * rather than importing theme.css, whose global body/heading rules would restyle
  * the whole app. Solid colour, 12 px on screen at every zoom, white 2 px ring.
  * Halo only for selected (.sel), faulty (.warn/.crit) and flagged (.ai) towers. */
@@ -3328,8 +3328,7 @@ h1 {
 .tw.sel,.tw.crit,.tw.ai{box-shadow:0 0 0 6px color-mix(in srgb,currentColor 22%,transparent)}
 .tw.sel{color:#1479C4}.tw.warn{color:#C27400}.tw.crit{color:#D42F52}.tw.ai{color:#6A4BD8}
 
-/* Analytics charts (SuliNOC-ui-kit charts.js): Manrope 12 px axis text, never mono.
- * Copied from the kit's theme.css chart rules; see also src/charts.js. */
+/* Analytics chart axes use Manrope 12 px text, never mono. */
 .ch-wrap{position:relative;width:100%}
 .ch-wrap svg{display:block;height:auto}
 .ch-wrap text{font:500 12px "Manrope",system-ui,sans-serif}
@@ -3359,9 +3358,9 @@ button.tower-row:hover{background:rgba(255,255,255,.04)}
 /* ==================================================================
  * Kit skin tokens and palette (skin.css)
  * ================================================================== */
-/* SuliNOC skin: the kit's light tokens, fonts and surfaces, applied on top of the
- * existing components. Loaded last so it overrides index.css without rewriting it.
- * Tokens: SuliNOC-ui-kit/src/theme.css. Fonts: Newsreader (headings), Manrope (text),
+/* SuliNOC skin: its light tokens, fonts and surfaces apply on top of existing
+ * components. Loaded last so it overrides index.css without rewriting it.
+ * Fonts: Newsreader (headings), Manrope (text),
  * IBM Plex Mono (IDs, coordinates, times only). */
 :root {
   color-scheme: light;
