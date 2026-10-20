@@ -12,7 +12,23 @@ export function HeroFrame({
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const openRef = useRef(open);
+  const onEnterRef = useRef(onEnter);
   openRef.current = open;
+  onEnterRef.current = onEnter;
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (
+        event.origin !== window.location.origin ||
+        event.source !== frame.current?.contentWindow ||
+        event.data?.type !== "sulinoc:enter"
+      )
+        return;
+      onEnterRef.current();
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   const sync = useCallback(() => {
     const hero = frame.current?.contentDocument?.getElementById("hero");
@@ -25,24 +41,10 @@ export function HeroFrame({
 
   const onLoad = useCallback(
     (event: SyntheticEvent<HTMLIFrameElement>) => {
-      const doc = event.currentTarget.contentDocument;
-      if (!doc) return;
-      for (const action of doc.querySelectorAll<HTMLButtonElement>(
-        "#enter, #skip",
-      )) {
-        action.addEventListener(
-          "click",
-          (ev) => {
-            ev.preventDefault();
-            ev.stopImmediatePropagation();
-            onEnter();
-          },
-          { once: true },
-        );
-      }
+      if (!event.currentTarget.contentDocument) return;
       sync();
     },
-    [onEnter, sync],
+    [sync],
   );
 
   return (
