@@ -63,3 +63,4 @@ Thumbs.db
 # intentionally committed for reproducible local and Fly.io startup.
 /data/
 frontend/standalone/out/
+frontend/standalone/SuliNOC-UI.html

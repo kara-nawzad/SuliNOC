@@ -162,10 +162,15 @@ At 1× speed one tick ≈ 1 wall-clock second, so the acts fall at roughly
               └────────────────┬────────────────┘
                                │ HTTP / tick-cursor deltas
                     ┌──────────▼──────────┐
-                    │  autonoc/web        │
-                    │  Leaflet dashboard  │
-                    │  renders, never     │
-                    │  computes (I6)      │
+                    │  frontend/ React UI │
+                    │  React + Leaflet    │
+                    │  build →            │
+                    │  autonoc/web/dist   │
+                    └──────────┬──────────┘
+                               │ if no React build
+                    ┌──────────▼──────────┐
+                    │ autonoc/web fallback│
+                    │ Leaflet static UI   │
                     └─────────────────────┘
 ```
 
@@ -178,10 +183,11 @@ At 1× speed one tick ≈ 1 wall-clock second, so the acts fall at roughly
   torch / xgboost / sklearn / pandas. Never calls `engine.step()`.
 - **api/** — FastAPI. Owns the production clock (a lifespan task), the
   process lock, the cursor-delta protocol, and the control surface.
-- **web/** — a single-page Leaflet dashboard (bundled, offline-capable). It
-  renders whatever the API sends and computes nothing: no status names, no
-  colours, no thresholds in JavaScript — all of it comes from
-  `GET /api/config` (invariant I5).
+- **frontend/** — the canonical React/Leaflet UI. Its Vite build is written
+  to `autonoc/web/dist` and served by FastAPI.
+- **autonoc/web/** — the retained static Leaflet fallback used only when the
+  React build is absent. Both interfaces render API data; neither reimplements
+  engine decisions.
 
 ### 7. The twelve invariants
 
@@ -808,7 +814,7 @@ python -m autonoc.scripts.counterfactual --rules    # rules verdicts, no models
 
 ### 21. Testing
 
-**Historical inventory at the time this section was written:** 87 test functions across 7 files. The current checkout collects 145 Python test items in 11 files (`python -m pytest --collect-only -q`, 2026-10-20); this older table is not a complete inventory.
+**Historical inventory at the time this section was written:** 87 test functions across 7 files. The current checkout collects 146 Python test items in 12 files (`python -m pytest --collect-only -q`, 2026-10-20); this older table is not a complete inventory. The React suite currently has 39 Vitest tests in 14 files, plus a CI-gated Esri map-status/retry Playwright smoke test.
 
 | File | Tests | What they guard |
 |------|-------|-----------------|
@@ -825,10 +831,11 @@ clone (that is deliberate — `@needs_data`). `test_model_is_not_memorising_geog
 was missing that gate (audit §29 #10) and now carries it.
 
 **CI (updated 2026-10-20):** `.github/workflows/ci.yml` installs the
-frontend and Python dependencies, builds React, and runs pytest on pull
-requests and pushes to `main`. Fly deploy runs only after a successful push
-to `main`; Vitest and Playwright are not currently CI gates. The earlier
-`docs/archive/ci-proposed.yml` is retained as historical design material.
+frontend and Python dependencies, runs Python tests and Vitest, builds React,
+and runs the Esri map status/retry Playwright smoke test on pull requests and
+pushes to `main`. Fly deploy runs only after a successful, green push to
+`main`. The former proposal remains archived at
+`docs/archive/ci-proposed.yml`.
 
 ---
 
@@ -844,7 +851,7 @@ forever and the client silently desyncs).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | Serves the Leaflet dashboard |
+| GET | `/` | Serves the built React UI, or the retained static Leaflet fallback if the build is absent |
 | GET | `/api/config` | Single source of truth (status names/colours, thresholds, map, EPC, depot, agg sites, break-even) |
 | GET | `/api/data` | Full resync snapshot |
 | GET | `/api/delta?since=<tick>` | Cursor-based state deltas — read-only, idempotent; resyncs if lag > 60 ticks |
@@ -1054,13 +1061,14 @@ relative paths — work from any clone).
    and `test_cast_seed_is_verified_by_models` runs instead of skipping.
 3. **Historical README test-count correction.** An earlier README count of
    64 was changed to 87 at the time. The current README deliberately avoids a
-   fixed count; `pytest --collect-only` found 145 Python test items on
+   fixed count; `pytest --collect-only` found 146 Python test items on
    2026-10-20.
 4. ~~**README CI claim ("Linux and Windows") did not match the workflow.**~~
-   **RESOLVED (2026-10-15):** `.github/workflows/ci.yml` builds the React
-   frontend and runs pytest on pull requests and pushes to `main`; Fly deploys
-   only after a successful push to `main`. The workflow does not run Vitest or
-   Playwright. The historical proposal remains at `docs/archive/ci-proposed.yml`.
+   **RESOLVED (2026-10-20):** `.github/workflows/ci.yml` runs Python and
+   frontend unit tests, builds the React frontend, and exercises the Esri map
+   status/retry flow in Playwright on pull requests and pushes to `main`; Fly
+   deploys only after a successful `main` push. The superseded proposal remains
+   at `docs/archive/ci-proposed.yml`.
 5. **Historical M7 table (superseded 2026-10-15).** An earlier README draft
    quoted an 8×5 run (98.75 / 98.75 availability). The current README and UI
    use the committed 30-seed × 10-day report: availability 98.30–98.52%; C

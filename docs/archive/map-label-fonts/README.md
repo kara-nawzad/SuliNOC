@@ -1,13 +1,3 @@
-# Locally served map fonts
+# Archived map-label font bundle
 
-Noto Sans Regular and Noto Sans Arabic Regular are distributed under the SIL
-Open Font License 1.1; see `OFL.txt` in this directory. Fonts were retrieved
-from the Noto project's `notofonts/noto-fonts` repository:
-
-- `hinted/ttf/NotoSans/NotoSans-Regular.ttf`
-- `hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf`
-
-MapLibre's native font-face rendering uses these local TTFs, including proper
-Arabic/Kurdish shaping. No remote glyph server is necessary. Latin/English
-names are preferred when the map data provides them; local names are retained
-as the fallback, not machine-translated or invented.
+This directory records two local Noto Sans font files that were kept for a previous MapLibre native glyph-rendering path. The current React map uses Esri raster tiles with a Leaflet overlay and has no source, build, test, or script dependency on local MapLibre glyph fonts. The unused files were removed after a full repository audit; the SIL Open Font License notice is retained at [`docs/licenses/NOTO-OFL-1.1.txt`](../../licenses/NOTO-OFL-1.1.txt).

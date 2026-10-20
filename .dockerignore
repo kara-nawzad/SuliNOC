@@ -29,6 +29,7 @@ htmlcov
 **/dist
 autonoc/web/dist
 frontend/standalone/out
+frontend/standalone/SuliNOC-UI.html
 **/test-results
 **/playwright-report
 *.tsbuildinfo

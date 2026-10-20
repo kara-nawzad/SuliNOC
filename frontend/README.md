@@ -59,14 +59,15 @@ python -m pytest tests/ -q
 The existing Prettier check is advisory only: it currently finds formatting debt in 16 files and is
 not part of CI.
 
-Playwright tests require a separately started API and an installed Chromium browser:
+Playwright requires Chromium. The config starts a local API automatically unless `AUTONOC_TEST_URL`
+is set to an existing test server. The CI-gated smoke test exercises Esri tile failure status and retry:
 
 ```sh
 cd frontend
 npx playwright install chromium
-npm run test:e2e
+npm run test:e2e -- tests/map-status.spec.ts
 ```
 
-The current GitHub Actions workflow builds the UI and runs the Python suite on pull requests and
-pushes to `main`; it does not yet run Vitest or Playwright. See the root README for the API, deployment,
+The active GitHub Actions workflow runs Vitest, the production build, this map-status smoke test, and
+the Python suite on pull requests and pushes to `main`. See the root README for the API, deployment,
 and study interpretation.

@@ -22,7 +22,7 @@ assumption-based dollar scenarios.
 > trained and evaluated on simulator-generated data.
 
 **[Open the live demo](https://autonoc-project.fly.dev/)** · [Frontend guide](frontend/README.md) ·
-[Design vision](docs/DESIGN_VISION.md)
+[Contributing](CONTRIBUTING.md) · [Assets](docs/ASSETS.md) · [Design vision](docs/DESIGN_VISION.md)
 
 ---
 
@@ -331,19 +331,31 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ## Tests and reproducibility
 
-Run the Python and frontend suites from the repository root:
+Run the Python and frontend unit/build gates from the repository root:
 
 ```bash
 python -m pytest tests/ -q
+npm ci --prefix frontend
 npm test --prefix frontend
 npm run build --prefix frontend
 ```
 
-`npm run format:check --prefix frontend` currently reports pre-existing formatting debt in 16 files; it is not a CI gate.
+For the isolated Esri status/retry browser smoke test, install Chromium once and run:
 
-The active [GitHub Actions workflow](.github/workflows/ci.yml) runs `npm ci` and the React production
-build plus the Python test suite on pull requests and pushes to `main`. Deployment runs only after a
-successful `main` push. Vitest and Playwright are not currently part of CI.
+```bash
+cd frontend
+npx playwright install chromium
+cd ..
+npm run test:e2e --prefix frontend -- tests/map-status.spec.ts
+```
+
+The Playwright config starts the local API automatically unless `AUTONOC_TEST_URL` points it at an
+already-running test server. `npm run format:check --prefix frontend` currently reports pre-existing
+formatting debt in 16 files; it is advisory, not a CI gate.
+
+The active [GitHub Actions workflow](.github/workflows/ci.yml) runs frontend Vitest, the production
+build, the Esri map status/retry Playwright smoke test, and the Python suite on pull requests and
+pushes to `main`. Deployment runs only after a successful `main` push.
 
 Optional dataset/model and study commands:
 
@@ -395,10 +407,11 @@ Fly.io app is built from the repository's multi-stage `Dockerfile`: Node 22 buil
 then a Python 3.12 runtime serves FastAPI and the bundled frontend. `fly.toml` configures the `ams`
 primary region, one shared-CPU / 1 GB machine, and the `/data` volume for completed-run summaries.
 
-The active [`.github/workflows/ci.yml`](.github/workflows/ci.yml) builds the React frontend and runs
-Python tests on pushes to `main` and pull requests targeting `main`. Only a successful push to
-`main` deploys with `flyctl deploy --remote-only`; pull requests are not deployments. The deploy job
-also enforces a single primary-region simulation machine.
+The active [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs Python tests, frontend Vitest,
+builds the React app, and checks the Esri status/retry path in Playwright on pushes to `main` and pull
+requests targeting `main`. Only a successful push to `main` deploys with `flyctl deploy --remote-only`;
+pull requests are not deployments. The deploy job also enforces a single primary-region simulation
+machine.
 
 ## Repository layout
 
@@ -415,7 +428,9 @@ frontend/
 models/               Tracked trained model, scaler, and metadata artifacts
 reports/              Tracked counterfactual CSV and JSON summary
 tests/                Python engine, AI, lifecycle, and API contract tests
-docs/                 Project and design documentation
+docs/                 Current guidance, asset licenses, and design docs
+  archive/            Dated reviews and superseded investigations
+CONTRIBUTING.md       Contributor workflow and verification gates
 Start-Demo.ps1        Windows detached demo launcher
 Start-Demo.bat        Windows console demo launcher
 Stop-Demo.bat         Windows local server stop helper

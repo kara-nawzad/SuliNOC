@@ -91,7 +91,7 @@ sessions costs ~32 ms per second — under 4 % of one core — and roughly 200 M
 headroom inside the 1 GB limit. Raise `AUTONOC_MAX_SESSIONS` only with that budget in mind; the
 gauge in `/api/health` reports the live count.
 
-## Verification
+## Verification (recorded at the original fix; historical snapshot)
 
 * `PYTHONPATH=. pytest -q tests/test_sessions.py` — 12 passed. Covers isolation, idle expiry,
   reclaim after the grace window, refusal while every dashboard is active, the waiting-visitor
