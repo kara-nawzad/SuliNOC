@@ -3309,13 +3309,13 @@ h1 {
   }
 }
 
-/* MapLibre stays in Leaflet's background pane. No transforms/filters touch
+/* Esri raster tiles stay in Leaflet's background pane. No transforms/filters touch
    the server-colored operational markers, labels, or site click targets. */
 .map-mode button {
   pointer-events: auto;
   text-decoration: underline;
   text-underline-offset: 3px;
-  color: #c0d4e7;
+  color: var(--sn-link-strong);
 }
 
 /* Tower markers: the kit's `.tw` rules (SuliNOC-ui-kit theme.css), copied here
@@ -4950,8 +4950,7 @@ dialog.dialog::backdrop,.app-shell dialog::backdrop{background:rgba(16,38,92,.38
 .app-shell .map-top-overlay .layer-control,
 .app-shell .map-top-overlay .map-button{background:transparent!important}
 
-/* The "Street map · Esri" pill on the map is hidden. */
-.app-shell .map-mode{display:none!important}
+/* Keep the Esri tile status and retry action visible on the map. */
 
 /* Map fixes: no dark outline on the zoom buttons, scale bar beside them, weather chip top-right with room, light district list */
 .app-shell .map-zoom{border:0;box-shadow:none;background:transparent;border-radius:var(--r-md)}
