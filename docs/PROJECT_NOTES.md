@@ -828,7 +828,7 @@ was missing that gate (audit §29 #10) and now carries it.
 frontend and Python dependencies, builds React, and runs pytest on pull
 requests and pushes to `main`. Fly deploy runs only after a successful push
 to `main`; Vitest and Playwright are not currently CI gates. The earlier
-`docs/ci-proposed.yml` is retained as historical design material.
+`docs/archive/ci-proposed.yml` is retained as historical design material.
 
 ---
 
@@ -1060,7 +1060,7 @@ relative paths — work from any clone).
    **RESOLVED (2026-10-15):** `.github/workflows/ci.yml` builds the React
    frontend and runs pytest on pull requests and pushes to `main`; Fly deploys
    only after a successful push to `main`. The workflow does not run Vitest or
-   Playwright. The historical proposal remains at `docs/ci-proposed.yml`.
+   Playwright. The historical proposal remains at `docs/archive/ci-proposed.yml`.
 5. **Historical M7 table (superseded 2026-10-15).** An earlier README draft
    quoted an 8×5 run (98.75 / 98.75 availability). The current README and UI
    use the committed 30-seed × 10-day report: availability 98.30–98.52%; C
@@ -1088,7 +1088,7 @@ relative paths — work from any clone).
     = 30 min" while `APPROVE_LATENCY["B"] == 2`.**~~ **RESOLVED (v2.1):**
     docstring corrected to 2 ticks = 10 min, matching §32 and the code.
 
-### 29a. Correctness pass, 2026-10-15 (see docs/PROJECT_STUDY_2026-10-15.md)
+### 29a. Correctness pass, 2026-10-15 (see docs/archive/PROJECT_STUDY_2026-10-15.md)
 
 Changes applied after the whole-project audit, all covered by tests:
 

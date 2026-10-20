@@ -2,7 +2,7 @@
 
 **Reviewed:** 2026-10-15
 **Baseline:** `264b831` (merge of PR #10), branch `arena/a64422f6-sulinoc`
-**Supersedes for open items:** `docs/PROJECT_STUDY_2026-10-03.md` (that review's P1
+**Supersedes for open items:** `docs/archive/PROJECT_STUDY_2026-10-03.md` (that review's P1
 delivery findings have since been fixed; its remaining findings are re-verified
 below against the current code)
 
@@ -17,7 +17,7 @@ produce it.
 | Backend suite (`pytest`, Python 3.11, torch 2.14 CPU wheel) | **117 passed, 6 skipped, 0 failed** |
 | Skipped tests | data-dependent (`@needs_data` / `needs_seq`): `data/` is gitignored and regenerable |
 | Frontend suite (`npm test`, Vitest) | **29 passed (8 files)** |
-| Playwright config | present (`frontend-react/playwright.config.ts`), exercised via `docs/ci-proposed.yml` |
+| Playwright config | present (`frontend-react/playwright.config.ts`), exercised via `docs/archive/ci-proposed.yml` |
 | Model artifacts | committed and loadable (`doctor_xgb.json`, `doctor_scaler.npz`, `oracle_gru.pt`, `oracle_stats.npz`) — the live server boots in ML mode |
 | Working tree | clean |
 
@@ -81,7 +81,7 @@ polish.
 
 4. **CI deploys to Fly.io without running tests, including on pull-request
    events.** `.github/workflows/ci.yml` is deploy-only and triggers on
-   `pull_request`. `docs/ci-proposed.yml` already contains the intended
+   `pull_request`. `docs/archive/ci-proposed.yml` already contains the intended
    test-gated workflow (frontend build + Vitest, pytest, Playwright smoke,
    `deploy` needs `test`) but was never activated because the app connection
    lacked `workflows` write permission.

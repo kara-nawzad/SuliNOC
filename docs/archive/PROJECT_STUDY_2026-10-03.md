@@ -388,7 +388,7 @@ A React migration can improve maintainability, but it will not correct the stale
 
 The active `.github/workflows/ci.yml` has only a deploy job, triggered on both pushes to main and pull requests targeting main. It does not run pytest before deployment. For same-repository PRs with secrets available, PR code may be deployed; fork PRs can instead fail for lack of secrets.
 
-`docs/ci-proposed.yml` adds tests and a dependency on the test job, but it still needs an explicit deploy condition restricting deployment to the intended main-branch push event. Copying it unchanged does not fully resolve PR deployment behavior.
+`docs/archive/ci-proposed.yml` adds tests and a dependency on the test job, but it still needs an explicit deploy condition restricting deployment to the intended main-branch push event. Copying it unchanged does not fully resolve PR deployment behavior.
 
 ### Reproducible environment
 

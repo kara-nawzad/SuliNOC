@@ -13,7 +13,7 @@ not verified.** Numbers are from `/home/user/shots/measure.json` (not committed;
 5. Crews: kit CrewMotion; setLatLng per frame; parked/repairing not moving
 6. Analytics: kit lineChart; Manrope 12 px; short times; units as subtitle; axis note under title
 7. Organisation: nav order; Map/Schematic toggle; fibre rings list; Towers list; one note per page
-8. Session: send the session token; investigation in docs/SESSION_RUN_INVESTIGATION.md
+8. Session: send the session token; investigation in docs/archive/SESSION_RUN_INVESTIGATION.md
 9. Build stamp in console, Settings, footer
 10. Note style; analytics provenance 12 px (was 6 px)
 
@@ -37,7 +37,7 @@ not verified.** Numbers are from `/home/user/shots/measure.json` (not committed;
 Root cause: a request with no cookie and no header gets a new run at tick 0 (reproduced: 3 requests, 3 run IDs).
 The React client sent neither, so a cross-site embed started a new run on every poll. The client now
 sends the token, as the single-file console already did. The cookie's 180 s lifetime is set only at
-creation (backend change needed; not made). See docs/SESSION_RUN_INVESTIGATION.md.
+creation (backend change needed; not made). See docs/archive/SESSION_RUN_INVESTIGATION.md.
 
 ## Organisation: what changed and what did not exist
 - Nav order is now Overview, Live network, Incidents, Analytics, Maintenance, AI, Towers; Settings and About are in the footer.
