@@ -9,7 +9,6 @@
     <meta name="theme-color" content="#081426" />
     <title>SuliNOC · Network operations</title>
     <link rel="preload" as="image" href="/assets/hero-city-sunset.jpg" />
-    <link rel="preload" as="image" href="/assets/hero-tower-cutout.webp" />
     <link
       rel="preload"
       as="font"
@@ -108,7 +107,6 @@
         pointer-events: none;
       }
       .hero-background,
-      .hero-tower,
       .hero-shade {
         position: absolute;
         inset: 0;
@@ -133,15 +131,6 @@
           ),
           linear-gradient(0deg, rgb(5 15 31 / 54%) 0%, transparent 48%),
           linear-gradient(180deg, rgb(5 15 31 / 34%) 0%, transparent 32%);
-      }
-      .hero-tower {
-        z-index: -1;
-        object-fit: cover;
-        object-position: 78% 100%;
-        opacity: 0.84;
-        mix-blend-mode: screen;
-        -webkit-mask-image: linear-gradient(90deg, transparent 32%, #000 54%);
-        mask-image: linear-gradient(90deg, transparent 32%, #000 54%);
       }
       .hero-topbar {
         position: absolute;
@@ -311,12 +300,6 @@
               transparent 100%
             );
         }
-        .hero-tower {
-          object-position: 79% 100%;
-          opacity: 0.73;
-          -webkit-mask-image: linear-gradient(90deg, transparent 30%, #000 56%);
-          mask-image: linear-gradient(90deg, transparent 30%, #000 56%);
-        }
         .hero-topbar {
           top: max(20px, env(safe-area-inset-top));
           left: 22px;
@@ -399,12 +382,6 @@
         fetchpriority="high"
       />
       <div class="hero-shade" aria-hidden="true"></div>
-      <img
-        class="hero-tower"
-        src="/assets/hero-tower-cutout.webp"
-        alt=""
-        aria-hidden="true"
-      />
       <header class="hero-topbar">
         <div class="wordmark" aria-label="SuliNOC">Suli<span>NOC</span></div>
         <div class="top-meta">SIMULATED NETWORK · 300 MODELED SITES</div>
