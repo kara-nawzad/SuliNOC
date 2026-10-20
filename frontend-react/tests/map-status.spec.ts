@@ -1,0 +1,52 @@
+import { expect, test } from "@playwright/test";
+
+const transparentTile = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4//8/AwAI/AL+p5qgoAAAAABJRU5ErkJggg==",
+  "base64",
+);
+
+test("Esri tile failures show a visible schematic status and retry can recover", async ({
+  page,
+}) => {
+  let failTiles = true;
+  let tileRequests = 0;
+  await page.route(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/**",
+    async (route) => {
+      tileRequests += 1;
+      if (failTiles) {
+        await route.abort();
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "image/png",
+          body: transparentTile,
+        });
+      }
+    },
+  );
+
+  await page.goto("/");
+  await page
+    .frameLocator('iframe[title="SuliNOC welcome"]')
+    .getByRole("button", { name: "Enter workspace" })
+    .click();
+
+  const mapStatus = page.locator(".map-mode");
+  await expect(mapStatus).toBeVisible();
+  await expect(mapStatus).toHaveCSS("display", "flex");
+  await expect(
+    page.getByText("Streets unavailable · schematic", { exact: true }),
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(
+    page.getByRole("button", { name: "Retry streets" }),
+  ).toBeVisible();
+
+  const failedRequestCount = tileRequests;
+  failTiles = false;
+  await page.getByRole("button", { name: "Retry streets" }).click();
+  await expect.poll(() => tileRequests).toBeGreaterThan(failedRequestCount);
+  await expect(
+    page.getByText("Street map · Esri", { exact: true }),
+  ).toBeVisible({ timeout: 20_000 });
+});
