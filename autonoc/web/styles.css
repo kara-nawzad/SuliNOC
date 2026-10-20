@@ -135,6 +135,12 @@ kbd{border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padd
   font-size:8px!important}
 .leaflet-control-attribution a{color:var(--faint)!important}
 #mapfade{position:absolute;inset:0;background:#070b12;transition:opacity 1.1s ease;pointer-events:none}
+#map-status{position:absolute;right:11px;top:11px;z-index:600;display:flex;align-items:center;gap:7px;
+  max-width:calc(100% - 22px);padding:6px 8px;border:1px solid var(--line2);border-radius:8px;
+  background:rgba(6,10,17,.82);color:var(--dim);font-size:9px;backdrop-filter:blur(8px)}
+#map-retry{border:1px solid var(--line2);border-radius:6px;padding:4px 7px;background:#101925;
+  color:var(--txt);font:inherit;cursor:pointer}
+#map-retry:hover,#map-retry:focus-visible{border-color:var(--blue);outline:none}
 #legend{position:absolute;left:11px;top:11px;z-index:500;background:rgba(6,10,17,.74);
   border:1px solid var(--line);border-radius:10px;padding:9px 11px;backdrop-filter:blur(10px);
   font-size:9px;color:var(--dim)}

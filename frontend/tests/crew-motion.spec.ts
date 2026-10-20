@@ -13,7 +13,7 @@ test("trucks keep moving between polls with fractional pixels, then stop on paus
   let paused = false;
   const id = baseline.teams[0].id;
   await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.route("https://tiles.openfreemap.org/**", (route) =>
+  await page.route("https://server.arcgisonline.com/**", (route) =>
     route.abort(),
   );
   await page.route("**/api/delta?*", (route) => {
