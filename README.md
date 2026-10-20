@@ -4,16 +4,16 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Vanilla JS](https://img.shields.io/badge/UI-vanilla%20JS%20%2B%20Vite-1479C4)](https://vitejs.dev/)
+[![React + TypeScript](https://img.shields.io/badge/UI-React%20%2B%20TypeScript-3178C6)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![O-RAN inspired](https://img.shields.io/badge/architecture-O--RAN%20inspired-5b6abf)](#architecture)
-[![Fly.io deploy workflow](https://github.com/kara-nawzad/AutoNOC_Project/actions/workflows/ci.yml/badge.svg)](https://github.com/kara-nawzad/AutoNOC_Project/actions/workflows/ci.yml)
+[![CI & Deploy](https://github.com/kara-nawzad/SuliNOC/actions/workflows/ci.yml/badge.svg)](https://github.com/kara-nawzad/SuliNOC/actions/workflows/ci.yml)
 
 **AutoNOC is a deterministic simulation of a 300-site LTE network scenario centered on Sulaymaniyah,
 Iraq; the site positions and telemetry are modeled, not live operator data.** A pure-Python engine
 generates radio, traffic, weather, power, fault, and crew state; an XGBoost Doctor diagnoses current
 faults, a PyTorch GRU Oracle scores 60-minute failure risk, and an expected-value Commander applies
-simulated actions. A FastAPI service feeds the SuliNOC operations console (plain JavaScript, no framework), while
+simulated actions. A FastAPI service feeds the SuliNOC React/TypeScript operations console, while
 matched-seed experiments compare policies and keep model-cost proxies separate from explicitly
 assumption-based dollar scenarios.
 
@@ -21,7 +21,7 @@ assumption-based dollar scenarios.
 > an integration with a live mobile network, or an O-RAN-certified implementation. Its models are
 > trained and evaluated on simulator-generated data.
 
-**[Open the live demo](https://autonoc-project.fly.dev/)** · [Frontend guide](frontend/README.md) ·
+**[Open the live demo](https://autonoc-project.fly.dev/)** · [Frontend guide](frontend-react/README.md) ·
 [Design vision](docs/DESIGN_VISION.md)
 
 ---
@@ -47,8 +47,8 @@ assumption-based dollar scenarios.
 
 - A seeded, five-minute-tick simulation of **300 modeled LTE sites**, ten districts, fiber rings,
   and a ten-team maintenance fleet.
-- A SuliNOC command center (vanilla JavaScript + Vite) for network state, incidents, site inspection, crew
-  movement, AI actions, traffic, power, and current-run history.
+- A SuliNOC command center (React + TypeScript + Vite) for network state, incidents, site inspection,
+  crew movement, AI actions, traffic, power, and current-run history.
 - Repeatable scenario controls: pause, resume, step, speed, AI enable/disable, supported fault
   injection, and a fiber-cut demonstration.
 - An ML pipeline with separate diagnosis and prediction roles, plus an expected-value policy layer.
@@ -56,17 +56,16 @@ assumption-based dollar scenarios.
   model-cost proxy.
 - Isolated, anonymous browser sessions: each visitor receives a server-issued cookie and an
   independent in-memory simulation, controls, AI state, approvals, telemetry, and run history.
-- A MapLibre vector basemap using OpenFreeMap-hosted OpenMapTiles/OpenStreetMap data, rendered
-  beneath Leaflet overlays. A schematic fallback is available when the street layer cannot load;
-  online street tiles require network access.
+- An Esri World Street Map raster basemap rendered by Leaflet beneath the network overlays. Esri tiles
+  require network access; the local schematic remains visible when they cannot load, with a status
+  indicator and retry control.
 
 At 1× speed, the server advances about one simulation tick per second; one tick represents five
 simulated minutes. The simulation defaults to seed `42` with AI disabled. Seed `131` is used by the
 included Windows demo launchers.
 
-**Stack:** Python 3.12, FastAPI, and Uvicorn; vanilla JavaScript bundled with Vite; XGBoost and
-PyTorch; pytest; multi-stage
-Docker deployment to Fly.io.
+**Stack:** Python 3.12, FastAPI, and Uvicorn; React/TypeScript bundled with Vite; XGBoost and
+PyTorch; pytest; multi-stage Docker deployment to Fly.io.
 
 ## Architecture
 
@@ -90,8 +89,8 @@ Docker deployment to Fly.io.
              └────────────┬─────────────┘
                           │ relative HTTP requests
              ┌────────────▼─────────────┐
-             │ frontend/                │
-             │ SuliNOC console (JS)     │
+             │ frontend-react/          │
+             │ SuliNOC console (React)  │
              └──────────────────────────┘
 ```
 
@@ -151,6 +150,10 @@ availability includes the report's 95% confidence interval.
 | **B** | Advisory; 2-tick approval delay | 98.31% ± 0.03 |               73,104 |                   0 |              0.73 |              1,001.30 |                   103,849.67 |
 | **C** | Autonomous Commander            | 98.42% ± 0.03 |               68,147 |             423.10 |            147.00 |              1,005.66 |                    90,463.50 |
 | **D** | Predictive upper bound          | 98.52% ± 0.03 |               63,948 |             489.83 |              1.03 |              1,037.20 |                    82,828.67 |
+
+> These UI and README values come directly from the committed JSON. The M7 study was not regenerated
+> during this cleanup; rerun and review it against the current engine before presenting it as a newly
+> validated result.
 
 For **C versus A**, the report records:
 
@@ -267,8 +270,8 @@ need to regenerate training datasets just to launch the app.
 Build the frontend and start the API:
 
 ```bash
-npm ci --prefix frontend
-npm run build --prefix frontend
+npm ci --prefix frontend-react
+npm run build --prefix frontend-react
 python -m uvicorn autonoc.api.main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -276,11 +279,11 @@ Open <http://127.0.0.1:8000>. The production build is written to `autonoc/web/di
 it at `/`. For hot reload, keep the API running and use a second terminal:
 
 ```bash
-npm run dev --prefix frontend
+npm run dev --prefix frontend-react
 ```
 
 Open the Vite URL shown in the terminal (normally port `5173`). Vite proxies relative `/api`
-requests to the local API. See [`frontend/README.md`](frontend/README.md) for frontend controls,
+requests to the local API. See [`frontend-react/README.md`](frontend-react/README.md) for frontend controls,
 contracts, and browser-test setup.
 
 To start the seed-131 demo with AI enabled manually (PowerShell):
@@ -332,14 +335,15 @@ Run the Python and frontend suites from the repository root:
 
 ```bash
 python -m pytest tests/ -q
-npm test --prefix frontend
-npm run build --prefix frontend
-npm run format:check --prefix frontend
+npm test --prefix frontend-react
+npm run build --prefix frontend-react
 ```
 
-The CI workflow builds the console and runs the Python suite. The active
-[GitHub Actions workflow](.github/workflows/ci.yml) is **deploy-focused; it does not run these test
-suites**.
+`npm run format:check --prefix frontend-react` currently reports pre-existing formatting debt in 16 files; it is not a CI gate.
+
+The active [GitHub Actions workflow](.github/workflows/ci.yml) runs `npm ci` and the React production
+build plus the Python test suite on pull requests and pushes to `main`. Deployment runs only after a
+successful `main` push. Vitest and Playwright are not currently part of CI.
 
 Optional dataset/model and study commands:
 
@@ -391,11 +395,10 @@ Fly.io app is built from the repository's multi-stage `Dockerfile`: Node 22 buil
 then a Python 3.12 runtime serves FastAPI and the bundled frontend. `fly.toml` configures the `ams`
 primary region, one shared-CPU / 1 GB machine, and the `/data` volume for completed-run summaries.
 
-The active [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs `flyctl deploy --remote-only`
-on pushes to `main` and pull requests targeting `main`, and enforces a single primary-region
-simulation machine. PR-triggered runs use the existing Fly app; they are deployments, not staging
-checks. Despite the workflow's name, it is **not** a Python/frontend test gate. Tests should be run
-separately before merging.
+The active [`.github/workflows/ci.yml`](.github/workflows/ci.yml) builds the React frontend and runs
+Python tests on pushes to `main` and pull requests targeting `main`. Only a successful push to
+`main` deploys with `flyctl deploy --remote-only`; pull requests are not deployments. The deploy job
+also enforces a single primary-region simulation machine.
 
 ## Repository layout
 
@@ -405,10 +408,10 @@ autonoc/
   ai/                 Feature pipeline, Doctor, Oracle, and inference worker
   api/                FastAPI routes, schemas, telemetry projections, run summaries
   scripts/            Sanity check, counterfactual, seed-casting, and export tools
-  web/                Legacy static fallback; current UI is built from frontend/
-frontend/
-  src/                Console modules: API client, store, map, views, panels, styles
-  public/assets/      Logo and hero images used by the console
+  web/                Static fallback served when the React build is absent
+frontend-react/
+  src/                React components, map, data, services, tests, and styles
+  public/assets/      Hero imagery, logos, and locally bundled fonts
 models/               Tracked trained model, scaler, and metadata artifacts
 reports/              Tracked counterfactual CSV and JSON summary
 tests/                Python engine, AI, lifecycle, and API contract tests
@@ -441,8 +444,8 @@ diag.ps1              Windows environment and live-server diagnostic
   separate.
 - **Not a secure operator service.** Demo control endpoints do not implement user authentication or
   authorization. Do not expose a writable instance to an untrusted network.
-- **Street basemap requires external access.** The vector tiles are not bundled; if the provider or
-  WebGL is unavailable, the UI falls back to its schematic map.
+- **Street basemap requires external access.** Esri raster tiles are not bundled; if the provider is
+  unavailable, the UI keeps its local schematic map visible and offers a retry.
 
 ## License
 
