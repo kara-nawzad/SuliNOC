@@ -1,16 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { SyntheticEvent } from "react";
 
-/** The new UI's welcome screen, shown exactly as the single-file design renders it.
- * public/assets/hero-source.html is a verbatim copy of frontend/index.html; it is loaded in
- * a same-origin frame so its own markup, styles and animation run unchanged. The two
- * buttons are intercepted in the capture phase so the frame does not switch to its
- * own workspace; they close this screen and the React workspace takes over.
- *
- * The frame stays mounted for the whole session. Closing it uses the design's own
- * `off` state (animations paused, nothing drawn) and reports the document as hidden,
- * so its polling and drawing stop. Reopening it just removes that state: no reload
- * and no restart of the intro animation. */
+/** Minimal, same-origin welcome page; the iframe contains no copy of the app.
+ * The enter and skip actions are intercepted so React can reveal the workspace. */
 export function HeroFrame({
   onEnter,
   open,
@@ -23,18 +15,8 @@ export function HeroFrame({
   openRef.current = open;
 
   const sync = useCallback(() => {
-    const doc = frame.current?.contentDocument;
-    if (!doc) return;
-    doc.getElementById("hero")?.classList.toggle("off", !openRef.current);
-    // The design's loops check document.hidden / visibilityState before polling or drawing.
-    Object.defineProperty(doc, "hidden", {
-      configurable: true,
-      get: () => !openRef.current,
-    });
-    Object.defineProperty(doc, "visibilityState", {
-      configurable: true,
-      get: () => (openRef.current ? "visible" : "hidden"),
-    });
+    const hero = frame.current?.contentDocument?.getElementById("hero");
+    hero?.classList.toggle("off", !openRef.current);
   }, []);
 
   useEffect(() => {
@@ -69,9 +51,7 @@ export function HeroFrame({
       src="/assets/hero-source.html"
       title="SuliNOC welcome"
       onLoad={onLoad}
-      style={
-        open ? undefined : { visibility: "hidden", pointerEvents: "none" }
-      }
+      style={open ? undefined : { visibility: "hidden", pointerEvents: "none" }}
     />
   );
 }
