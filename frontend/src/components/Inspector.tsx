@@ -8,7 +8,16 @@ import { tone } from "./ui";
 const GROUPS: { title: string; keys: string[] }[] = [
   {
     title: "Telecom",
-    keys: ["rsrp", "sinr", "cqi", "prb", "throughput", "latency", "loss", "jitter"],
+    keys: [
+      "rsrp",
+      "sinr",
+      "cqi",
+      "prb",
+      "throughput",
+      "latency",
+      "loss",
+      "jitter",
+    ],
   },
   { title: "Antenna & feeder", keys: ["vswr", "s11"] },
   { title: "Equipment", keys: ["cpu", "temp", "dust"] },
@@ -103,7 +112,9 @@ export function Inspector({
             </h3>
             <div className="range-source">
               Source now:{" "}
-              <b style={{ color: config.presentation.power_colors[node.power] }}>
+              <b
+                style={{ color: config.presentation.power_colors[node.power] }}
+              >
                 {node.power}
               </b>
             </div>

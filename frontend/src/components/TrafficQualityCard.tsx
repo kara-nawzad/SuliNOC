@@ -145,7 +145,10 @@ export function TrafficQualityCard({
     const key = `${timeframe}|${metric}|${data.run_id}`;
     const rows = samples
       .map((s) => ({ x: simTimeToMinutes(s.sim_time), tick: s.tick, s }))
-      .filter((r): r is { x: number; tick: number; s: TelemetrySample } => r.x !== null);
+      .filter(
+        (r): r is { x: number; tick: number; s: TelemetrySample } =>
+          r.x !== null,
+      );
     const first = rows[0]?.tick ?? -1;
     const last = rows.at(-1)?.tick ?? -1;
     const fed = c.fed;
@@ -242,13 +245,26 @@ export function TrafficQualityCard({
       <h3 className="chart-title">{primaryLabel}</h3>
       <p className="chart-subtitle">{primaryUnit}</p>
       <p className="chart-note" ref={primaryNote} />
-      <div className="ch-wrap" ref={primaryHost} role="img" aria-label={`${timeframe} ${primaryLabel} history`} />
+      <div
+        className="ch-wrap"
+        ref={primaryHost}
+        role="img"
+        aria-label={`${timeframe} ${primaryLabel} history`}
+      />
       <h3 className="chart-title">E-RAB drop proxy</h3>
-      <p className="chart-subtitle" title="Simulator aggregate packet-loss proxy, not a bearer-level measurement">
+      <p
+        className="chart-subtitle"
+        title="Simulator aggregate packet-loss proxy, not a bearer-level measurement"
+      >
         % · independent scale
       </p>
       <p className="chart-note" ref={dropNote} />
-      <div className="ch-wrap" ref={dropHost} role="img" aria-label={`${timeframe} E-RAB drop proxy history`} />
+      <div
+        className="ch-wrap"
+        ref={dropHost}
+        role="img"
+        aria-label={`${timeframe} E-RAB drop proxy history`}
+      />
       <p className="chart-provenance">
         {historyError
           ? historyError

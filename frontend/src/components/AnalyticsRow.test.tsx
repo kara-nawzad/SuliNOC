@@ -42,15 +42,24 @@ function makeConfig() {
     break_even_precision: 0.4375,
     tick_minutes: 5,
     status_colors: {
-      0: "#0f0", 1: "#ff0", 2: "#ff0", 3: "#f0f", 4: "#f00", 5: "#f80",
+      0: "#0f0",
+      1: "#ff0",
+      2: "#ff0",
+      3: "#f0f",
+      4: "#f00",
+      5: "#f80",
     },
     gauges: {
       prb: { lo: 0, hi: 100, good: 60, warn: 85, bad: 95, lower_bad: false },
     },
     presentation: {
       palette: {
-        prediction: "#a0f", warning: "#fa0", healthy: "#0f0",
-        critical: "#f00", fiber: "#0af", crew: "#ccc",
+        prediction: "#a0f",
+        warning: "#fa0",
+        healthy: "#0f0",
+        critical: "#f00",
+        fiber: "#0af",
+        crew: "#ccc",
       },
       power_colors: powerColors,
       prediction_horizon_min: 60,
@@ -72,7 +81,10 @@ function makeSnapshot(mix: Partial<Record<PowerSource, number>>) {
       active_ats: 2,
       history: [],
       current: {
-        availability: 99, throughput_gbps: 12, prb: 40, erab_drop: 0.1,
+        availability: 99,
+        throughput_gbps: 12,
+        prb: 40,
+        erab_drop: 0.1,
       },
     },
   } as unknown as Snapshot;
@@ -102,9 +114,12 @@ function renderRow(mix: Partial<Record<PowerSource, number>>) {
 
 describe("Site power & fleet donut", () => {
   it("renders live per-source counts and the Diesel DG legend label", () => {
-    const { container } = renderRow(
-      { Grid: 150, Solar: 60, Battery: 50, Generator: 40 },
-    );
+    const { container } = renderRow({
+      Grid: 150,
+      Solar: 60,
+      Battery: 50,
+      Generator: 40,
+    });
     expect(screen.getByText("Diesel DG")).toBeInTheDocument();
     expect(screen.queryByText("Generator")).not.toBeInTheDocument();
     // legend numbers come from the payload, not from a frozen 300/0/0/0
@@ -117,9 +132,12 @@ describe("Site power & fleet donut", () => {
   });
 
   it("draws one donut segment per power source, colored from config", () => {
-    const { container } = renderRow(
-      { Grid: 240, Solar: 30, Battery: 20, Generator: 10 },
-    );
+    const { container } = renderRow({
+      Grid: 240,
+      Solar: 30,
+      Battery: 20,
+      Generator: 10,
+    });
     const svg = container.querySelector(
       'svg[aria-label="Current site power-source distribution"]',
     )!;

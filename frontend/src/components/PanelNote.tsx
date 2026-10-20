@@ -96,7 +96,9 @@ export function PanelNote() {
     const onClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
       if (!target || target.closest(SKIP)) return;
-      const card = target.closest<HTMLElement>(".glass, .kpi, article, section");
+      const card = target.closest<HTMLElement>(
+        ".glass, .kpi, article, section",
+      );
       if (!card) return;
       const heading = card.querySelector<HTMLElement>(
         ".panel-heading h2, .panel-heading h3, .kpi-label, h2, h3",
@@ -125,7 +127,10 @@ export function PanelNote() {
 
   if (!note) return null;
   const width = Math.min(300, window.innerWidth - 24);
-  const left = Math.max(12, Math.min(note.x + 14, window.innerWidth - width - 12));
+  const left = Math.max(
+    12,
+    Math.min(note.x + 14, window.innerWidth - width - 12),
+  );
   const top = Math.max(12, Math.min(note.y + 14, window.innerHeight - 170));
   return (
     <aside

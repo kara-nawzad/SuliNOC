@@ -29,11 +29,7 @@ export function TowerList({
     (n) => n.status !== config.presentation.healthy_status,
   ).length;
   return (
-    <section
-      id="towers"
-      className="glass towers-panel"
-      aria-label="Towers"
-    >
+    <section id="towers" className="glass towers-panel" aria-label="Towers">
       <PanelHeading
         title="Towers"
         right={
@@ -75,12 +71,8 @@ export function TowerList({
             <span role="cell" style={{ color: config.status_colors[n.status] }}>
               {config.status_names[n.status]}
             </span>
-            <span role="cell">
-              {n.prb.toFixed(1)}%
-            </span>
-            <span role="cell">
-              {n.cqi}
-            </span>
+            <span role="cell">{n.prb.toFixed(1)}%</span>
+            <span role="cell">{n.cqi}</span>
             <span className="mono" role="cell">
               {n.ring}
             </span>

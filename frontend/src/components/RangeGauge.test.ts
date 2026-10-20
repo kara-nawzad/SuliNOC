@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { gaugeState } from "./RangeGauge";
 
 // Thresholds copied from the backend's GAUGE_SPECS (autonoc/engine/config.py).
-const rsrp = { lo: -130, hi: -50, good: -80, warn: -100, bad: -115, lower_bad: true };
+const rsrp = {
+  lo: -130,
+  hi: -50,
+  good: -80,
+  warn: -100,
+  bad: -115,
+  lower_bad: true,
+};
 const vswr = { lo: 1, hi: 3, good: 1.3, warn: 1.5, bad: 2, lower_bad: false };
 
 describe("gaugeState", () => {

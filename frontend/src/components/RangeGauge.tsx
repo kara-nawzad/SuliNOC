@@ -98,7 +98,8 @@ export function RangeGauge({
       />
     );
   });
-  const scaleText = (x: number) => `${fmt(x * s, units.decimals)}${units.unit ? " " + units.unit : ""}`;
+  const scaleText = (x: number) =>
+    `${fmt(x * s, units.decimals)}${units.unit ? " " + units.unit : ""}`;
   return (
     <div className={`range-gauge is-${st}`}>
       <div className="range-head">
@@ -118,8 +119,14 @@ export function RangeGauge({
         aria-valuetext={`${shown}, ${WORD[st]}`}
       >
         {bands}
-        <i className="range-fill" style={{ width: `${pct}%`, background: FILL[st] }} />
-        <em className="range-mark" style={{ left: `${pct}%`, borderColor: FILL[st] }} />
+        <i
+          className="range-fill"
+          style={{ width: `${pct}%`, background: FILL[st] }}
+        />
+        <em
+          className="range-mark"
+          style={{ left: `${pct}%`, borderColor: FILL[st] }}
+        />
       </div>
       <div className="range-scale">
         <span>{scaleText(spec.lo)}</span>

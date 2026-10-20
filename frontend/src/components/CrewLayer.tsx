@@ -47,9 +47,7 @@ export function CrewLayer({
         render: (id, frame) => {
           const marker = markers.current.get(id);
           if (!marker) return;
-          marker.setLatLng(
-            L.CRS.EPSG3857.unproject(L.point(frame.x, frame.y)),
-          );
+          marker.setLatLng(L.CRS.EPSG3857.unproject(L.point(frame.x, frame.y)));
           marker.getElement()?.classList.toggle("crew-parked", !frame.moving);
         },
       }),

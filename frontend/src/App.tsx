@@ -224,7 +224,10 @@ function Console({
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
-    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    document.addEventListener("scroll", onScroll, {
+      capture: true,
+      passive: true,
+    });
     update();
     return () => {
       document.removeEventListener("scroll", onScroll, { capture: true });
@@ -250,7 +253,11 @@ function Console({
     if (heroOpen) return null;
     return (
       <div className="boot-screen">
-        <img className="brand-logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC" />
+        <img
+          className="brand-logo"
+          src="/assets/suli-noc-logo-dark.png"
+          alt="SuliNOC"
+        />
         <h1>
           SuliNOC<span> / NETWORK COMMAND</span>
         </h1>
@@ -279,7 +286,9 @@ function Console({
   // Greeting follows the simulation clock (the hour of the sim time shown on the dashboard).
   const simMinutes = simTimeToMinutes(data.kpis.sim_time);
   const greetingText = greetingFor(
-    simMinutes == null ? new Date().getHours() : Math.floor((simMinutes % 1440) / 60),
+    simMinutes == null
+      ? new Date().getHours()
+      : Math.floor((simMinutes % 1440) / 60),
   );
 
   return (
@@ -355,7 +364,11 @@ function Console({
               onClick={() => navigate("overview")}
               aria-label="SuliNOC overview"
             >
-              <img className="brand-logo" src="/assets/suli-noc-logo-dark.png" alt="SuliNOC" />
+              <img
+                className="brand-logo"
+                src="/assets/suli-noc-logo-dark.png"
+                alt="SuliNOC"
+              />
             </button>
             <span className="header-divider" />
             <div className="network-switch">
@@ -412,24 +425,22 @@ function Console({
                 <CircleHelp size={18} />
               </button>
             </div>
-            <span className="build-stamp mono" title="Build: commit and build time">
+            <span
+              className="build-stamp mono"
+              title="Build: commit and build time"
+            >
               build {__BUILD_STAMP__.sha}
             </span>
             <span className="header-divider" />
             <div className="header-system">
               <ShieldCheck size={16} />
-              <div>
-                O-RAN · Non-RT RIC
-              </div>
+              <div>O-RAN · Non-RT RIC</div>
             </div>
           </header>
           <main id="overview">
             <div className="overview-heading">
               <div>
-                <h1
-                  key={greetingText}
-                  className="overview-hi gslow"
-                >
+                <h1 key={greetingText} className="overview-hi gslow">
                   {greetingText}, Slemani.
                 </h1>
               </div>
@@ -554,9 +565,7 @@ function Console({
                 <Dot color={status === "live" ? p.healthy : p.warning} /> Engine{" "}
                 {status === "live" ? "connected" : "disconnected"}
               </span>
-              <span>
-                Deterministic world. Predictive operations.
-              </span>
+              <span>Deterministic world. Predictive operations.</span>
             </footer>
           </main>
         </div>
@@ -615,7 +624,8 @@ function Console({
                   <div className="fleet-card-foot">
                     <span>ETA {team.eta} ticks</span>
                     <span>
-                      {team.missions} {team.missions === 1 ? "mission" : "missions"}
+                      {team.missions}{" "}
+                      {team.missions === 1 ? "mission" : "missions"}
                     </span>
                   </div>
                 </article>
@@ -673,18 +683,22 @@ function Console({
               <div>
                 <strong>Auto-approve crew requests (demo)</strong>
                 <p>
-                  When On, the system approves a pending crew dispatch by
-                  itself after 10 seconds. When Off, a person must approve
-                  each one.
+                  When On, the system approves a pending crew dispatch by itself
+                  after 10 seconds. When Off, a person must approve each one.
                 </p>
               </div>
-              <div className="approval-choice" role="group" aria-label="Demo auto-approval">
+              <div
+                className="approval-choice"
+                role="group"
+                aria-label="Demo auto-approval"
+              >
                 {[
                   { label: "Off", seconds: 0 },
                   { label: "On · 10 s", seconds: 10 },
                 ].map((option) => {
                   const active =
-                    (data.control.auto_approve_seconds > 0) === (option.seconds > 0);
+                    data.control.auto_approve_seconds > 0 ===
+                    option.seconds > 0;
                   return (
                     <button
                       key={option.label}

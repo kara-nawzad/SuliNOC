@@ -38,12 +38,10 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   for (const selector of [".hero-background", ".hero-tower"]) {
     await expect
       .poll(() =>
-        welcome
-          .locator(selector)
-          .evaluate((element) => {
-            const image = element as HTMLImageElement;
-            return image.complete && image.naturalWidth > 0;
-          }),
+        welcome.locator(selector).evaluate((element) => {
+          const image = element as HTMLImageElement;
+          return image.complete && image.naturalWidth > 0;
+        }),
       )
       .toBe(true);
   }

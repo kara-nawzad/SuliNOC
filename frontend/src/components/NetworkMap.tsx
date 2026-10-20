@@ -266,7 +266,10 @@ export function NetworkMap({
           </div>
         }
       />
-      <p className="note">Live from the current simulation run. Crews move between confirmed positions.</p>
+      <p className="note">
+        Live from the current simulation run. Crews move between confirmed
+        positions.
+      </p>
       <div className="map-stage">
         <MapContainer
           center={config.map_center}
@@ -287,10 +290,7 @@ export function NetworkMap({
             <LocalBasemap config={config} />
           )}
           {layers.streets && (
-            <TileBasemap
-              key={streetAttempt}
-              onStatus={setStreetStatus}
-            />
+            <TileBasemap key={streetAttempt} onStatus={setStreetStatus} />
           )}
           {layers.fiber &&
             data.rings.map((r) => (
@@ -493,8 +493,8 @@ export function NetworkMap({
           </div>
         </div>
         <div className="map-location">
-          <MapPin size={12} /> IRAQ <span> / </span> KURDISTAN{" "}
-          <span> / </span> SULAYMANIYAH
+          <MapPin size={12} /> IRAQ <span> / </span> KURDISTAN <span> / </span>{" "}
+          SULAYMANIYAH
         </div>
         {storm && (
           <div
@@ -506,9 +506,7 @@ export function NetworkMap({
           >
             <CloudLightning size={15} />
             <div>
-              <strong>
-                Storm over {storm.name}
-              </strong>
+              <strong>Storm over {storm.name}</strong>
               <span>
                 Wind {storm.wind} km/h · {storm.node_count} sites in area
               </span>

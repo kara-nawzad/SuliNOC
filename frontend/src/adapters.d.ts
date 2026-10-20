@@ -18,7 +18,9 @@ export class CrewTrips {
   constructor(project: (lat: number, lon: number) => [number, number]);
   update(team: TeamLike): Track;
 }
-export function simTimeToMinutes(simTime: string | null | undefined): number | null;
+export function simTimeToMinutes(
+  simTime: string | null | undefined,
+): number | null;
 export function towerClass(
   node: { id: string; status: number; warn?: boolean; critical?: boolean },
   config: { presentation: { offline_statuses: number[] } },
