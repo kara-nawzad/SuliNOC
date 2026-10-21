@@ -7307,3 +7307,36 @@ dialog.dialog::backdrop,
     min-height: 44px;
   }
 }
+
+/* Floating map controls need an opaque light surface over the raster tiles. */
+.app-shell .map-top-overlay .map-button {
+  background: #ffffff !important;
+  color: #10265c !important;
+  border: 1px solid var(--sn-ln) !important;
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
+}
+.app-shell .map-top-overlay .map-button:hover,
+.app-shell .map-top-overlay .map-button:focus-visible {
+  background: #f4f8fd !important;
+  color: var(--sn-link) !important;
+  border-color: var(--sn-link) !important;
+}
+.app-shell .map-top-overlay .map-button.active,
+.app-shell .map-top-overlay .map-button[aria-expanded="true"] {
+  background: var(--sn-s1) !important;
+  color: var(--sn-tx) !important;
+  border-color: var(--sn-ln) !important;
+}
+.app-shell .map-top-overlay .segmented {
+  background: var(--sn-s3) !important;
+  border-color: var(--sn-ln) !important;
+  box-shadow: var(--sh-1);
+}
+.app-shell .map-top-overlay .segmented button.selected {
+  background: #ffffff !important;
+  color: #10265c !important;
+  box-shadow:
+    inset 0 0 0 1px var(--sn-ln),
+    var(--sh-1);
+}

@@ -182,6 +182,19 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(towerHeader).toHaveCSS("opacity", "1");
   await expect(towerHeader).toHaveCSS("background-color", "rgb(234, 243, 254)");
 
+  const mapStyleGroup = page.getByRole("group", { name: "Map style" });
+  const selectedMapStyle = mapStyleGroup.getByRole("button", { name: "Map" });
+  await expect(selectedMapStyle).toBeVisible();
+  await expect(selectedMapStyle).toHaveCSS(
+    "background-color",
+    "rgb(255, 255, 255)",
+  );
+  for (const label of ["Map layers", "Reset map view"]) {
+    const control = page.getByRole("button", { name: label });
+    await expect(control).toBeVisible();
+    await expect(control).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  }
+
   const mapStatus = page.locator(".map-mode");
   await expect(mapStatus).toBeVisible();
   await expect(mapStatus).toHaveCSS("display", "flex");
