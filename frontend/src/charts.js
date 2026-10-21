@@ -85,7 +85,9 @@ export function lineChart(
       y0 = Math.min(ticks[0], lo),
       y1 = Math.max(ticks.at(-1), hi),
       x1 = xs.at(-1),
-      x0 = winMin ? x1 - winMin : xs[0],
+      // If the selected window reaches before available history, begin at the
+      // first sample instead of leaving a blank gap at the left of the chart.
+      x0 = winMin ? Math.max(xs[0], x1 - winMin) : xs[0],
       span = x1 - x0 || 1; // a set window spans its own length
     const dl = (m) => hhmm(m) + " D" + (Math.floor(m / 1440) + 1),
       longWin = winMin ? winMin >= 1440 : span > 1440;
