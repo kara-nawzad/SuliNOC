@@ -59,8 +59,12 @@ export function TrafficQualityCard({
   const charts = useRef<{
     primary: ReturnType<typeof lineChart> | null;
     drop: ReturnType<typeof lineChart> | null;
-    fed: { key: string; first: number; last: number };
-  }>({ primary: null, drop: null, fed: { key: "", first: -1, last: -1 } });
+    fed: { key: string; first: number; last: number; count: number };
+  }>({
+    primary: null,
+    drop: null,
+    fed: { key: "", first: -1, last: -1, count: 0 },
+  });
 
   useEffect(() => {
     const request = ++requestId.current;
@@ -133,7 +137,7 @@ export function TrafficQualityCard({
       charts.current.drop?.destroy();
       charts.current.primary = null;
       charts.current.drop = null;
-      charts.current.fed = { key: "", first: -1, last: -1 };
+      charts.current.fed = { key: "", first: -1, last: -1, count: 0 };
     };
   }, [config]);
 
@@ -152,9 +156,12 @@ export function TrafficQualityCard({
     const first = rows[0]?.tick ?? -1;
     const last = rows.at(-1)?.tick ?? -1;
     const fed = c.fed;
-    // Longer windows: only a new timeframe, metric or run resets the chart,
-    // and new ticks are appended. The chart cannot drop points, so the 30 min
-    // view is redrawn instead (see below).
+    const fresh = rows.filter((r) => r.tick > fed.last);
+    // If history arrives after the timeframe switch, the last tick may be
+    // unchanged while older samples have been backfilled. Replace the series
+    // whenever its start or point count differs from tail-only appends.
+    const seriesChanged =
+      first !== fed.first || rows.length !== fed.count + fresh.length;
     // Fixed axis: QCI 9 traffic 20–50 Gbps; PRB stays automatic.
     c.primary.setWindow(WINDOW_MINUTES[timeframe]);
     c.drop?.setWindow(WINDOW_MINUTES[timeframe]);
@@ -163,19 +170,18 @@ export function TrafficQualityCard({
     c.primary.setDomain(metric === "throughput_gbps" ? 20 : null, 50);
     // The 30 min view holds only a few points, so it is redrawn from the
     // trimmed window every time; otherwise old points would stay on the axis.
-    if (fed.key !== key || timeframe === "30m") {
+    if (fed.key !== key || timeframe === "30m" || seriesChanged) {
       c.primary.setData(rows.map((r) => [r.x, r.s[metric]]));
       c.drop.setData(rows.map((r) => [r.x, r.s.drop_rate]));
       stats.redraws += 1;
-      c.fed = { key, first, last };
-    } else if (last > fed.last) {
-      const fresh = rows.filter((r) => r.tick > fed.last);
+      c.fed = { key, first, last, count: rows.length };
+    } else if (fresh.length) {
       for (const r of fresh) {
         c.primary.append([r.x, r.s[metric]]);
         c.drop.append([r.x, r.s.drop_rate]);
       }
       stats.appends += fresh.length;
-      c.fed = { key, first, last };
+      c.fed = { key, first, last, count: rows.length };
     }
   }, [samples, timeframe, metric, data.run_id]);
 
