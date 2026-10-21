@@ -7868,14 +7868,18 @@ dialog.dialog::backdrop,
     bottom: 3px;
     font-size: 8px;
   }
+  .wave-launcher.is-open {
+    visibility: hidden;
+    pointer-events: none;
+  }
   .wave-panel {
     right: 10px;
-    bottom: calc(188px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     width: min(400px, calc(100vw - 20px));
-    height: min(620px, calc(100dvh - 204px - env(safe-area-inset-bottom, 0px)));
+    height: min(620px, calc(100dvh - 92px - env(safe-area-inset-bottom, 0px)));
     min-height: min(
       340px,
-      calc(100dvh - 204px - env(safe-area-inset-bottom, 0px))
+      calc(100dvh - 92px - env(safe-area-inset-bottom, 0px))
     );
     border-radius: 18px;
   }

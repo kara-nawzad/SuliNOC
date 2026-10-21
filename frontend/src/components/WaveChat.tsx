@@ -88,6 +88,7 @@ export function WaveChat({
   const [responseExpression, setResponseExpression] =
     useState<WaveExpression | null>(null);
   const sendingRef = useRef(false);
+  const wasOpenRef = useRef(false);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
@@ -105,14 +106,20 @@ export function WaveChat({
   }, [key, messages]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      if (wasOpenRef.current) {
+        wasOpenRef.current = false;
+        launcherRef.current?.focus();
+      }
+      return;
+    }
+    wasOpenRef.current = true;
     inputRef.current?.focus();
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
         setOpen(false);
         setFocused(false);
-        launcherRef.current?.focus();
       }
     };
     window.addEventListener("keydown", onKeyDown);
