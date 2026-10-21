@@ -109,6 +109,17 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     "background-color",
     "rgb(214, 231, 251)",
   );
+  const kpiLabels = await page
+    .locator(".kpi-grid .kpi-title > span")
+    .allTextContents();
+  expect(kpiLabels.map((label) => label.trim())).toEqual([
+    "Network availability",
+    "Sites operational",
+    "Site power alarms",
+    "QCI 9 throughput",
+    "E-RAB drop rate",
+    "Active incidents",
+  ]);
 
   const mapStatus = page.locator(".map-mode");
   await expect(mapStatus).toBeVisible();
@@ -151,4 +162,14 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     );
   expect(new Set(navItemTops).size).toBe(1);
   expect(new Set(utilityItemTops).size).toBe(1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const incidentPanel = page.locator(".alerts-rail .alarms-panel");
+  await expect(incidentPanel).toHaveCSS("height", "400px");
+  const incidentList = incidentPanel.locator(".incident-list");
+  await expect(incidentList).toHaveCSS("overflow-y", "auto");
+  await incidentPanel
+    .getByLabel("Filter alarm severity")
+    .selectOption({ index: 1 });
+  await expect(incidentPanel).toHaveCSS("height", "400px");
 });

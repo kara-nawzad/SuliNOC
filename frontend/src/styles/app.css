@@ -7248,3 +7248,29 @@ dialog.dialog::backdrop,
     animation: none !important;
   }
 }
+
+/* On phones, keep the alarm card stable; only its incident list scrolls. */
+@media (max-width: 600px) {
+  .app-shell .alerts-rail {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: 400px auto !important;
+    align-items: stretch;
+    max-height: none;
+  }
+  .app-shell .alerts-rail .alarms-panel {
+    height: 400px;
+    min-height: 0;
+    max-height: 400px;
+    overflow: hidden;
+  }
+  .app-shell .alerts-rail .incident-list {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
