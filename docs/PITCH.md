@@ -1,6 +1,6 @@
 # The 90-Second Executive Pitch
 
-*AutoNOC — a network-operations simulation with modeled results, not measured savings.*
+*SuliNOC — a network-operations simulation with modeled results, not measured savings.*
 Spoken script; stage directions in italics. Rehearsed runtime: 85–95 s.
 
 ---
@@ -11,7 +11,7 @@ Spoken script; stage directions in italics. Rehearsed runtime: 85–95 s.
 > diesel, and your customer churns to a competitor whose tower still works.
 > In Sulaymaniyah that downtime is driven by three things my dashboard is
 > about to show you: mountain storms, grid brown-outs, and — the one nobody
-> budgets for — **fuel thieves**. AutoNOC is an O-RAN Non-RT RIC that turns
+> budgets for — **fuel thieves**. SuliNOC is an O-RAN Non-RT RIC that turns
 > all three from phone calls into policy."
 
 *Point at the header strip while saying the numbers:*
@@ -19,7 +19,7 @@ Spoken script; stage directions in italics. Rehearsed runtime: 85–95 s.
 ## 0:15 — THE PROOF, IN NUMBERS  (~20 s)
 
 > "Thirty seeds, ten simulated days each, identical fault schedules per arm.
-> In this simulator, autonomous AutoNOC cuts **5,124 tower-minutes of downtime**
+> In this simulator, autonomous SuliNOC cuts **5,124 tower-minutes of downtime**
 > and **12.9% of the cost proxy** — model units, not dollars. It captures
 > **55.0% of the A-to-D downtime-reduction headroom**, not two thirds. Arm C
 > records **147 false dispatches per ten-day run**, and they are charged in the

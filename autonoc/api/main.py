@@ -406,7 +406,7 @@ async def lifespan(app: FastAPI):
         pass
 
 
-app = FastAPI(title="AutoNOC", version="3.0", lifespan=lifespan)
+app = FastAPI(title="SuliNOC", version="3.0", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 # Same-origin only by default: the dashboard is served by this app (and the
 # Vite dev server proxies /api), so cross-origin browser access is not a
@@ -463,7 +463,7 @@ async def browser_session(request: Request, call_next):
     dashboard capacity let a single uptime monitor fill the demo — that was the
     root cause of the "at capacity" lockout. They are also the payload for this
     documented failure:
-    ``{"detail": "AutoNOC is at capacity …", "code": "session_capacity"}``.
+    ``{"detail": "SuliNOC is at capacity …", "code": "session_capacity"}``.
     """
     if _registry is None:
         return await call_next(request)

@@ -15,7 +15,7 @@ from autonoc.engine.engine import NOCEngine
 
 def main(seed: int = 42, days: int = 7) -> None:
     ticks = days * C.TICKS_PER_DAY
-    print(f"AutoNOC engine sanity check — seed {seed}, {days} simulated days\n")
+    print(f"SuliNOC engine sanity check — seed {seed}, {days} simulated days\n")
 
     e = NOCEngine(seed=seed, horizon=ticks + C.TICKS_PER_DAY)
     t0 = time.perf_counter()

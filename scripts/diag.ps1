@@ -1,4 +1,4 @@
-# AutoNOC diagnostic - run from PowerShell with: .\scripts\diag.ps1
+# SuliNOC diagnostic - run from PowerShell with: .\scripts\diag.ps1
 # Checks the current React frontend, backend, committed model artifacts, and a local server.
 $ErrorActionPreference = "Continue"
 $scriptDir = if ($PSScriptRoot) {
@@ -8,7 +8,7 @@ $scriptDir = if ($PSScriptRoot) {
 }
 $root = Split-Path -Parent $scriptDir
 
-Write-Host "=== AutoNOC DIAGNOSTIC ===" -ForegroundColor Cyan
+Write-Host "=== SuliNOC DIAGNOSTIC ===" -ForegroundColor Cyan
 Write-Host "Project: $root"
 Write-Host ""
 

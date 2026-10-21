@@ -1,4 +1,4 @@
-# Stop only the AutoNOC Uvicorn server listening on port 8000.
+# Stop only the SuliNOC Uvicorn server listening on port 8000.
 # Unrelated services that happen to use the port are deliberately left alone.
 $ErrorActionPreference = "Stop"
 
@@ -20,16 +20,16 @@ foreach ($ownerPid in $owners) {
   if ($process -and $process.CommandLine -match '(?i)\buvicorn(?:\.exe)?\s+autonoc\.api\.main:app\b') {
     $targets += $process
   } else {
-    Write-Warning "Leaving PID $ownerPid alone: it is not AutoNOC's Uvicorn app."
+    Write-Warning "Leaving PID $ownerPid alone: it is not SuliNOC's Uvicorn app."
   }
 }
 
 if ($targets.Count -eq 0) {
-  Write-Error "Port 8000 is in use, but no AutoNOC Uvicorn process was found. Nothing was stopped."
+  Write-Error "Port 8000 is in use, but no SuliNOC Uvicorn process was found. Nothing was stopped."
   exit 1
 }
 
 foreach ($target in $targets) {
   Stop-Process -Id $target.ProcessId -Force
-  Write-Host "Stopped AutoNOC Uvicorn (PID $($target.ProcessId))."
+  Write-Host "Stopped SuliNOC Uvicorn (PID $($target.ProcessId))."
 }

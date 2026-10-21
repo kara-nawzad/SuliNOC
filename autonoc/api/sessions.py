@@ -185,7 +185,7 @@ class SessionRegistry:
                           if self.reclaim else None)
                 if victim is None:
                     raise SessionCapacityError(
-                        f"AutoNOC is at capacity ({self.max_sessions} active browser "
+                        f"SuliNOC is at capacity ({self.max_sessions} active browser "
                         "sessions). Close an idle dashboard and try again.",
                         retry_after=1.0,
                     )

@@ -1,6 +1,6 @@
-# AutoNOC — simulated telecom operations command center
+# SuliNOC — simulated telecom operations command center
 
-[![Live demo](https://img.shields.io/badge/demo-live-10b981?logo=flydotio&logoColor=white)](https://autonoc-project.fly.dev/)
+[![Live demo](https://img.shields.io/badge/demo-live-10b981?logo=flydotio&logoColor=white)](https://karanawzad.tech/SuliNOC/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -9,7 +9,7 @@
 [![O-RAN inspired](https://img.shields.io/badge/architecture-O--RAN%20inspired-5b6abf)](#architecture)
 [![CI & Deploy](https://github.com/kara-nawzad/SuliNOC/actions/workflows/ci.yml/badge.svg)](https://github.com/kara-nawzad/SuliNOC/actions/workflows/ci.yml)
 
-**AutoNOC is a deterministic simulation of a 300-site LTE network scenario centered on Sulaymaniyah,
+**SuliNOC is a deterministic simulation of a 300-site LTE network scenario centered on Sulaymaniyah,
 Iraq; the site positions and telemetry are modeled, not live operator data.** A pure-Python engine
 generates radio, traffic, weather, power, fault, and crew state; an XGBoost Doctor diagnoses current
 faults, a PyTorch GRU Oracle scores 60-minute failure risk, and an expected-value Commander applies
@@ -21,7 +21,7 @@ assumption-based dollar scenarios.
 > an integration with a live mobile network, or an O-RAN-certified implementation. Its models are
 > trained and evaluated on simulator-generated data.
 
-**[Open the live demo](https://autonoc-project.fly.dev/)** · [Frontend guide](frontend/README.md) ·
+**[Open SuliNOC](https://karanawzad.tech/SuliNOC/)** · [Frontend guide](frontend/README.md) ·
 [Contributing](CONTRIBUTING.md) · [Assets](docs/ASSETS.md) · [Design vision](docs/DESIGN_VISION.md)
 
 ---
@@ -220,7 +220,7 @@ an actual incident saved $684.
   static assets are answered by the shared default engine, because they cannot keep a cookie —
   uptime monitors and crawlers must never occupy a dashboard slot.
 - A full registry still answers HTTP 503 with `code: session_capacity`, but it is transient: the
-  dashboard retries with an `X-AutoNOC-Retry` marker, which tells the server a visitor is waiting,
+  dashboard retries with a protocol marker, which tells the server a visitor is waiting,
   and receives a reclaimed slot instead of a second refusal. `/api/health` reports the live gauge
   under `sessions`. See [the archived session-capacity investigation](docs/archive/SESSION_CAPACITY_FIX.md).
 - The model bundle is loaded once per process and shared read-only by inference workers. These
@@ -316,7 +316,7 @@ The Windows launchers and diagnostic helper live under `scripts/`:
   `venv\Scripts\python.exe`, then falls back to `python` on `PATH`.
 - **`scripts/Start-Demo.bat`** runs the server in its window and opens the dashboard. It expects the
   project `venv` to exist.
-- **`scripts/Stop-Demo.bat`** stops AutoNOC's Uvicorn process on port `8000`. It checks the process
+- **`scripts/Stop-Demo.bat`** stops SuliNOC's Uvicorn process on port `8000`. It checks the process
   command line and refuses to kill an unrelated service that happens to own the port; it is the
   matching stop helper for both launchers.
 - **`scripts/diag.ps1`** checks the console source/build files, model artifacts, the backend health
@@ -407,8 +407,9 @@ direct exposure as an operator service.
 
 ## Deployment
 
-The app is deployed at [autonoc-project.fly.dev](https://autonoc-project.fly.dev/). The existing
-Fly.io app is built from the repository's multi-stage `Dockerfile`: Node 22 builds the console assets,
+The public entry point is [karanawzad.tech/SuliNOC/](https://karanawzad.tech/SuliNOC/). It keeps
+that address in the browser while embedding the SuliNOC app, which is deployed on Fly.io. The app is
+built from the repository's multi-stage `Dockerfile`: Node 22 builds the console assets,
 then a Python 3.12 runtime serves FastAPI and the bundled frontend. `fly.toml` configures the `ams`
 primary region, one shared-CPU / 1 GB machine, and the `/data` volume for completed-run summaries.
 

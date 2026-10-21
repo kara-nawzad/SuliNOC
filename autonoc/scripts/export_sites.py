@@ -47,7 +47,7 @@ def main(seed: int = 42) -> None:
         })
 
     doc = {
-        "project": "AutoNOC v2 — Sulaymaniyah",
+        "project": "SuliNOC — Sulaymaniyah",
         "seed": seed,
         "generated_from": "autonoc/engine/placement.py",
         "crs": "EPSG:4326",

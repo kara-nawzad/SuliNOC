@@ -5,7 +5,7 @@ type ArmName = keyof typeof report.arms;
 const labels: Record<ArmName, string> = {
   A: "No AI · reactive dispatch",
   B: "Advisory · human approval",
-  C: "Autonomous · AutoNOC Commander",
+  C: "Autonomous · SuliNOC Commander",
   D: "Clairvoyant · predictive upper bound",
 };
 

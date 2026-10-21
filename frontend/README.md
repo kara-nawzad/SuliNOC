@@ -1,4 +1,4 @@
-# AutoNOC React command center
+# SuliNOC React command center
 
 The canonical web UI lives in `frontend/`. It uses React 18, TypeScript, Vite, Tailwind CSS 4,
 Framer Motion, Lucide, and React Leaflet. Fonts are bundled locally. Operational telemetry is read

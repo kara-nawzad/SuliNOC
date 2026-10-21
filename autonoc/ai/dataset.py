@@ -138,7 +138,7 @@ def main() -> None:
     different traffic — the test set is not a re-run of training data with a
     different slice taken out.
     """
-    print("AutoNOC dataset generation\n")
+    print("SuliNOC dataset generation\n")
     plans = [
         ("data/train.csv", 42, 60),
         ("data/val.csv", 90, 12),

@@ -1,22 +1,82 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SuliNOC · Kara Nawzad</title>
-  <!-- Top-level redirect, not an iframe: the console runs as a normal page on its own origin,
-       so phone browsers do not block its cookies or storage as cross-site embedded content. -->
-  <meta http-equiv="refresh" content="0; url=https://autonoc-project.fly.dev/">
-  <style>
-    html, body { height: 100%; margin: 0; background: #d6e7fb; color: #10265c; font: 16px system-ui, sans-serif; }
-    main { min-height: 100%; display: grid; place-items: center; text-align: center; padding: 24px; }
-    a { color: #1479c4; }
-  </style>
-</head>
-<body>
-  <main>
-    <p>Opening SuliNOC… <a href="https://autonoc-project.fly.dev/">Continue</a></p>
-  </main>
-  <script>location.replace("https://autonoc-project.fly.dev/");</script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#081426" />
+    <meta
+      name="description"
+      content="SuliNOC network operations simulation for Sulaymaniyah."
+    />
+    <link rel="canonical" href="https://karanawzad.tech/SuliNOC/" />
+    <title>SuliNOC · Network operations</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #081426;
+        font-family: system-ui, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body,
+      main {
+        width: 100%;
+        height: 100%;
+        min-height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+      .app-frame {
+        display: block;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        border: 0;
+      }
+      .fallback-link {
+        position: fixed;
+        z-index: 10;
+        right: max(12px, env(safe-area-inset-right));
+        bottom: max(12px, env(safe-area-inset-bottom));
+        padding: 8px 12px;
+        border: 1px solid rgb(255 255 255 / 22%);
+        border-radius: 999px;
+        background: rgb(8 20 38 / 88%);
+        color: #f6f8fc;
+        font-size: 12px;
+        text-decoration: none;
+        backdrop-filter: blur(12px);
+      }
+      .fallback-link:hover,
+      .fallback-link:focus-visible {
+        background: #152d4b;
+        outline: 2px solid #8bc9ff;
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <main aria-label="SuliNOC network operations">
+      <iframe
+        class="app-frame"
+        src="https://autonoc-project.fly.dev/"
+        title="SuliNOC network operations command center"
+        allow="fullscreen"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </main>
+    <a
+      class="fallback-link"
+      href="https://autonoc-project.fly.dev/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Having trouble? Open SuliNOC directly
+    </a>
+  </body>
 </html>
