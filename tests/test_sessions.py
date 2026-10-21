@@ -156,6 +156,7 @@ def test_only_api_traffic_needs_a_session():
     # Probes, the dashboard shell, crawlers and assets cannot keep a cookie,
     # so they must never hold a slot.
     assert requires_session("/api/health") is False
+    assert requires_session("/api/wave/status") is False
     assert requires_session("/") is False
     assert requires_session("/favicon.svg") is False
     assert requires_session("/static/app.js") is False
@@ -168,7 +169,7 @@ def test_health_checks_and_assets_never_consume_capacity(monkeypatch):
 
     monkeypatch.setenv("AUTONOC_MAX_SESSIONS", "1")
     with TestClient(M.app) as client:
-        for path in ("/api/health", "/", "/static/app.js", "/api/health"):
+        for path in ("/api/health", "/api/wave/status", "/", "/static/app.js", "/api/health"):
             assert client.get(path).status_code == 200, path
         assert M._registry.count() == 0
         assert "autonoc_session" not in client.cookies

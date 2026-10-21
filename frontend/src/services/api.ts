@@ -6,6 +6,7 @@ import type {
   TelemetryHistory,
   TelemetryTimeframe,
 } from "../types/api";
+import type { WaveChatReply, WaveProviderState, WaveTurn } from "../types/wave";
 
 /** The backend refuses a new dashboard only when every slot is genuinely busy.
  * It is transient by design: the retry marker below tells the server that a
@@ -135,6 +136,14 @@ async function control(
 }
 export const api = {
   config: (signal?: AbortSignal) => request<Config>("/api/config", { signal }),
+  waveStatus: (signal?: AbortSignal) =>
+    request<WaveProviderState>("/api/wave/status", { signal }),
+  waveChat: (question: string, runId: string, history: WaveTurn[]) =>
+    request<WaveChatReply>("/api/wave/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, run_id: runId, history }),
+    }),
   delta: async (cursor: number, signal?: AbortSignal) =>
     validateSnapshot(
       await request<Snapshot>(`/api/delta?since=${cursor}`, { signal }),

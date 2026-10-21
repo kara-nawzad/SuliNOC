@@ -18,6 +18,7 @@ THREE v1 bugs are structurally impossible here:
 from __future__ import annotations
 
 import asyncio
+import copy
 import os
 import re
 import shutil
@@ -41,6 +42,8 @@ from autonoc.engine.engine import NOCEngine
 from . import presentation as P
 from . import schemas as S
 from .run_history import RunSummaryStore
+from .wave_ai import WaveAIError, answer_question as answer_wave_question
+from .wave_ai import provider_status as wave_provider_status
 from .sessions import (Session, SessionRegistry, SessionCapacityError,
                        COOKIE_NAME, requires_session)
 
@@ -180,6 +183,23 @@ def _cookie_secure(request: Request) -> bool:
         return True
     forwarded = request.headers.get("x-forwarded-proto", "").split(",")[0].strip()
     return (forwarded or request.url.scheme) == "https"
+
+
+def _attach_session_cookie(response, request: Request, session: Session, created: bool) -> None:
+    if not created:
+        return
+    response.headers[SESSION_HEADER] = session.token
+    # The console is often embedded cross-site (the preview frame), and a
+    # SameSite=Lax cookie is then never sent back. Over HTTPS use None; Secure.
+    secure = _cookie_secure(request)
+    response.set_cookie(
+        COOKIE_NAME,
+        session.token,
+        httponly=True,
+        samesite="none" if secure else "lax",
+        secure=secure,
+        max_age=int(_registry.idle_timeout) if _registry else 180,
+    )
 
 
 def _activate(s: Session) -> None:
@@ -501,24 +521,77 @@ async def browser_session(request: Request, call_next):
                 "Cache-Control": "no-store",
             },
         )
+    request.state.session_token = session.token
+
+    if request.url.path == "/api/wave/chat":
+        # Wave needs the same session-aware state as /api/delta, but its provider
+        # request can take seconds. Capture an immutable snapshot while this
+        # session is active, then release BOTH the session gate and engine lock
+        # before call_next reaches OpenAI so polling and controls keep flowing.
+        async with _gate:
+            _activate(session)
+            try:
+                with _lock:
+                    request.state.wave_snapshot = copy.deepcopy(_snapshot(resync=True))
+            finally:
+                _deactivate(session)
+
+        response = await call_next(request)
+        _attach_session_cookie(response, request, session, created)
+        return response
+
     async with _gate:
         _activate(session)
         try:
             response = await call_next(request)
-            if created:
-                response.headers[SESSION_HEADER] = session.token
-                # The console is often embedded cross-site (the preview frame), and
-                # a SameSite=Lax cookie is then never sent back: each poll would open
-                # a fresh simulation at tick 0. Over HTTPS use SameSite=None; Secure.
-                secure = _cookie_secure(request)
-                response.set_cookie(
-                    COOKIE_NAME, session.token, httponly=True,
-                    samesite="none" if secure else "lax",
-                    secure=secure,
-                    max_age=int(_registry.idle_timeout))
+            _attach_session_cookie(response, request, session, created)
             return response
         finally:
             _deactivate(session)
+
+# ------------------------------------------------------------------ Wave AI
+@app.get("/api/wave/status")
+async def wave_status():
+    """Expose safe setup/verification state, never a provider credential."""
+    return wave_provider_status()
+
+
+@app.post("/api/wave/chat", response_model=S.WaveChatResponse)
+async def wave_chat(payload: S.WaveChatRequest, request: Request):
+    """Read-only generative chat grounded in this browser's current run.
+
+    The session middleware snapshots the selected session under its gate, then
+    releases it before this handler makes any provider request. The assistant
+    never receives engine objects or control tools.
+    """
+    snapshot = getattr(request.state, "wave_snapshot", None)
+    if snapshot is None:
+        # Useful for direct unit tests and deployments that call the route
+        # without the lifespan registry; normal dashboard traffic takes the
+        # session-aware middleware branch above.
+        with _lock:
+            snapshot = copy.deepcopy(_snapshot(resync=True))
+    if payload.run_id != snapshot.get("run_id"):
+        raise HTTPException(
+            status_code=409,
+            detail="The simulation run changed before Wave could answer. Refresh and ask again.",
+        )
+
+    try:
+        result = await answer_wave_question(
+            payload.question,
+            snapshot,
+            session_id=getattr(request.state, "session_token", "__shared__"),
+            history=[{"role": turn.role, "content": turn.content} for turn in payload.history],
+        )
+    except WaveAIError as exc:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"code": exc.code, "detail": exc.detail},
+            headers=exc.headers,
+        )
+    return S.WaveChatResponse(**result)
+
 
 # ------------------------------------------------------------------ config
 @app.get("/api/config", response_model=S.ConfigResponse)

@@ -803,7 +803,6 @@ function Console({
         <WaveChat
           key={data.run_id}
           data={data}
-          config={config}
           connection={status}
           refresh={refresh}
         />

@@ -8,11 +8,12 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "../services/api";
-import type { Config, Snapshot } from "../types/api";
+import type { Snapshot } from "../types/api";
+import type { WaveChatReply, WaveProviderState } from "../types/wave";
 import { WaveChat } from "./WaveChat";
 
 vi.mock("../services/api", () => ({
-  api: { delta: vi.fn() },
+  api: { waveStatus: vi.fn(), waveChat: vi.fn() },
 }));
 
 function makeSnapshot(): Snapshot {
@@ -49,11 +50,33 @@ function makeSnapshot(): Snapshot {
   } as unknown as Snapshot;
 }
 
-const config = {
-  status_names: {},
-  presentation: { healthy_status: 0 },
-  agg_sites: [],
-} as unknown as Config;
+function providerStatus(
+  status: WaveProviderState["status"],
+): WaveProviderState {
+  return {
+    provider: "openai",
+    model: status === "connected" ? "gpt-4.1-mini" : "",
+    configured: status !== "missing_key" && status !== "unavailable",
+    verified: status === "connected",
+    status,
+    detail: status,
+  };
+}
+
+function reply(
+  answer = "The current simulation snapshot is available.",
+): WaveChatReply {
+  return {
+    answer,
+    provider: "openai",
+    model: "gpt-4.1-mini",
+    ai_connected: true,
+    run_id: "wave-test-run",
+    tick: 42,
+    sim_time: "D1 12:00",
+  };
+}
+
 const refresh = vi.fn();
 
 function openWave() {
@@ -67,84 +90,161 @@ function askWave(question: string) {
   fireEvent.click(screen.getByRole("button", { name: "Send message to Wave" }));
 }
 
-describe("Wave chatbot", () => {
+function renderWave() {
+  return render(
+    <WaveChat data={makeSnapshot()} connection="live" refresh={refresh} />,
+  );
+}
+
+describe("Wave generative assistant", () => {
   afterEach(() => {
     cleanup();
     sessionStorage.clear();
     vi.clearAllMocks();
   });
 
-  it("fetches live telemetry, answers, and keeps the conversation on close/reopen", async () => {
-    let resolveSnapshot!: (snapshot: Snapshot) => void;
-    const response = new Promise<Snapshot>((resolve) => {
-      resolveSnapshot = resolve;
+  it("sends a grounded request, shows thinking/responding, and preserves history on reopen", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    let resolveReply!: (value: WaveChatReply) => void;
+    const response = new Promise<WaveChatReply>((resolve) => {
+      resolveReply = resolve;
     });
-    vi.mocked(api.delta).mockReturnValue(response);
+    vi.mocked(api.waveChat).mockReturnValue(response);
 
-    render(
-      <WaveChat
-        data={makeSnapshot()}
-        config={config}
-        connection="live"
-        refresh={refresh}
-      />,
-    );
+    renderWave();
     openWave();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(
-      await screen.findAllByRole("img", { name: "Wave, focused expression" }),
-    ).toHaveLength(2);
+      screen.getByRole("group", { name: "Suggested questions" }),
+    ).toBeInTheDocument();
     askWave("How is the network?");
 
     expect(
-      screen.getAllByRole("img", { name: "Wave, thinking expression" }),
+      screen.getAllByRole("img", { name: "Wave, thinking state" }),
     ).toHaveLength(2);
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Checking the latest simulation snapshot",
+      "Wave is checking this simulation snapshot",
     );
-    expect(api.delta).toHaveBeenCalledWith(42);
+    expect(api.waveChat).toHaveBeenCalledWith(
+      "How is the network?",
+      "wave-test-run",
+      [],
+    );
 
     await act(async () => {
-      resolveSnapshot(makeSnapshot());
+      resolveReply(reply("The snapshot shows the network state at D1 12:00."));
       await response;
     });
     expect(
-      await screen.findByText(/network availability is 99\.50%/),
+      await screen.findByText(
+        "The snapshot shows the network state at D1 12:00.",
+      ),
     ).toBeInTheDocument();
     expect(
-      await screen.findAllByRole("img", { name: "Wave, excited expression" }),
+      await screen.findAllByRole("img", { name: "Wave, responding state" }),
     ).toHaveLength(2);
+    expect(await screen.findByText(/OpenAI connected/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Close Wave panel" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     openWave();
-
     expect(screen.getByText("How is the network?")).toBeInTheDocument();
     expect(
-      screen.getByText(/network availability is 99\.50%/),
+      screen.getByText("The snapshot shows the network state at D1 12:00."),
     ).toBeInTheDocument();
   });
 
-  it("shows an actionable error when the live snapshot request fails", async () => {
-    vi.mocked(api.delta).mockRejectedValue(new Error("Gateway unavailable"));
-    render(
-      <WaveChat
-        data={makeSnapshot()}
-        config={config}
-        connection="live"
-        refresh={refresh}
-      />,
-    );
+  it("reports missing server configuration and retries the same question", async () => {
+    const missingKey = providerStatus("missing_key");
+    vi.mocked(api.waveStatus)
+      .mockResolvedValueOnce(missingKey)
+      .mockResolvedValue(missingKey);
+    vi.mocked(api.waveChat)
+      .mockRejectedValueOnce(
+        new Error(
+          "Wave’s AI is not configured. Add OPENAI_API_KEY to the backend deployment environment; no key is stored in the browser.",
+        ),
+      )
+      .mockResolvedValue(reply("OpenAI answered after configuration."));
+
+    renderWave();
     openWave();
+    expect(await screen.findByText("AI setup required")).toBeInTheDocument();
     askWave("List incidents");
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Gateway unavailable",
+      "Add OPENAI_API_KEY to the backend deployment environment",
     );
-    expect(
-      screen.getAllByRole("img", { name: "Wave, alert expression" }),
-    ).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("img", { name: "Wave, offline state" }),
+    ).toHaveLength(2);
+
     fireEvent.click(screen.getByRole("button", { name: "Refresh telemetry" }));
     await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    expect(
+      await screen.findByText("OpenAI answered after configuration."),
+    ).toBeInTheDocument();
+    expect(api.waveChat).toHaveBeenCalledTimes(2);
+    expect(api.waveChat).toHaveBeenLastCalledWith(
+      "List incidents",
+      "wave-test-run",
+      [],
+    );
+    expect(screen.getAllByText("List incidents")).toHaveLength(1);
+    expect(await screen.findByText(/OpenAI connected/)).toBeInTheDocument();
+  });
+
+  it("sends recent conversation turns to the server for follow-up questions", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    vi.mocked(api.waveChat)
+      .mockResolvedValueOnce(reply("One active simulated incident."))
+      .mockResolvedValueOnce(
+        reply("It is the same incident in the current snapshot."),
+      );
+
+    renderWave();
+    openWave();
+    askWave("How many incidents?");
+    expect(
+      await screen.findByText("One active simulated incident."),
+    ).toBeInTheDocument();
+
+    askWave("Tell me more about it.");
+    expect(
+      await screen.findByText(
+        "It is the same incident in the current snapshot.",
+      ),
+    ).toBeInTheDocument();
+    expect(api.waveChat).toHaveBeenNthCalledWith(
+      2,
+      "Tell me more about it.",
+      "wave-test-run",
+      [
+        { role: "user", content: "How many incidents?" },
+        { role: "assistant", content: "One active simulated incident." },
+      ],
+    );
+  });
+
+  it("uses a suggested question as a real server request", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    vi.mocked(api.waveChat).mockResolvedValue(reply());
+    renderWave();
+    openWave();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Are there any active power problems?",
+      }),
+    );
+    await waitFor(() => expect(api.waveChat).toHaveBeenCalledOnce());
+    expect(api.waveChat).toHaveBeenCalledWith(
+      "Are there any active power problems?",
+      "wave-test-run",
+      [],
+    );
   });
 });
