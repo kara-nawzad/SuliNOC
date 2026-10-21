@@ -242,6 +242,12 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   expect(new Set(utilityItemTops).size).toBe(1);
 
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".phone-tools")).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "Main navigation" })
+      .locator(".nav-bottom"),
+  ).toBeHidden();
   const incidentPanel = page.locator(".alerts-rail .alarms-panel");
   await expect(incidentPanel).toHaveCSS("height", "400px");
   const incidentList = incidentPanel.locator(".incident-list");

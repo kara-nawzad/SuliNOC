@@ -7340,3 +7340,10 @@ dialog.dialog::backdrop,
     inset 0 0 0 1px var(--sn-ln),
     var(--sh-1);
 }
+
+/* Phone utility actions live in the header; keep the bottom rail for section tabs. */
+@media (max-width: 600px) {
+  .app-shell .navigation-rail .nav-bottom {
+    display: none !important;
+  }
+}
