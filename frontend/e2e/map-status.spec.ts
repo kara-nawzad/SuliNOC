@@ -225,6 +225,8 @@ test("Esri tile failures show a visible schematic status and retry can recover",
 
   await page.setViewportSize({ width: 700, height: 900 });
   const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(page.locator(".phone-tools")).toBeHidden();
+  await expect(navigation.locator(".nav-bottom")).toBeVisible();
   await expect(navigation).toHaveCSS("flex-direction", "row");
   await expect(navigation.locator(".nav-items")).toHaveCSS(
     "flex-direction",

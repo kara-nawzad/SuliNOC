@@ -6296,7 +6296,7 @@ dialog.dialog::backdrop,
     display: none;
   }
   .app-shell .phone-tools {
-    display: flex;
+    display: none;
     gap: var(--sp-1);
   }
   .app-shell .phone-tools .icon-button {
@@ -7341,8 +7341,11 @@ dialog.dialog::backdrop,
     var(--sh-1);
 }
 
-/* Phone utility actions live in the header; keep the bottom rail for section tabs. */
+/* Narrow phones use header utility actions; wider layouts keep them in the rail. */
 @media (max-width: 600px) {
+  .app-shell .phone-tools {
+    display: flex;
+  }
   .app-shell .navigation-rail .nav-bottom {
     display: none !important;
   }
