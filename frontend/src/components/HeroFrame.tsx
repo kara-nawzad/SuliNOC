@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SyntheticEvent } from "react";
 
 /** Minimal, same-origin welcome page; the iframe contains no copy of the app.
@@ -11,6 +11,7 @@ export function HeroFrame({
   open: boolean;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
+  const [ready, setReady] = useState(false);
   const openRef = useRef(open);
   const onEnterRef = useRef(onEnter);
   openRef.current = open;
@@ -41,8 +42,26 @@ export function HeroFrame({
 
   const onLoad = useCallback(
     (event: SyntheticEvent<HTMLIFrameElement>) => {
-      if (!event.currentTarget.contentDocument) return;
-      sync();
+      const document = event.currentTarget.contentDocument;
+      if (!document) {
+        setReady(true);
+        return;
+      }
+
+      const reveal = () => {
+        if (frame.current?.contentDocument !== document) return;
+        sync();
+        setReady(true);
+      };
+      const assetsReady = [
+        document.fonts?.ready ?? Promise.resolve(),
+        ...Array.from(document.images, (image) =>
+          typeof image.decode === "function"
+            ? image.decode().catch(() => undefined)
+            : Promise.resolve(),
+        ),
+      ];
+      void Promise.all(assetsReady).then(reveal, reveal);
     },
     [sync],
   );
@@ -57,7 +76,11 @@ export function HeroFrame({
       src={heroSource}
       title="SuliNOC welcome"
       onLoad={onLoad}
-      style={open ? undefined : { visibility: "hidden", pointerEvents: "none" }}
+      style={{
+        backgroundColor: "#081426",
+        visibility: open && ready ? "visible" : "hidden",
+        pointerEvents: open && ready ? "auto" : "none",
+      }}
     />
   );
 }

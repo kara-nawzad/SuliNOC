@@ -8,6 +8,7 @@ const transparentTile = Buffer.from(
 test("Esri tile failures show a visible schematic status and retry can recover", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   let failTiles = true;
   let tileRequests = 0;
   await page.route(
@@ -44,6 +45,21 @@ test("Esri tile failures show a visible schematic status and retry can recover",
       name: "A clearer view of a connected city.",
     }),
   ).toBeVisible();
+  await expect(welcomeFrame).toHaveCSS("visibility", "visible");
+  const logo = welcome.locator(".hero-logo");
+  await expect(logo).toHaveAttribute("src", "/assets/suli-noc-logo-dark.png");
+  await expect
+    .poll(() =>
+      logo.evaluate((element) => {
+        const image = element as HTMLImageElement;
+        return image.complete && image.naturalWidth > 0;
+      }),
+    )
+    .toBe(true);
+  const mobileHeroPosition = await welcome
+    .locator(".hero-background")
+    .evaluate((element) => getComputedStyle(element).objectPosition);
+  expect(mobileHeroPosition).toMatch(/^74%/);
 
   await expect
     .poll(() =>
@@ -68,6 +84,7 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   });
   expect(loadedFonts).toEqual([true, true, true, true]);
 
+  await page.setViewportSize({ width: 1280, height: 720 });
   await welcome.getByRole("button", { name: "Enter workspace" }).click();
   await expect(welcomeFrame).toHaveCSS("visibility", "hidden");
   await expect(welcomeFrame).toHaveCSS("pointer-events", "none");
