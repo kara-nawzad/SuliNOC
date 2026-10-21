@@ -4,6 +4,7 @@
 
 - `frontend/public/assets/` contains files served at `/assets/` without bundler imports.
 - `frontend/public/assets/hero-source.html` is the small, self-contained welcome page loaded by `HeroFrame`; it contains only the intro composition, buttons, and enter/skip message hook—not a second copy of the React application. Its sole image asset is `hero-city-sunset.jpg`, which already includes the city tower; do not add a separate tower overlay. It references the local Manrope 400/500, Newsreader 600, and IBM Plex Mono 500 WOFF2 files under `frontend/public/assets/fonts/`.
+- `HeroFrame` adds the current build ID to the iframe URL to invalidate older browser copies. Only content-fingerprinted Vite assets are cached as immutable; HTML and other stable-name assets must revalidate or not be cached.
 - The React app imports its Manrope, Newsreader, and IBM Plex Mono weights from the `@fontsource` npm packages in `frontend/src/main.tsx`; these are bundled by Vite. `frontend/public/assets/suli-noc-logo-dark.png` is used in the React header, and `frontend/public/favicon.svg` is the browser icon. The hero page uses a text wordmark and does not need a separate logo image.
 - The former MapLibre map-label font bundle is no longer used; its historical note is archived under `docs/archive/map-label-fonts/` and its OFL notice under `docs/licenses/NOTO-OFL-1.1.txt`.
 

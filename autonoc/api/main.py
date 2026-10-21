@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import shutil
 import threading
 import time
@@ -422,22 +423,31 @@ app.add_middleware(
 )
 
 
+_FINGERPRINTED_ASSET = re.compile(r"-[A-Za-z0-9_-]{8}[.][A-Za-z0-9]+$")
+
+
 @app.middleware("http")
 async def no_cache_dashboard(request, call_next):
-    """The dashboard must NEVER be cached.
+    """Keep entry points fresh and cache only content-fingerprinted assets.
 
-    A stale cached index.html/app.js was the root cause of the long-running
-    "page loads but everything is empty" bug: the browser kept resurrecting
-    an old frontend even after the backend was fixed. HTML and API responses
-    are served with Cache-Control: no-store. Legacy assets revalidate; the
-    Vite assets have content hashes and can safely be cached immutably.
+    The old blanket immutable rule for ``/assets/`` also covered stable names
+    such as ``hero-source.html``. Safari can keep those responses for a year,
+    so a deployment could not replace the welcome page on an existing device.
+    HTML and unversioned assets must revalidate; only Vite's fingerprinted
+    output is safe to cache immutably.
     """
     response = await call_next(request)
     path = request.url.path
     if path.startswith("/assets/"):
-        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        filename = Path(path).name
+        if filename.lower().endswith(".html"):
+            response.headers["Cache-Control"] = "no-store"
+        elif _FINGERPRINTED_ASSET.search(filename):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            response.headers["Cache-Control"] = "no-cache, max-age=0, must-revalidate"
     elif path.startswith("/static/"):
-        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Cache-Control"] = "no-cache, max-age=0, must-revalidate"
     else:
         response.headers["Cache-Control"] = "no-store"
     return response

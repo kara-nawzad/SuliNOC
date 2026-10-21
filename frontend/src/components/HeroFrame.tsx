@@ -47,11 +47,14 @@ export function HeroFrame({
     [sync],
   );
 
+  const buildId = `${__BUILD_STAMP__.sha}-${__BUILD_STAMP__.built}`;
+  const heroSource = `/assets/hero-source.html?v=${encodeURIComponent(buildId)}`;
+
   return (
     <iframe
       ref={frame}
       className="hero-frame"
-      src="/assets/hero-source.html"
+      src={heroSource}
       title="SuliNOC welcome"
       onLoad={onLoad}
       style={open ? undefined : { visibility: "hidden", pointerEvents: "none" }}

@@ -26,9 +26,19 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     },
   );
 
+  const heroResponsePromise = page.waitForResponse((response) =>
+    response.url().includes("/assets/hero-source.html?"),
+  );
   await page.goto("/");
+  const heroResponse = await heroResponsePromise;
+  expect(heroResponse.headers()["cache-control"]).toBe("no-store");
+
   const welcomeFrame = page.locator('iframe[title="SuliNOC welcome"]');
   const welcome = page.frameLocator('iframe[title="SuliNOC welcome"]');
+  await expect(welcomeFrame).toHaveAttribute(
+    "src",
+    /^\/assets\/hero-source\.html\?v=.+$/,
+  );
   await expect(
     welcome.getByRole("heading", {
       name: "A clearer view of a connected city.",
