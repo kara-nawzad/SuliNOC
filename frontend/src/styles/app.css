@@ -6233,6 +6233,23 @@ dialog.dialog::backdrop,
     -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
   }
+  .app-shell .navigation-rail .nav-items,
+  .app-shell .navigation-rail .nav-bottom {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    gap: 0;
+  }
+  .app-shell .navigation-rail .nav-items {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-top: 0 !important;
+  }
+  .app-shell .navigation-rail .nav-bottom {
+    flex: 0 0 auto;
+    margin: 0;
+  }
   .app-shell .nav-item {
     flex: 1 1 0;
     max-width: 60px;

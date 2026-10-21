@@ -119,4 +119,28 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(
     page.getByText("Street map · Esri", { exact: true }),
   ).toBeVisible({ timeout: 20_000 });
+
+  await page.setViewportSize({ width: 700, height: 900 });
+  const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(navigation).toHaveCSS("flex-direction", "row");
+  await expect(navigation.locator(".nav-items")).toHaveCSS(
+    "flex-direction",
+    "row",
+  );
+  await expect(navigation.locator(".nav-bottom")).toHaveCSS(
+    "flex-direction",
+    "row",
+  );
+  const navItemTops = await navigation
+    .locator(".nav-items .nav-item")
+    .evaluateAll((items) =>
+      items.map((item) => Math.round(item.getBoundingClientRect().top)),
+    );
+  const utilityItemTops = await navigation
+    .locator(".nav-bottom .nav-item")
+    .evaluateAll((items) =>
+      items.map((item) => Math.round(item.getBoundingClientRect().top)),
+    );
+  expect(new Set(navItemTops).size).toBe(1);
+  expect(new Set(utilityItemTops).size).toBe(1);
 });
