@@ -1141,17 +1141,6 @@ h1 {
   color: #84b3c2;
   padding-left: 5px;
 }
-.map-expanded {
-  position: fixed;
-  inset: 22px 25px 22px 95px;
-  z-index: 600;
-  background: #0b101bf5;
-}
-.map-expanded .map-stage {
-  height: auto;
-  flex: 1;
-}
-
 /* FLIP alarm stream and A1 recommendations */
 .alerts-rail {
   display: grid;
@@ -2958,9 +2947,6 @@ h1 {
   .section-label > span:last-child {
     display: none;
   }
-  .map-expanded {
-    inset: 12px 15px 12px 75px;
-  }
   .kpi-title {
     font-size: 9px;
   }
@@ -3209,9 +3195,6 @@ h1 {
   }
   .inspector {
     max-width: 350px;
-  }
-  .map-expanded {
-    inset: 10px 10px 10px 58px;
   }
   .dialog-content {
     padding: 20px;
@@ -7193,8 +7176,12 @@ dialog.dialog::backdrop,
 
 /* History tabs: light track, dark text (was a near-black bar) */
 .history-tabs {
-  background: #e4eefb !important;
-  border-color: #a9c2e6 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  padding: 0;
+  gap: 10px;
 }
 .history-tabs button {
   color: #33487a !important;

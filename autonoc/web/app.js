@@ -250,6 +250,7 @@ let streetTimer = null;
 
 function setStreetStatus(message, retry = false) {
   setTxt('map-status-text', message);
+  $('map-status').classList.toggle('hidden', !retry);
   $('map-retry').classList.toggle('hidden', !retry);
 }
 
@@ -280,7 +281,6 @@ function loadStreetLayer() {
     if (attempt !== streetAttempt || loaded) return;
     loaded = true;
     if (streetTimer) clearTimeout(streetTimer);
-    setStreetStatus('Street map · Esri');
     $('mapfade').style.opacity = 0;
   });
   layer.on('tileerror', () => {

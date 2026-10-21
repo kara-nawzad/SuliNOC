@@ -115,15 +115,16 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   expect(kpiLabels.map((label) => label.trim())).toEqual([
     "Network availability",
     "Sites operational",
-    "Site power alarms",
-    "QCI 9 throughput",
-    "E-RAB drop rate",
     "Active incidents",
+    "E-RAB drop rate",
+    "QCI 9 throughput",
+    "Site power alarms",
   ]);
 
   const mapStatus = page.locator(".map-mode");
   await expect(mapStatus).toBeVisible();
   await expect(mapStatus).toHaveCSS("display", "flex");
+  await expect(page.getByRole("button", { name: "Expand map" })).toHaveCount(0);
   await expect(
     page.getByText("Streets unavailable · schematic", { exact: true }),
   ).toBeVisible({ timeout: 20_000 });
@@ -135,9 +136,12 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   failTiles = false;
   await page.getByRole("button", { name: "Retry streets" }).click();
   await expect.poll(() => tileRequests).toBeGreaterThan(failedRequestCount);
-  await expect(
-    page.getByText("Street map · Esri", { exact: true }),
-  ).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".map-stage")).toHaveAttribute(
+    "data-street-status",
+    "ready",
+    { timeout: 20_000 },
+  );
+  await expect(page.locator(".map-mode")).toHaveCount(0);
 
   await page.setViewportSize({ width: 700, height: 900 });
   const navigation = page.getByRole("navigation", { name: "Main navigation" });
@@ -172,4 +176,11 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     .getByLabel("Filter alarm severity")
     .selectOption({ index: 1 });
   await expect(incidentPanel).toHaveCSS("height", "400px");
+
+  await incidentPanel
+    .getByRole("button", { name: "Open event history" })
+    .click();
+  const historyTabs = page.getByRole("tablist", { name: "History type" });
+  await expect(historyTabs).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(historyTabs).toHaveCSS("border-top-width", "0px");
 });

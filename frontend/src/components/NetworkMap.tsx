@@ -15,7 +15,6 @@ import {
   LocateFixed,
   Minus,
   Plus,
-  Maximize2,
   CloudLightning,
   MapPin,
 } from "lucide-react";
@@ -242,17 +241,14 @@ export function NetworkMap({
   const [streetAttempt, setStreetAttempt] = useState(0);
   const [district, setDistrict] = useState<number | null>(null);
   const [resetKey, setResetKey] = useState(0);
-  const [expanded, setExpanded] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const p = config.presentation.palette;
   const selected = data.nodes.find((n) => n.id === selectedId);
   const storm = data.agg.find((a) => a.weather === "Storm");
   const b = config.bounds;
   return (
     <section
-      ref={ref}
       id="network"
-      className={`glass map-panel ${expanded ? "map-expanded" : ""}`}
+      className="glass map-panel"
       aria-label="Live network map"
     >
       <PanelHeading
@@ -270,7 +266,7 @@ export function NetworkMap({
         Live from the current simulation run. Crews move between confirmed
         positions.
       </p>
-      <div className="map-stage">
+      <div className="map-stage" data-street-status={streetStatus}>
         <MapContainer
           center={config.map_center}
           zoom={config.map_zoom}
@@ -483,13 +479,6 @@ export function NetworkMap({
             >
               <LocateFixed size={15} />
             </button>
-            <button
-              className="map-button"
-              aria-label={expanded ? "Exit expanded map" : "Expand map"}
-              onClick={() => setExpanded((v) => !v)}
-            >
-              <Maximize2 size={15} />
-            </button>
           </div>
         </div>
         <div className="map-location">
@@ -513,26 +502,20 @@ export function NetworkMap({
             </div>
           </div>
         )}
-        <div className="map-mode" aria-live="polite">
-          <span aria-hidden="true" />
-          <span className="map-mode-label">
-            {!layers.streets
-              ? "Local schematic"
-              : streetStatus === "ready"
-                ? "Street map · Esri"
-                : streetStatus === "loading"
-                  ? "Loading streets…"
-                  : "Streets unavailable · schematic"}
-          </span>
-          {layers.streets && streetStatus === "unavailable" && (
+        {layers.streets && streetStatus === "unavailable" && (
+          <div className="map-mode" aria-live="polite">
+            <span aria-hidden="true" />
+            <span className="map-mode-label">
+              Streets unavailable · schematic
+            </span>
             <button
               type="button"
               onClick={() => setStreetAttempt((n) => n + 1)}
             >
               Retry streets
             </button>
-          )}
-        </div>
+          </div>
+        )}
         <div className="map-north" aria-label="North is up">
           <span>N</span>
           <span aria-hidden="true">↑</span>
