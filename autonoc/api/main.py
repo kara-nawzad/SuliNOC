@@ -426,6 +426,19 @@ app.add_middleware(
 _FINGERPRINTED_ASSET = re.compile(r"-[A-Za-z0-9_-]{8}[.][A-Za-z0-9]+$")
 
 
+def _cache_control_for_path(path: str) -> str:
+    if path.startswith("/assets/"):
+        filename = Path(path).name
+        if filename.lower().endswith(".html"):
+            return "no-store"
+        if _FINGERPRINTED_ASSET.search(filename):
+            return "public, max-age=31536000, immutable"
+        return "no-cache, max-age=0, must-revalidate"
+    if path.startswith("/static/"):
+        return "no-cache, max-age=0, must-revalidate"
+    return "no-store"
+
+
 @app.middleware("http")
 async def no_cache_dashboard(request, call_next):
     """Keep entry points fresh and cache only content-fingerprinted assets.
@@ -437,19 +450,7 @@ async def no_cache_dashboard(request, call_next):
     output is safe to cache immutably.
     """
     response = await call_next(request)
-    path = request.url.path
-    if path.startswith("/assets/"):
-        filename = Path(path).name
-        if filename.lower().endswith(".html"):
-            response.headers["Cache-Control"] = "no-store"
-        elif _FINGERPRINTED_ASSET.search(filename):
-            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-        else:
-            response.headers["Cache-Control"] = "no-cache, max-age=0, must-revalidate"
-    elif path.startswith("/static/"):
-        response.headers["Cache-Control"] = "no-cache, max-age=0, must-revalidate"
-    else:
-        response.headers["Cache-Control"] = "no-store"
+    response.headers["Cache-Control"] = _cache_control_for_path(request.url.path)
     return response
 
 
