@@ -3446,9 +3446,9 @@ button.tower-row:hover {
 .tower-head {
   position: sticky;
   top: 0;
+  z-index: 2;
   background: #0b1624;
   font-size: 12px;
-  opacity: 0.75;
 }
 .ring-list {
   margin-top: 12px;

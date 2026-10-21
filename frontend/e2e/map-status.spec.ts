@@ -150,6 +150,16 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await panelInfoDialog.getByRole("button", { name: "Close dialog" }).click();
   await expect(panelInfoDialog).toBeHidden();
 
+  const towerTable = page.locator(".tower-table");
+  const towerHeader = towerTable.locator(".tower-head");
+  await towerTable.evaluate((table) => {
+    table.scrollTop = 120;
+  });
+  await expect(towerHeader).toHaveCSS("position", "sticky");
+  await expect(towerHeader).toHaveCSS("z-index", "2");
+  await expect(towerHeader).toHaveCSS("opacity", "1");
+  await expect(towerHeader).toHaveCSS("background-color", "rgb(234, 243, 254)");
+
   const mapStatus = page.locator(".map-mode");
   await expect(mapStatus).toBeVisible();
   await expect(mapStatus).toHaveCSS("display", "flex");
