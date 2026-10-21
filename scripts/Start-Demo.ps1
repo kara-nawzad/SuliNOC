@@ -1,5 +1,5 @@
 # ============================================================
-#  Start-Demo.ps1 - start the AutoNOC demo server (detached)
+#  Start-Demo.ps1 - start the SuliNOC demo server (detached)
 # ============================================================
 #  The server runs in the background and keeps running even if
 #  you close every PowerShell window. Nothing you type can stop
@@ -29,7 +29,7 @@ if (-not (Test-Path $py)) {
     $py = "python"
 }
 
-Write-Host "=== AutoNOC demo launcher ===" -ForegroundColor Cyan
+Write-Host "=== SuliNOC demo launcher ===" -ForegroundColor Cyan
 
 # 1. Refuse to take over a port owned by any existing process.
 $busy = @(
@@ -47,7 +47,7 @@ if ($busy.Count -gt 0) {
         }
     }
     if ($autoNocRunning) {
-        Write-Host "  AutoNOC is already listening on port 8000." -ForegroundColor Yellow
+        Write-Host "  SuliNOC is already listening on port 8000." -ForegroundColor Yellow
         Write-Host "  Open http://127.0.0.1:8000 or stop it with scripts\Stop-Demo.bat."
     } else {
         Write-Host "  Port 8000 is occupied by another process; it was left untouched." -ForegroundColor Red

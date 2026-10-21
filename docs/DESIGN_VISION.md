@@ -1,4 +1,4 @@
-# Design Vision — the AutoNOC command center (v3 UI)
+# Design Vision — the SuliNOC command center (v3 UI)
 
 *Living document. Status: phase 1 shipped (2026-10); phase 2 planned.*
 
@@ -11,7 +11,7 @@ ITU-T X.733, O-RAN rApps).
 
 Reference direction agreed with the owner: the "NEXUS-style" operations
 layout — grouped sidebar, KPI card row with sparklines, map + live alarm
-feed, analytics bottom row — rebuilt around AutoNOC's *real* assets (real
+feed, analytics bottom row — rebuilt around SuliNOC's *real* assets (real
 city map, real fiber topology, real X.733 feed) instead of stock decoration.
 
 ## Layout contract

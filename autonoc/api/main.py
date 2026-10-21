@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import shutil
 import threading
 import time
@@ -405,7 +406,7 @@ async def lifespan(app: FastAPI):
         pass
 
 
-app = FastAPI(title="AutoNOC", version="3.0", lifespan=lifespan)
+app = FastAPI(title="SuliNOC", version="3.0", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 # Same-origin only by default: the dashboard is served by this app (and the
 # Vite dev server proxies /api), so cross-origin browser access is not a
@@ -422,24 +423,34 @@ app.add_middleware(
 )
 
 
+_FINGERPRINTED_ASSET = re.compile(r"-[A-Za-z0-9_-]{8}[.][A-Za-z0-9]+$")
+
+
+def _cache_control_for_path(path: str) -> str:
+    if path.startswith("/assets/"):
+        filename = Path(path).name
+        if filename.lower().endswith(".html"):
+            return "no-store"
+        if _FINGERPRINTED_ASSET.search(filename):
+            return "public, max-age=31536000, immutable"
+        return "no-cache, max-age=0, must-revalidate"
+    if path.startswith("/static/"):
+        return "no-cache, max-age=0, must-revalidate"
+    return "no-store"
+
+
 @app.middleware("http")
 async def no_cache_dashboard(request, call_next):
-    """The dashboard must NEVER be cached.
+    """Keep entry points fresh and cache only content-fingerprinted assets.
 
-    A stale cached index.html/app.js was the root cause of the long-running
-    "page loads but everything is empty" bug: the browser kept resurrecting
-    an old frontend even after the backend was fixed. HTML and API responses
-    are served with Cache-Control: no-store. Legacy assets revalidate; the
-    Vite assets have content hashes and can safely be cached immutably.
+    The old blanket immutable rule for ``/assets/`` also covered stable names
+    such as ``hero-source.html``. Safari can keep those responses for a year,
+    so a deployment could not replace the welcome page on an existing device.
+    HTML and unversioned assets must revalidate; only Vite's fingerprinted
+    output is safe to cache immutably.
     """
     response = await call_next(request)
-    path = request.url.path
-    if path.startswith("/assets/"):
-        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    elif path.startswith("/static/"):
-        response.headers["Cache-Control"] = "no-cache"
-    else:
-        response.headers["Cache-Control"] = "no-store"
+    response.headers["Cache-Control"] = _cache_control_for_path(request.url.path)
     return response
 
 
@@ -452,7 +463,7 @@ async def browser_session(request: Request, call_next):
     dashboard capacity let a single uptime monitor fill the demo — that was the
     root cause of the "at capacity" lockout. They are also the payload for this
     documented failure:
-    ``{"detail": "AutoNOC is at capacity …", "code": "session_capacity"}``.
+    ``{"detail": "SuliNOC is at capacity …", "code": "session_capacity"}``.
     """
     if _registry is None:
         return await call_next(request)

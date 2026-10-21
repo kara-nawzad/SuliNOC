@@ -1,6 +1,6 @@
-# AutoNOC — Complete Project Notes
+# SuliNOC — Complete Project Notes
 
-> A detailed reference for the AutoNOC project: what it is, how every part works,
+> A detailed reference for the SuliNOC project: what it is, how every part works,
 > why it is built the way it is, what the published numbers actually mean, how to
 > run it and deploy it, and what is known to be incomplete or inconsistent.
 >
@@ -12,7 +12,7 @@
 
 ### 1. What this project is
 
-AutoNOC is a **predictive Network Operations Center (NOC) for a simulated LTE
+SuliNOC is a **predictive Network Operations Center (NOC) for a simulated LTE
 network**. It is a digital twin of a 300-tower network in Sulaymaniyah, Iraq,
 with an AI layer that:
 
@@ -997,7 +997,7 @@ python -m uvicorn autonoc.api.main:app --port 8000
 or `scripts/Start-Demo.ps1` (detached) / `scripts/Start-Demo.bat` (runs in its
 window), both with AI auto-on and paths relative to the script location. Neither
 start helper kills an existing port-8000 process; `scripts/Stop-Demo.bat` stops
-only an AutoNOC Uvicorn process and leaves unrelated listeners alone.
+only the SuliNOC Uvicorn process and leaves unrelated listeners alone.
 
 1. Open `http://localhost:8000`. At 1× speed one tick ≈ 1 s of demo time.
 2. ~1:00 (Act 1): SLY-eNB-080 (Salim St) starts degrading. The AI panel

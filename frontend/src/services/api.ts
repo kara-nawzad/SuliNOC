@@ -86,7 +86,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     if ((body as { code?: string } | null)?.code === CAPACITY_CODE)
       throw new Error(
-        "AutoNOC is at capacity. Close an idle dashboard tab and try again.",
+        "SuliNOC is at capacity. Close an idle dashboard tab and try again.",
       );
     const detail =
       typeof body?.detail === "string"
@@ -108,7 +108,7 @@ export function validateSnapshot(value: Snapshot): Snapshot {
     typeof value.run_id !== "string"
   ) {
     throw new Error(
-      "Dashboard API mismatch. Restart the updated AutoNOC backend.",
+      "Dashboard API mismatch. Restart the updated SuliNOC backend.",
     );
   }
   return value;

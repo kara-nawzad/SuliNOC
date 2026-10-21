@@ -74,7 +74,7 @@ describe("typed API transport", () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            detail: "AutoNOC is at capacity (8 active browser sessions).",
+            detail: "SuliNOC is at capacity (8 active browser sessions).",
             code: "session_capacity",
           }),
           {
@@ -99,7 +99,7 @@ describe("typed API transport", () => {
     const refusal = () =>
       new Response(
         JSON.stringify({
-          detail: "AutoNOC is at capacity (8 active browser sessions).",
+          detail: "SuliNOC is at capacity (8 active browser sessions).",
           code: "session_capacity",
         }),
         {
@@ -110,7 +110,7 @@ describe("typed API transport", () => {
     const fetcher = vi.fn().mockImplementation(refusal);
     vi.stubGlobal("fetch", fetcher);
     await expect(api.pause("run-token")).rejects.toThrow(
-      "AutoNOC is at capacity. Close an idle dashboard tab and try again.",
+      "SuliNOC is at capacity. Close an idle dashboard tab and try again.",
     );
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
