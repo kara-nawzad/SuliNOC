@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Modal } from "./ui";
 
-/** Short plain-language explanations, matched by the card's heading text. */
+/** Plain-language explanations opened from each panel's three-dot control. */
 const NOTES: { key: string; title: string; text: string }[] = [
   {
     key: "network availability",
@@ -80,75 +80,38 @@ const NOTES: { key: string; title: string; text: string }[] = [
   },
 ];
 
-const SKIP =
-  "button, a, input, select, textarea, label, dialog, .dialog, .panel-note, .leaflet-container, .map-stage, .map-top-overlay";
+type PanelNoteContent = { title: string; text: string };
 
-/** Click any dashboard card to see a short note about what it shows. */
+/** A single shared modal; only explicit panel-info controls can open it. */
 export function PanelNote() {
-  const [note, setNote] = useState<{
-    title: string;
-    text: string;
-    x: number;
-    y: number;
-  } | null>(null);
+  const [note, setNote] = useState<PanelNoteContent | null>(null);
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target || target.closest(SKIP)) return;
-      const card = target.closest<HTMLElement>(
-        ".glass, .kpi, article, section",
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const trigger = target.closest<HTMLButtonElement>("[data-panel-info]");
+      const title = trigger?.dataset.panelInfo?.trim();
+      if (!title) return;
+
+      const normalizedTitle = title.toLowerCase();
+      const entry = NOTES.find((item) => normalizedTitle.includes(item.key));
+      setNote(
+        entry ?? {
+          title,
+          text: "This panel presents live information from the SuliNOC simulation. Use its labels and values to review the current network state.",
+        },
       );
-      if (!card) return;
-      const heading = card.querySelector<HTMLElement>(
-        ".panel-heading h2, .panel-heading h3, .kpi-label, h2, h3",
-      );
-      const label = (heading?.textContent ?? "").trim().toLowerCase();
-      if (!label) return;
-      const entry = NOTES.find((n) => label.includes(n.key));
-      if (!entry) return;
-      setNote({
-        title: entry.title,
-        text: entry.text,
-        x: event.clientX,
-        y: event.clientY,
-      });
     };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setNote(null);
-    };
+
     document.addEventListener("click", onClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("click", onClick);
-      document.removeEventListener("keydown", onKey);
-    };
+    return () => document.removeEventListener("click", onClick);
   }, []);
 
   if (!note) return null;
-  const width = Math.min(300, window.innerWidth - 24);
-  const left = Math.max(
-    12,
-    Math.min(note.x + 14, window.innerWidth - width - 12),
-  );
-  const top = Math.max(12, Math.min(note.y + 14, window.innerHeight - 170));
   return (
-    <aside
-      className="panel-note"
-      role="note"
-      style={{ left, top, width }}
-      aria-label={`About ${note.title}`}
-    >
-      <button
-        type="button"
-        className="panel-note-close"
-        aria-label="Close note"
-        onClick={() => setNote(null)}
-      >
-        <X size={16} />
-      </button>
-      <h4>{note.title}</h4>
-      <p>{note.text}</p>
-    </aside>
+    <Modal title={note.title} onClose={() => setNote(null)}>
+      <p className="dialog-intro">{note.text}</p>
+    </Modal>
   );
 }

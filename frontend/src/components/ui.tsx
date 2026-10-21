@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { motion } from "framer-motion";
-import { X, ArrowUpRight } from "lucide-react";
+import { X, ArrowUpRight, MoreHorizontal } from "lucide-react";
 import type { Config, Severity } from "../types/api";
 
 export const tone = (color: string): CSSProperties =>
@@ -42,6 +42,26 @@ export function Badge({
     </span>
   );
 }
+export function PanelInfoButton({
+  title,
+  compact = false,
+}: {
+  title: string;
+  compact?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className={`panel-info-button${compact ? " compact" : ""}`}
+      data-panel-info={title}
+      aria-label={`More information about ${title}`}
+      aria-haspopup="dialog"
+      title={`More information about ${title}`}
+    >
+      <MoreHorizontal size={17} strokeWidth={2} aria-hidden="true" />
+    </button>
+  );
+}
 export function PanelHeading({
   eyebrow,
   title,
@@ -57,7 +77,10 @@ export function PanelHeading({
         {eyebrow && <div className="eyebrow">{eyebrow}</div>}
         <h2>{title}</h2>
       </div>
-      {right}
+      <div className="panel-heading-actions">
+        {right}
+        <PanelInfoButton title={title} />
+      </div>
     </div>
   );
 }

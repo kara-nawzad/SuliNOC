@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import type { Config, Snapshot, TelemetrySample } from "../types/api";
 import { NumberTween } from "./NumberTween";
-import { Sparkline, tone } from "./ui";
+import { PanelInfoButton, Sparkline, tone } from "./ui";
 
 export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
   const { current: now, history, traffic_change_pct: change } = data.dashboard;
@@ -47,14 +47,14 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
       note: "Correlated · X.733 alarms",
     },
     {
-      key: "drop_rate",
-      label: "E-RAB drop rate",
-      value: now.drop_rate,
-      unit: "%",
-      decimals: 2,
-      icon: Gauge,
-      color: p.prediction,
-      note: "Mean synthetic site counter",
+      key: "power_events",
+      label: "Site power alarms",
+      value: now.power_events,
+      unit: "",
+      decimals: 0,
+      icon: Zap,
+      color: p.warning,
+      note: `${data.dashboard.active_ats} active ATS · ${data.dashboard.fuel_thefts} theft events`,
     },
     {
       key: "throughput_gbps",
@@ -70,14 +70,14 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
           : `${change > 0 ? "+" : ""}${change.toFixed(1)}% vs last sim hour`,
     },
     {
-      key: "power_events",
-      label: "Site power alarms",
-      value: now.power_events,
-      unit: "",
-      decimals: 0,
-      icon: Zap,
-      color: p.warning,
-      note: `${data.dashboard.active_ats} active ATS · ${data.dashboard.fuel_thefts} theft events`,
+      key: "drop_rate",
+      label: "E-RAB drop rate",
+      value: now.drop_rate,
+      unit: "%",
+      decimals: 2,
+      icon: Gauge,
+      color: p.prediction,
+      note: "Mean synthetic site counter",
     },
   ];
   return (
@@ -90,7 +90,10 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
           <article className="glass kpi-card" key={key} style={tone(color)}>
             <div className="kpi-title">
               <span>{label}</span>
-              <Icon size={15} />
+              <div className="kpi-title-actions">
+                <Icon size={15} aria-hidden="true" />
+                <PanelInfoButton title={label} compact />
+              </div>
             </div>
             <div className="kpi-value">
               <NumberTween value={value} decimals={decimals} />

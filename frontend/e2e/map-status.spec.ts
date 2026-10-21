@@ -116,10 +116,39 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     "Network availability",
     "Sites operational",
     "Active incidents",
-    "E-RAB drop rate",
-    "QCI 9 throughput",
     "Site power alarms",
+    "QCI 9 throughput",
+    "E-RAB drop rate",
   ]);
+
+  await expect(page.locator(".kpi-grid [data-panel-info]")).toHaveCount(6);
+  await expect(
+    page.locator(".panel-heading-actions [data-panel-info]"),
+  ).toHaveCount(8);
+  await expect(
+    page.locator(".ring-list-heading [data-panel-info]"),
+  ).toHaveCount(1);
+  await page
+    .locator('.kpi-card [data-panel-info="Network availability"]')
+    .click();
+  const panelInfoDialog = page.getByRole("dialog", {
+    name: "Network availability",
+  });
+  await expect(panelInfoDialog).toBeVisible();
+  await expect(panelInfoDialog).toHaveAttribute("open", "");
+  await expect(panelInfoDialog).toContainText(
+    "share of sites that are in service",
+  );
+  const backdropStyle = await panelInfoDialog.evaluate((dialog) => ({
+    color: getComputedStyle(dialog, "::backdrop").backgroundColor,
+    filter: getComputedStyle(dialog, "::backdrop").backdropFilter,
+  }));
+  expect(backdropStyle).toEqual({
+    color: "rgba(16, 38, 92, 0.38)",
+    filter: "blur(4px)",
+  });
+  await panelInfoDialog.getByRole("button", { name: "Close dialog" }).click();
+  await expect(panelInfoDialog).toBeHidden();
 
   const mapStatus = page.locator(".map-mode");
   await expect(mapStatus).toBeVisible();

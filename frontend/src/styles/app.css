@@ -6951,44 +6951,6 @@ dialog.dialog::backdrop,
   font-size: 15px;
 }
 
-/* Click-a-card note: small window with a plain explanation */
-.app-shell .panel-note {
-  position: fixed;
-  z-index: 1500;
-  background: #ffffff;
-  color: var(--sn-tx);
-  border: 1px solid #c9d8ee;
-  border-radius: 14px;
-  box-shadow: 0 14px 34px #10265c2e;
-  padding: 16px 42px 16px 18px;
-}
-.app-shell .panel-note h4 {
-  margin: 0 0 6px;
-  font-size: 17px;
-  font-weight: 650;
-  color: var(--sn-tx);
-}
-.app-shell .panel-note p {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.55;
-  color: #2c3f66;
-}
-.app-shell .panel-note-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid #c9d8ee;
-  background: #f5f8fd;
-  color: var(--sn-tx);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-
 /* Simulation settings: two clear choices instead of a bare switch */
 .app-shell .approval-choice {
   display: flex;
@@ -7259,5 +7221,89 @@ dialog.dialog::backdrop,
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Panel information: explicit three-dot controls open the shared modal. */
+.app-shell .panel-heading-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.app-shell .panel-info-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  color: var(--sn-t2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  box-shadow: none;
+}
+.app-shell .panel-info-button svg {
+  display: block;
+  color: currentColor;
+  opacity: 1;
+}
+.app-shell .panel-info-button:hover {
+  color: var(--sn-link);
+  background: var(--sn-s1);
+  border-color: var(--sn-ln);
+  box-shadow: none;
+}
+.app-shell .panel-info-button.compact {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+}
+.app-shell .kpi-title {
+  min-width: 0;
+  white-space: normal;
+}
+.app-shell .kpi-title > span {
+  flex: 1;
+  min-width: 0;
+}
+.app-shell .kpi-title-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.app-shell .kpi-title-actions > svg {
+  flex: none;
+}
+.app-shell .kpi-title-actions .panel-info-button {
+  color: var(--sn-t3);
+}
+.app-shell .ring-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+.app-shell .ring-list-heading .ring-list-title {
+  margin: 0;
+}
+@media (max-width: 767px), (pointer: coarse) {
+  .app-shell .panel-heading-actions {
+    gap: var(--sp-1);
+  }
+  .app-shell .panel-info-button,
+  .app-shell .panel-info-button.compact {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 }

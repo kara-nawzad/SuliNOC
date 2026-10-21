@@ -19,7 +19,7 @@ import {
   MapPin,
 } from "lucide-react";
 import type { Config, NodeData, Snapshot } from "../types/api";
-import { Dot, PanelHeading, tone } from "./ui";
+import { Dot, PanelHeading, PanelInfoButton, tone } from "./ui";
 import { CrewLayer } from "./CrewLayer";
 import TileBasemap, { type StreetStatus } from "./TileBasemap";
 
@@ -535,7 +535,10 @@ export function NetworkMap({
         </span>
       </div>
       <div className="ring-list" aria-label="Fibre rings">
-        <h3 className="ring-list-title">Fibre rings</h3>
+        <div className="ring-list-heading">
+          <h3 className="ring-list-title">Fibre rings</h3>
+          <PanelInfoButton title="Fibre rings" compact />
+        </div>
         <ul>
           {data.rings.map((r) => (
             <li key={r.id}>
