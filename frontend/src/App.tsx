@@ -247,10 +247,10 @@ function Console({
           block: "start",
         });
   }
-  // The welcome screen comes first: while it is open, nothing else is drawn.
+  // Keep all console surfaces off-screen while the welcome iframe is loading or open.
+  if (heroOpen) return null;
+
   if (!config || !data) {
-    // While the welcome screen is open, the console draws nothing behind it.
-    if (heroOpen) return null;
     return (
       <div className="boot-screen">
         <img

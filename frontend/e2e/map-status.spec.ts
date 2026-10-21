@@ -30,8 +30,17 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   const heroResponsePromise = page.waitForResponse((response) =>
     response.url().includes("/assets/hero-source.html?"),
   );
+  const configResponsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/config" && response.ok();
+  });
+  const initialDeltaPromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/delta" && response.ok();
+  });
   await page.goto("/");
   const heroResponse = await heroResponsePromise;
+  await Promise.all([configResponsePromise, initialDeltaPromise]);
   expect(heroResponse.headers()["cache-control"]).toBe("no-store");
 
   const welcomeFrame = page.locator('iframe[title="SuliNOC welcome"]');
@@ -45,6 +54,7 @@ test("Esri tile failures show a visible schematic status and retry can recover",
       name: "A clearer view of a connected city.",
     }),
   ).toBeVisible();
+  await expect(page.locator(".app-shell, .boot-screen")).toHaveCount(0);
   await expect(welcomeFrame).toHaveCSS("visibility", "visible");
   const logo = welcome.locator(".hero-logo");
   await expect(logo).toHaveAttribute("src", "/assets/suli-noc-logo-dark.png");
@@ -88,6 +98,9 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await welcome.getByRole("button", { name: "Enter workspace" }).click();
   await expect(welcomeFrame).toHaveCSS("visibility", "hidden");
   await expect(welcomeFrame).toHaveCSS("pointer-events", "none");
+  await expect(
+    page.getByRole("navigation", { name: "Main navigation" }),
+  ).toBeVisible();
 
   const mapStatus = page.locator(".map-mode");
   await expect(mapStatus).toBeVisible();
