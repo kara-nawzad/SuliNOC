@@ -16,7 +16,7 @@ const NOTES: { key: string; title: string; text: string }[] = [
   {
     key: "site power alarms",
     title: "Site power alarms",
-    text: "Power problems at sites, such as mains failure or a battery fault. Zero means every site has power.",
+    text: "This is a cumulative count for the current simulation run: ATS failures to crank plus fuel-theft events. Events stay in the total after they clear, so this is not the number of sites currently failing. Active ATS alarms are shown in Site power & fleet, and current site outages appear under Active incidents. Zero means neither event type has been recorded this run; it does not guarantee that every site currently has power.",
   },
   {
     key: "qci 9 throughput",

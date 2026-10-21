@@ -14,6 +14,10 @@ import { PanelInfoButton, Sparkline, tone } from "./ui";
 
 export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
   const { current: now, history, traffic_change_pct: change } = data.dashboard;
+  const powerAtsEvents = Math.max(
+    0,
+    now.power_events - data.dashboard.fuel_thefts,
+  );
   const p = config.presentation.palette;
   const cards = [
     {
@@ -54,7 +58,7 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
       decimals: 0,
       icon: Zap,
       color: p.warning,
-      note: `${data.dashboard.active_ats} active ATS · ${data.dashboard.fuel_thefts} theft events`,
+      note: `Run total: ${powerAtsEvents} ATS · ${data.dashboard.fuel_thefts} thefts`,
     },
     {
       key: "throughput_gbps",

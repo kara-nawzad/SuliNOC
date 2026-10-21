@@ -150,6 +150,28 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await panelInfoDialog.getByRole("button", { name: "Close dialog" }).click();
   await expect(panelInfoDialog).toBeHidden();
 
+  const powerCard = page
+    .locator(".kpi-card")
+    .filter({ hasText: "Site power alarms" });
+  await expect(powerCard.locator(".kpi-note")).toContainText(
+    /Run total: \d+ ATS · \d+ thefts/,
+  );
+  await powerCard.locator("[data-panel-info]").click();
+  const powerInfoDialog = page.getByRole("dialog", {
+    name: "Site power alarms",
+  });
+  await expect(powerInfoDialog).toContainText(
+    "cumulative count for the current simulation run",
+  );
+  await expect(powerInfoDialog).toContainText(
+    "not the number of sites currently failing",
+  );
+  await expect(powerInfoDialog).toContainText(
+    "it does not guarantee that every site currently has power",
+  );
+  await powerInfoDialog.getByRole("button", { name: "Close dialog" }).click();
+  await expect(powerInfoDialog).toBeHidden();
+
   const towerTable = page.locator(".tower-table");
   const towerHeader = towerTable.locator(".tower-head");
   await towerTable.evaluate((table) => {
