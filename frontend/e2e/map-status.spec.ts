@@ -55,6 +55,10 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     }),
   ).toBeVisible();
   await expect(page.locator(".app-shell, .boot-screen")).toHaveCount(0);
+  await expect(page.locator("html")).toHaveCSS(
+    "background-color",
+    "rgb(8, 20, 38)",
+  );
   await expect(welcomeFrame).toHaveCSS("visibility", "visible");
   const logo = welcome.locator(".hero-logo");
   await expect(logo).toHaveAttribute("src", "/assets/suli-noc-logo-dark.png");
@@ -101,6 +105,10 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(
     page.getByRole("navigation", { name: "Main navigation" }),
   ).toBeVisible();
+  await expect(page.locator(".app-shell")).toHaveCSS(
+    "background-color",
+    "rgb(214, 231, 251)",
+  );
 
   const mapStatus = page.locator(".map-mode");
   await expect(mapStatus).toBeVisible();

@@ -3522,7 +3522,8 @@ button.tower-row:hover {
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   font-family: var(--sans);
   color: var(--tx);
-  background: var(--bg);
+  /* Keep the document canvas dark until the welcome overlay is ready. */
+  background: #081426;
   --muted-text: #4b6192;
   --line: rgba(16, 38, 92, 0.12);
   --cyan-ui: #1479c4;
