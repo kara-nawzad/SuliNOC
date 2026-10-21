@@ -57,6 +57,41 @@ describe("typed API transport", () => {
       "/api/telemetry/history?timeframe=24h&run_id=run+%2F+token",
     );
   });
+  it("sends Wave chat only to the same-origin server endpoint", async () => {
+    const fetcher = respond({
+      answer: "grounded",
+      provider: "openai",
+      model: "gpt-4.1-mini",
+      ai_connected: true,
+      run_id: "run-token",
+      tick: 42,
+      sim_time: "D1 12:00",
+    });
+    await api.waveChat("How is the network?", "run-token", [
+      { role: "user", content: "What changed?" },
+    ]);
+    expect(fetcher.mock.calls[0][0]).toBe("/api/wave/chat");
+    expect(fetcher.mock.calls[0][1].method).toBe("POST");
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
+      question: "How is the network?",
+      run_id: "run-token",
+      history: [{ role: "user", content: "What changed?" }],
+    });
+    expect(JSON.stringify(fetcher.mock.calls[0][1].body)).not.toContain(
+      "OPENAI_API_KEY",
+    );
+  });
+  it("reads provider setup status from the same-origin backend", async () => {
+    const fetcher = respond({
+      provider: "openai",
+      model: "gpt-4.1-mini",
+      configured: false,
+      verified: false,
+      status: "missing_key",
+    });
+    await api.waveStatus();
+    expect(fetcher.mock.calls[0][0]).toBe("/api/wave/status");
+  });
   it("sends the server cursor unchanged", async () => {
     const fetcher = respond({
       tick: 42,

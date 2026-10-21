@@ -40,6 +40,7 @@ import { AnalyticsRow } from "./components/AnalyticsRow";
 import { PanelNote } from "./components/PanelNote";
 import { Inspector } from "./components/Inspector";
 import { HistoryModal } from "./components/HistoryModal";
+import { WaveChat } from "./components/WaveChat";
 import { CounterfactualModal } from "./components/CounterfactualModal";
 import { SimControls, ScenarioModal } from "./components/SimControls";
 import { Dot, Modal, tone } from "./components/ui";
@@ -247,10 +248,10 @@ function Console({
           block: "start",
         });
   }
-  // The welcome screen comes first: while it is open, nothing else is drawn.
+  // Keep all console surfaces off-screen while the welcome iframe is loading or open.
+  if (heroOpen) return null;
+
   if (!config || !data) {
-    // While the welcome screen is open, the console draws nothing behind it.
-    if (heroOpen) return null;
     return (
       <div className="boot-screen">
         <img
@@ -799,6 +800,12 @@ function Console({
             </motion.div>
           )}
         </AnimatePresence>
+        <WaveChat
+          key={data.run_id}
+          data={data}
+          connection={status}
+          refresh={refresh}
+        />
       </div>
     </MotionConfig>
   );

@@ -84,6 +84,7 @@
         min-height: 100%;
         margin: 0;
         overflow: hidden;
+        background: #081426;
       }
       button {
         font: inherit;
@@ -144,13 +145,14 @@
         gap: 24px;
         animation: appear 700ms 100ms both;
       }
-      .wordmark {
-        font-size: 19px;
-        font-weight: 500;
-        letter-spacing: -0.055em;
-      }
-      .wordmark span {
-        color: #83e6d7;
+      .hero-logo {
+        display: block;
+        width: 176px;
+        height: 67px;
+        flex: 0 0 auto;
+        object-fit: contain;
+        object-position: left center;
+        filter: brightness(0) invert(1);
       }
       .top-meta,
       .eyebrow,
@@ -288,7 +290,7 @@
       }
       @media (max-width: 700px) {
         .hero-background {
-          object-position: 68% center;
+          object-position: 74% center;
         }
         .hero-shade {
           background:
@@ -301,13 +303,22 @@
             );
         }
         .hero-topbar {
-          top: max(20px, env(safe-area-inset-top));
-          left: 22px;
-          right: 22px;
+          top: max(16px, env(safe-area-inset-top));
+          left: 20px;
+          right: 20px;
+          gap: 12px;
+        }
+        .hero-logo {
+          width: 156px;
+          height: 60px;
         }
         .top-meta {
+          max-width: calc(100vw - 200px);
+          overflow: hidden;
           font-size: 8px;
           letter-spacing: 0.06em;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         .hero-copy {
           bottom: max(34px, env(safe-area-inset-bottom));
@@ -339,6 +350,14 @@
         .hero-footnote {
           margin-top: 19px;
           font-size: 8px;
+        }
+      }
+      @media (max-width: 420px) {
+        .hero-topbar {
+          justify-content: flex-start;
+        }
+        .top-meta {
+          display: none;
         }
       }
       @media (max-height: 560px) and (min-width: 701px) {
@@ -383,7 +402,12 @@
       />
       <div class="hero-shade" aria-hidden="true"></div>
       <header class="hero-topbar">
-        <div class="wordmark" aria-label="SuliNOC">Suli<span>NOC</span></div>
+        <img
+          class="hero-logo"
+          src="/assets/suli-noc-logo-dark.png"
+          alt="SuliNOC"
+          fetchpriority="high"
+        />
         <div class="top-meta">SIMULATED NETWORK · 300 MODELED SITES</div>
       </header>
       <section class="hero-copy">

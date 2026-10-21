@@ -10,10 +10,14 @@ import {
 } from "lucide-react";
 import type { Config, Snapshot, TelemetrySample } from "../types/api";
 import { NumberTween } from "./NumberTween";
-import { Sparkline, tone } from "./ui";
+import { PanelInfoButton, Sparkline, tone } from "./ui";
 
 export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
   const { current: now, history, traffic_change_pct: change } = data.dashboard;
+  const powerAtsEvents = Math.max(
+    0,
+    now.power_events - data.dashboard.fuel_thefts,
+  );
   const p = config.presentation.palette;
   const cards = [
     {
@@ -25,6 +29,16 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
       icon: Activity,
       color: p.healthy,
       note: "In-service site availability",
+    },
+    {
+      key: "online",
+      label: "Sites operational",
+      value: now.online,
+      unit: `/ ${config.num_nodes}`,
+      decimals: 0,
+      icon: RadioTower,
+      color: p.healthy,
+      note: `${data.dashboard.operational_pct.toFixed(1)}% of network in service`,
     },
     {
       key: "incidents",
@@ -44,7 +58,7 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
       decimals: 0,
       icon: Zap,
       color: p.warning,
-      note: `${data.dashboard.active_ats} active ATS · ${data.dashboard.fuel_thefts} theft events`,
+      note: `Run total: ${powerAtsEvents} ATS · ${data.dashboard.fuel_thefts} thefts`,
     },
     {
       key: "throughput_gbps",
@@ -69,16 +83,6 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
       color: p.prediction,
       note: "Mean synthetic site counter",
     },
-    {
-      key: "online",
-      label: "Sites operational",
-      value: now.online,
-      unit: `/ ${config.num_nodes}`,
-      decimals: 0,
-      icon: RadioTower,
-      color: p.healthy,
-      note: `${data.dashboard.operational_pct.toFixed(1)}% of network in service`,
-    },
   ];
   return (
     <section
@@ -90,7 +94,10 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
           <article className="glass kpi-card" key={key} style={tone(color)}>
             <div className="kpi-title">
               <span>{label}</span>
-              <Icon size={15} />
+              <div className="kpi-title-actions">
+                <Icon size={15} aria-hidden="true" />
+                <PanelInfoButton title={label} compact />
+              </div>
             </div>
             <div className="kpi-value">
               <NumberTween value={value} decimals={decimals} />

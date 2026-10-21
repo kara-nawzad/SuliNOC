@@ -85,7 +85,9 @@ export function lineChart(
       y0 = Math.min(ticks[0], lo),
       y1 = Math.max(ticks.at(-1), hi),
       x1 = xs.at(-1),
-      x0 = winMin ? x1 - winMin : xs[0],
+      // If the selected window reaches before available history, begin at the
+      // first sample instead of leaving a blank gap at the left of the chart.
+      x0 = winMin ? Math.max(xs[0], x1 - winMin) : xs[0],
       span = x1 - x0 || 1; // a set window spans its own length
     const dl = (m) => hhmm(m) + " D" + (Math.floor(m / 1440) + 1),
       longWin = winMin ? winMin >= 1440 : span > 1440;
@@ -94,22 +96,38 @@ export function lineChart(
     let s = "";
     for (const v of ticks)
       s += `<line class="gl" x1="${L}" x2="${W - R}" y1="${sy(v)}" y2="${sy(v)}"/><text class="ay" x="${L - 8}" y="${sy(v) + 4}" text-anchor="end">${fixed(v)}</text>`;
+    const xLabels = [];
+    const addXLabel = (x, text, anchor) => {
+      const width = text.length * 7;
+      const left =
+        anchor === "start" ? x : anchor === "end" ? x - width : x - width / 2;
+      const right = left + width;
+      if (
+        xLabels.some(
+          (label) => left < label.right + 8 && right > label.left - 8,
+        )
+      )
+        return;
+      xLabels.push({ x, text, anchor, left, right });
+    };
     if (longWin) {
-      // day windows: start, end and every midnight, e.g. 00:00 D2
-      const edge = 90; // skip midnights that would sit on the start/end labels
-      s += `<text class="ax" x="${sx(x0)}" y="${H - 8}" text-anchor="start">${dl(x0)}</text>`;
-      s += `<text class="ax" x="${sx(x1)}" y="${H - 8}" text-anchor="end">${dl(x1)}</text>`;
-      for (let m = Math.ceil(x0 / 1440) * 1440; m < x1; m += 1440)
-        if (m - x0 > edge && x1 - m > edge)
-          s += `<text class="ax" x="${sx(m)}" y="${H - 8}" text-anchor="middle">${dl(m)}</text>`;
+      // Endpoints carry the time; compact day markers keep a week readable.
+      addXLabel(sx(x0), dl(x0), "start");
+      if (x1 > x0) {
+        addXLabel(sx(x1), dl(x1), "end");
+        for (let m = Math.ceil(x0 / 1440) * 1440; m < x1; m += 1440)
+          addXLabel(sx(m), `D${Math.floor(m / 1440) + 1}`, "middle");
+      }
     } else {
       for (let i = 0; i < 5; i++) {
         const x = x0 + (span * i) / 4,
           lab = xLabel(x, span);
         if (lab)
-          s += `<text class="ax" x="${sx(x)}" y="${H - 8}" text-anchor="${i === 0 ? "start" : i === 4 ? "end" : "middle"}">${lab}</text>`;
+          addXLabel(x, lab, i === 0 ? "start" : i === 4 ? "end" : "middle");
       }
     }
+    for (const label of xLabels.sort((a, b) => a.x - b.x))
+      s += `<text class="ax" x="${label.x}" y="${H - 8}" text-anchor="${label.anchor}">${label.text}</text>`;
     g.innerHTML = s;
     ln.setAttribute(
       "d",

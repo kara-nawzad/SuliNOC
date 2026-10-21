@@ -56,7 +56,7 @@ COOKIE_NAME = "autonoc_session"
 # assets are byte-identical for every visitor, and the requests that cannot keep
 # a cookie (uptime probes, crawlers, asset fetches) must never occupy a slot.
 # The dashboard's first `/api/*` call creates the session and issues the cookie.
-SESSION_FREE_PATHS: frozenset[str] = frozenset({"/api/health"})
+SESSION_FREE_PATHS: frozenset[str] = frozenset({"/api/health", "/api/wave/status"})
 
 
 def requires_session(path: str) -> bool:

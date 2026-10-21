@@ -306,6 +306,64 @@ API documentation is at <http://127.0.0.1:8000/docs>.
 | `AUTONOC_AI`           | `0`      | Set to `1` to enable the Commander at startup.                             |
 | `AUTONOC_AUTO_APPROVE` | `0`      | Auto-approval delay in seconds; `0` leaves crew actions for manual review. |
 | `AUTONOC_DATA_DIR`     | `./data` | Directory for completed-run SQLite summaries.                              |
+| `WAVE_AI_PROVIDER`                   | `openai`                    | Select `openai` or `groq` for Wave.                            |
+| `OPENAI_API_KEY`                     | unset                       | Optional OpenAI credential; read only by the backend.          |
+| `OPENAI_MODEL`                       | `gpt-4.1-mini`              | OpenAI Chat Completions model.                                 |
+| `GROQ_API_KEY`                       | unset                       | Optional Groq credential; read only by the backend.             |
+| `GROQ_MODEL`                         | `llama-3.3-70b-versatile`   | Groq model ID enabled in your Groq console.                     |
+| `WAVE_AI_TIMEOUT_SECONDS`            | `12`                        | Maximum provider request time, bounded by the backend.          |
+| `WAVE_AI_RATE_LIMIT_PER_MINUTE`       | `8`                         | Per-browser-session Wave request limit.                         |
+| `WAVE_AI_GLOBAL_RATE_LIMIT_PER_MINUTE` | `60`                        | Per-process request ceiling across sessions.                    |
+
+### Wave generative assistant
+
+Wave is a server-side, OpenAI-compatible integration with **OpenAI or Groq**, separate from
+SuliNOC's simulated Doctor/Oracle/Commander predictor. It uses a bounded snapshot of the current
+browser session's `/api/delta` data. The API captures that snapshot while the session is active,
+releases the session gate before waiting for the provider, and exposes no model-controlled tools or
+operations. Responses must distinguish simulated telemetry from a live operator network, observations
+from predictions, and missing data from facts. Suggestions are read-only.
+
+`GET /api/wave/status` reports `missing_key`, `not_verified`, `connected`, or `unavailable` without
+returning a credential. A key is **not** treated as a connection: `connected` is reported only after
+a successful Wave request to the selected provider. With no key, the panel displays setup guidance
+and chat returns a clear configuration error instead of a canned local answer.
+
+#### Use your Groq key
+
+1. In the **backend** environment, set `WAVE_AI_PROVIDER=groq`.
+2. Add the key from your Groq console as `GROQ_API_KEY` in that same backend environment.
+3. Optionally set `GROQ_MODEL` to a model ID enabled in your Groq account. The default is
+   `llama-3.3-70b-versatile`.
+4. Restart/redeploy the backend.
+5. Check `/api/wave/status` (`not_verified` is expected initially), then send a Wave question. It
+   reports `connected` only after a real successful provider response.
+
+For a local Bash launch, enter the key at a hidden prompt so it is not written into shell history:
+
+```bash
+export WAVE_AI_PROVIDER=groq
+read -rs -p 'Groq API key: ' GROQ_API_KEY; printf '\n'
+export GROQ_API_KEY
+python -m uvicorn autonoc.api.main:app --host 127.0.0.1 --port 8000
+```
+
+PowerShell users should set `WAVE_AI_PROVIDER=groq` and `GROQ_API_KEY` in the backend process
+environment using a secure secret manager or hidden prompt; do not put the key in a command saved to
+history.
+
+For the Fly.io app `autonoc-project`, open its **Secrets** settings and add `WAVE_AI_PROVIDER`
+with value `groq`, then add `GROQ_API_KEY` with the key from your Groq console. Optionally set
+`GROQ_MODEL` there too. Save the settings and deploy/restart the app; enter the key only in Fly's
+secret field, never in a committed file or frontend setting.
+
+To use OpenAI instead, set `WAVE_AI_PROVIDER=openai` and `OPENAI_API_KEY`; `OPENAI_MODEL` defaults
+to `gpt-4.1-mini`. Never put either provider key in `fly.toml`, `frontend/.env`, a `VITE_*`
+variable, source code, browser storage, or chat. When enabled, Wave sends the current question, up
+to eight recent chat messages, and the bounded simulation snapshot to the selected provider, so users
+should not enter passwords, API keys, or other secrets. The default limiter allows eight requests per
+browser session and sixty requests per backend process per minute; tune these with
+`WAVE_AI_RATE_LIMIT_PER_MINUTE` and `WAVE_AI_GLOBAL_RATE_LIMIT_PER_MINUTE` if needed.
 
 ## Windows demo and diagnostic scripts
 
@@ -388,6 +446,8 @@ Base URL: `http://127.0.0.1:8000`. Interactive Swagger documentation is availabl
 | ------ | -------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | `GET`  | `/api/health`                                                  | Current tick, seed, run ID, pause state, speed, and AI state.             |
 | `GET`  | `/api/config`                                                  | Server-owned status labels, colors, thresholds, gauges, and map metadata. |
+| `GET`  | `/api/wave/status`                                             | Safe Wave/OpenAI configuration and last-request verification state.       |
+| `POST` | `/api/wave/chat`                                               | Generative, read-only Wave answer grounded in the request's session snapshot. |
 | `GET`  | `/api/delta?since=<tick>`                                      | Read-only bounded snapshot for the dashboard.                             |
 | `GET`  | `/api/telemetry/history?timeframe=30m&run_id=<id>`             | Current-run telemetry samples; timeframe is `30m`, `24h`, or `7d`.        |
 | `GET`  | `/api/history`                                                 | Completed-run aggregate summaries, not resumable state.                   |

@@ -223,6 +223,31 @@ class DeltaResponse(BaseModel):
     ai: Optional[dict] = None        # M6 — Commander panel payload
 
 
+class WaveChatTurn(BaseModel):
+    """A bounded, untrusted turn supplied by the current browser session."""
+
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=1200)
+
+
+class WaveChatRequest(BaseModel):
+    """Read-only Wave request; live context is always captured server-side."""
+
+    question: str = Field(min_length=1, max_length=1000)
+    run_id: str = Field(min_length=1, max_length=100)
+    history: list[WaveChatTurn] = Field(default_factory=list, max_length=8)
+
+
+class WaveChatResponse(BaseModel):
+    answer: str = Field(min_length=1, max_length=4000)
+    provider: Literal["openai", "groq"] = "openai"
+    model: str
+    ai_connected: bool
+    run_id: str
+    tick: int
+    sim_time: str
+
+
 class ConfigResponse(BaseModel):
     """Single source of truth for anything the frontend renders.
 
