@@ -40,6 +40,7 @@ import { AnalyticsRow } from "./components/AnalyticsRow";
 import { PanelNote } from "./components/PanelNote";
 import { Inspector } from "./components/Inspector";
 import { HistoryModal } from "./components/HistoryModal";
+import { WaveChat } from "./components/WaveChat";
 import { CounterfactualModal } from "./components/CounterfactualModal";
 import { SimControls, ScenarioModal } from "./components/SimControls";
 import { Dot, Modal, tone } from "./components/ui";
@@ -799,6 +800,13 @@ function Console({
             </motion.div>
           )}
         </AnimatePresence>
+        <WaveChat
+          key={data.run_id}
+          data={data}
+          config={config}
+          connection={status}
+          refresh={refresh}
+        />
       </div>
     </MotionConfig>
   );
