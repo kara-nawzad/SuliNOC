@@ -4,10 +4,16 @@ from __future__ import annotations
 import asyncio
 import json
 
+import pytest
 from fastapi.testclient import TestClient
 
 from autonoc.api import main as M
 from autonoc.api import wave_ai
+
+
+@pytest.fixture(autouse=True)
+def use_openai_provider_by_default(monkeypatch):
+    monkeypatch.setenv("WAVE_AI_PROVIDER", "openai")
 
 
 async def idle_simulation_loop():
@@ -20,7 +26,7 @@ def test_wave_status_is_session_free_and_missing_key_is_clear(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.setattr(
         wave_ai,
-        "_openai_http_call",
+        "_provider_http_call",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("provider must not run")),
     )
 
@@ -100,7 +106,7 @@ def test_mocked_openai_success_verifies_provider_and_receives_current_snapshot(m
         captured.update(payload=payload, supplied_key=supplied_key, timeout=timeout)
         return 200, {"choices": [{"message": {"content": "Grounded test reply."}}]}, {}
 
-    monkeypatch.setattr(wave_ai, "_openai_http_call", fake_http)
+    monkeypatch.setattr(wave_ai, "_provider_http_call", fake_http)
     with TestClient(M.app) as client:
         before = client.get("/api/wave/status").json()
         assert before["status"] == "not_verified"
@@ -133,3 +139,45 @@ def test_mocked_openai_success_verifies_provider_and_receives_current_snapshot(m
     assert "TRUSTED SULINOC SNAPSHOT CONTEXT" in user_message
     assert '"is_live_operator_network":false' in user_message
     assert f'"tick":{data["tick"]}' in user_message
+
+
+def test_mocked_groq_provider_flows_through_session_api_without_exposing_key(monkeypatch):
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
+    key = "unit-test-groq-api-key-not-a-credential"
+    monkeypatch.setenv("WAVE_AI_PROVIDER", "groq")
+    monkeypatch.setenv("GROQ_API_KEY", key)
+    monkeypatch.setenv("GROQ_MODEL", "test-groq-model")
+    wave_ai._rate_limiter.clear()
+    captured: dict = {}
+
+    def fake_http(payload, supplied_key, timeout):
+        captured.update(payload=payload, key=supplied_key, timeout=timeout)
+        return 200, {"choices": [{"message": {"content": "Grounded Groq reply."}}]}, {}
+
+    monkeypatch.setattr(wave_ai, "_provider_http_call", fake_http)
+    with TestClient(M.app) as client:
+        status = client.get("/api/wave/status").json()
+        assert status["provider"] == "groq"
+        assert status["status"] == "not_verified"
+        data = client.get("/api/delta?since=0").json()
+        response = client.post(
+            "/api/wave/chat",
+            json={
+                "question": "Summarize the current simulation.",
+                "run_id": data["run_id"],
+                "history": [],
+            },
+        )
+        body = response.json()
+        assert response.status_code == 200
+        assert body["provider"] == "groq"
+        assert body["answer"] == "Grounded Groq reply."
+        assert body["ai_connected"] is True
+        assert key not in response.text
+        assert key not in json.dumps(client.get("/api/wave/status").json())
+        assert client.get("/api/wave/status").json()["status"] == "connected"
+
+    assert captured["key"] == key
+    assert captured["payload"]["model"] == "test-groq-model"
+    assert captured["payload"]["max_tokens"] == 700
+    assert key not in json.dumps(captured["payload"])

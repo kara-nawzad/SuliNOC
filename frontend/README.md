@@ -40,11 +40,12 @@ them to the API. The Vite server binds to `0.0.0.0` for preview environments.
 - Search, incident list, active and completed-run history, site inspection, analytics, and fleet
   status are driven by API snapshots/configuration. Formatting, search, filtering, and map marker
   geometry are client presentation logic—not operational predictions.
-- Wave is a reusable, responsive SVG assistant with motion-safe idle, thinking, responding, alert,
-  and offline lighting. Its generative chat calls the server-side `/api/wave/chat` endpoint, which
-  captures the current browser session's simulation snapshot and calls OpenAI without exposing the
-  key or providing operational tools. An absent key is shown as setup required; only a successful
-  provider response marks AI connected. Configure the backend key as described in the root README.
+- Wave is a reusable, responsive SVG assistant with a dismissible, persistent greeting and motion-safe
+  idle, thinking, responding, alert, and offline lighting. Its chat calls the server-side
+  `/api/wave/chat` endpoint, which captures the current browser session's simulation snapshot and
+  calls the selected OpenAI- or Groq-compatible provider without exposing its key or providing
+  operational tools. An absent key is shown as setup required; only a successful provider response
+  marks AI connected. Configure the backend as described in the root README.
 - The counterfactual modal shows A-vs-C outcomes from the committed M7 JSON, including confidence
   intervals and model-cost units. The separate live dollar scenario is illustrative and uses stated
   assumptions; it is not an observed saving. The JSON was not regenerated during this cleanup.

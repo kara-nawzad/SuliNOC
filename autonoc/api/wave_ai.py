@@ -1,9 +1,9 @@
 """Server-side, read-only Wave chat grounded in the current SuliNOC snapshot.
 
-Only this module reads OPENAI_API_KEY. It never logs or returns the key, and it
+Only this module reads provider credentials. It never logs or returns keys, and
 makes no tool/action calls. The browser sends a question and short conversation
 history; current telemetry is captured by the API session middleware and
-summarised here before anything is sent to OpenAI.
+summarised here before anything is sent to the selected provider.
 """
 from __future__ import annotations
 
@@ -23,7 +23,10 @@ from urllib.request import Request, urlopen
 from autonoc.engine import config as C
 
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
+GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
+DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+SUPPORTED_PROVIDERS = {"openai", "groq"}
 DEFAULT_TIMEOUT_SECONDS = 12.0
 DEFAULT_RATE_LIMIT_PER_MINUTE = 8
 DEFAULT_GLOBAL_RATE_LIMIT_PER_MINUTE = 60
@@ -124,18 +127,34 @@ _failed_key_fingerprint: bytes | None = None
 _failed_model: str | None = None
 
 
-def _api_key() -> str:
-    return os.environ.get("OPENAI_API_KEY", "").strip()
+def _provider_name() -> str:
+    return os.environ.get("WAVE_AI_PROVIDER", "openai").strip().casefold()
 
 
-def _model() -> str:
-    return os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip() or DEFAULT_OPENAI_MODEL
+def _provider_config() -> tuple[str, str, str, str]:
+    """Return provider, key, model, and key-variable name from server env only."""
+    provider = _provider_name()
+    if provider == "groq":
+        return (
+            provider,
+            os.environ.get("GROQ_API_KEY", "").strip(),
+            os.environ.get("GROQ_MODEL", DEFAULT_GROQ_MODEL).strip() or DEFAULT_GROQ_MODEL,
+            "GROQ_API_KEY",
+        )
+    if provider == "openai":
+        return (
+            provider,
+            os.environ.get("OPENAI_API_KEY", "").strip(),
+            os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip() or DEFAULT_OPENAI_MODEL,
+            "OPENAI_API_KEY",
+        )
+    raise ValueError("WAVE_AI_PROVIDER must be 'openai' or 'groq'.")
 
 
-def _key_fingerprint(key: str) -> bytes:
-    # Kept only in process memory to invalidate a previous verification after a
-    # key rotation. The digest is never logged, stored, or returned to clients.
-    return hashlib.sha256(key.encode("utf-8")).digest()
+def _key_fingerprint(key: str, provider: str) -> bytes:
+    # Kept only in process memory to invalidate verification after a key or
+    # provider change. The digest is never logged, stored, or returned.
+    return hashlib.sha256(f"{provider}:{key}".encode("utf-8")).digest()
 
 
 def _timeout_seconds() -> float:
@@ -166,20 +185,31 @@ def _global_rate_limit_per_minute() -> int:
 
 
 def provider_status() -> dict[str, Any]:
-    """Report configuration and verification state without revealing secrets."""
-    key = _api_key()
-    model = _model()
-    if not key:
+    """Report selected-provider verification without revealing credentials."""
+    try:
+        provider, key, model, key_variable = _provider_config()
+    except ValueError as exc:
         return {
             "provider": "openai",
+            "model": "",
+            "configured": False,
+            "verified": False,
+            "status": "unavailable",
+            "detail": str(exc),
+        }
+
+    if not key:
+        return {
+            "provider": provider,
             "model": model,
             "configured": False,
             "verified": False,
             "status": "missing_key",
-            "detail": "Set OPENAI_API_KEY in the server environment to enable Wave AI.",
+            "detail": f"Set {key_variable} in the server environment to enable Wave AI.",
         }
 
-    fingerprint = _key_fingerprint(key)
+    name = "Groq" if provider == "groq" else "OpenAI"
+    fingerprint = _key_fingerprint(key, provider)
     with _provider_lock:
         if _failed_key_fingerprint == fingerprint and _failed_model == model:
             state = "unavailable"
@@ -188,12 +218,12 @@ def provider_status() -> dict[str, Any]:
         else:
             state = "not_verified"
     details = {
-        "connected": "OpenAI has answered a Wave request successfully in this process.",
-        "unavailable": "The last OpenAI request failed; retry when the provider is available.",
-        "not_verified": "An API key is configured, but no successful Wave request has verified it yet.",
+        "connected": f"{name} has answered a Wave request successfully in this process.",
+        "unavailable": f"The last {name} request failed; retry when the provider is available.",
+        "not_verified": f"A {name} API key is configured, but no successful Wave request has verified it yet.",
     }
     return {
-        "provider": "openai",
+        "provider": provider,
         "model": model,
         "configured": True,
         "verified": state == "connected",
@@ -202,10 +232,10 @@ def provider_status() -> dict[str, Any]:
     }
 
 
-def _mark_success(key: str, model: str) -> None:
+def _mark_success(key: str, model: str, provider: str) -> None:
     global _verified_key_fingerprint, _verified_model
     global _failed_key_fingerprint, _failed_model
-    fingerprint = _key_fingerprint(key)
+    fingerprint = _key_fingerprint(key, provider)
     with _provider_lock:
         _verified_key_fingerprint = fingerprint
         _verified_model = model
@@ -213,9 +243,9 @@ def _mark_success(key: str, model: str) -> None:
         _failed_model = None
 
 
-def _mark_failure(key: str, model: str) -> None:
+def _mark_failure(key: str, model: str, provider: str) -> None:
     global _failed_key_fingerprint, _failed_model
-    fingerprint = _key_fingerprint(key)
+    fingerprint = _key_fingerprint(key, provider)
     with _provider_lock:
         _failed_key_fingerprint = fingerprint
         _failed_model = model
@@ -477,12 +507,16 @@ def build_context(snapshot: Mapping[str, Any], question: str) -> dict[str, Any]:
     }
 
 
-def _openai_http_call(
+def _provider_http_call(
     payload: Mapping[str, Any], key: str, timeout: float
 ) -> tuple[int, dict[str, Any], Mapping[str, str]]:
-    """Perform one fixed-host OpenAI request. Response bodies are never logged."""
+    """Call one allow-listed OpenAI-compatible endpoint; never log response bodies."""
+    provider = _provider_name()
+    if provider not in SUPPORTED_PROVIDERS:
+        raise ValueError("WAVE_AI_PROVIDER must be 'openai' or 'groq'.")
+    url = GROQ_CHAT_COMPLETIONS_URL if provider == "groq" else OPENAI_CHAT_COMPLETIONS_URL
     request = Request(
-        OPENAI_CHAT_COMPLETIONS_URL,
+        url,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         headers={
             "Authorization": f"Bearer {key}",
@@ -507,11 +541,11 @@ def _openai_http_call(
             body = {}
         return int(exc.code), body if isinstance(body, dict) else {}, dict(exc.headers.items())
     except (TimeoutError, socket.timeout) as exc:
-        raise TimeoutError("OpenAI request timed out") from exc
+        raise TimeoutError("Provider request timed out") from exc
     except URLError as exc:
         if isinstance(exc.reason, (TimeoutError, socket.timeout)):
-            raise TimeoutError("OpenAI request timed out") from exc
-        raise ConnectionError("OpenAI transport unavailable") from exc
+            raise TimeoutError("Provider request timed out") from exc
+        raise ConnectionError("Provider transport unavailable") from exc
 
 
 def _retry_after(headers: Mapping[str, str]) -> str:
@@ -565,15 +599,23 @@ async def answer_question(
     session_id: str,
     history: Sequence[Mapping[str, str]] = (),
 ) -> dict[str, Any]:
-    """Ask OpenAI using a compact, current, server-derived simulation context."""
-    key = _api_key()
-    model = _model()
+    """Ask the selected OpenAI-compatible provider with grounded snapshot data."""
+    try:
+        provider, key, model, key_variable = _provider_config()
+    except ValueError as exc:
+        raise WaveAIError(503, str(exc), code="wave_ai_provider_config") from None
     if not key:
+        provider_setup = (
+            f"Select WAVE_AI_PROVIDER=groq and set {key_variable}"
+            if provider == "groq"
+            else f"Set {key_variable}"
+        )
         raise WaveAIError(
             503,
-            "Wave’s AI is not configured. Add OPENAI_API_KEY to the backend deployment environment; no key is stored in the browser.",
+            f"Wave’s AI is not configured. {provider_setup} in the backend environment; no key is stored in the browser.",
             code="wave_ai_missing_key",
         )
+    provider_name = "Groq" if provider == "groq" else "OpenAI"
 
     retry_after = _rate_limiter.consume(
         session_id, limit=_rate_limit_per_minute()
@@ -621,79 +663,80 @@ async def answer_question(
         "model": model,
         "messages": messages,
         "temperature": 0.2,
-        "max_completion_tokens": 700,
+        ("max_tokens" if provider == "groq" else "max_completion_tokens"): 700,
     }
     timeout = _timeout_seconds()
     try:
         status, body, headers = await asyncio.wait_for(
-            asyncio.to_thread(_openai_http_call, payload, key, timeout),
+            asyncio.to_thread(_provider_http_call, payload, key, timeout),
             timeout=timeout + 1.0,
         )
     except (TimeoutError, asyncio.TimeoutError):
-        _mark_failure(key, model)
+        _mark_failure(key, model, provider)
         raise WaveAIError(
             504,
             "Wave’s AI request timed out. Please retry in a moment.",
             code="wave_ai_timeout",
         ) from None
     except Exception:
-        _mark_failure(key, model)
+        _mark_failure(key, model, provider)
         raise WaveAIError(
             503,
-            "Wave could not reach OpenAI. Please check the service and retry.",
+            f"Wave could not reach {provider_name}. Please check the service and retry.",
             code="wave_ai_unavailable",
         ) from None
 
     if status == 401 or status == 403:
-        _mark_failure(key, model)
+        _mark_failure(key, model, provider)
         raise WaveAIError(
             503,
-            "OpenAI rejected the server-side key. Check OPENAI_API_KEY in the deployment environment.",
+            f"{provider_name} rejected the server-side key. Check {key_variable} in the deployment environment.",
             code="wave_ai_auth_failed",
         )
     if status == 429:
-        _mark_failure(key, model)
+        _mark_failure(key, model, provider)
         raise WaveAIError(
             429,
-            "OpenAI is rate-limiting Wave right now. Please wait and retry.",
+            f"{provider_name} is rate-limiting Wave right now. Please wait and retry.",
             code="wave_ai_provider_rate_limited",
             headers={"Retry-After": _retry_after(headers)},
         )
     if status in {408, 504}:
-        _mark_failure(key, model)
+        _mark_failure(key, model, provider)
         raise WaveAIError(
             504,
-            "OpenAI took too long to answer. Please retry in a moment.",
+            f"{provider_name} took too long to answer. Please retry in a moment.",
             code="wave_ai_timeout",
         )
     if status >= 500:
-        _mark_failure(key, model)
+        _mark_failure(key, model, provider)
         raise WaveAIError(
             503,
-            "OpenAI is temporarily unavailable. Please retry shortly.",
+            f"{provider_name} is temporarily unavailable. Please retry shortly.",
             code="wave_ai_unavailable",
         )
     if status < 200 or status >= 300:
-        _mark_failure(key, model)
+        model_variable = "GROQ_MODEL" if provider == "groq" else "OPENAI_MODEL"
+        _mark_failure(key, model, provider)
         raise WaveAIError(
             502,
-            "OpenAI rejected the Wave request. Check the configured OPENAI_MODEL.",
+            f"{provider_name} rejected the Wave request. Check the configured {model_variable}.",
             code="wave_ai_provider_rejected",
         )
 
     answer = _answer_text(body)
     if not answer:
-        _mark_failure(key, model)
+        _mark_failure(key, model, provider)
         raise WaveAIError(
             502,
-            "OpenAI returned an empty or malformed response. Please retry.",
+            f"{provider_name} returned an empty or malformed response. Please retry.",
             code="wave_ai_malformed_response",
         )
-    _mark_success(key, model)
+    _mark_success(key, model, provider)
     return {
         "answer": answer[:_MAX_ANSWER_CHARS],
         "model": model,
-        "provider": "openai",
+        "provider": provider,
         "ai_connected": True,
         "tick": snapshot.get("tick"),
         "sim_time": (snapshot.get("kpis") or {}).get("sim_time"),

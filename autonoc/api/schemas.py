@@ -240,7 +240,7 @@ class WaveChatRequest(BaseModel):
 
 class WaveChatResponse(BaseModel):
     answer: str = Field(min_length=1, max_length=4000)
-    provider: Literal["openai"] = "openai"
+    provider: Literal["openai", "groq"] = "openai"
     model: str
     ai_connected: bool
     run_id: str

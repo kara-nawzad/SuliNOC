@@ -1,13 +1,15 @@
 export type WaveExpression =
   "idle" | "thinking" | "responding" | "alert" | "offline";
 
+export type WaveProvider = "openai" | "groq";
+
 export type WaveTurn = {
   role: "user" | "assistant";
   content: string;
 };
 
 export type WaveProviderState = {
-  provider: "openai";
+  provider: WaveProvider;
   model: string;
   configured: boolean;
   verified: boolean;
@@ -18,7 +20,7 @@ export type WaveProviderState = {
 
 export type WaveChatReply = {
   answer: string;
-  provider: "openai";
+  provider: WaveProvider;
   model: string;
   ai_connected: boolean;
   run_id: string;

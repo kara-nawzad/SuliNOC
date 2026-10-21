@@ -10,6 +10,11 @@ from autonoc.api import wave_ai
 from autonoc.engine import config as C
 
 
+@pytest.fixture(autouse=True)
+def use_openai_provider_by_default(monkeypatch):
+    monkeypatch.setenv("WAVE_AI_PROVIDER", "openai")
+
+
 def snapshot(*, ai_enabled: bool = False) -> dict:
     return {
         "tick": 12,
@@ -174,7 +179,7 @@ def test_missing_key_fails_without_contacting_provider(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.setattr(
         wave_ai,
-        "_openai_http_call",
+        "_provider_http_call",
         lambda *_args, **_kwargs: pytest.fail("provider must not be called without a key"),
     )
 
@@ -185,6 +190,42 @@ def test_missing_key_fails_without_contacting_provider(monkeypatch):
     assert error.value.status_code == 503
     assert error.value.code == "wave_ai_missing_key"
     assert "OPENAI_API_KEY" in error.value.detail
+
+
+def test_groq_missing_key_is_reported_without_provider_request(monkeypatch):
+    monkeypatch.setenv("WAVE_AI_PROVIDER", "groq")
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-key-must-not-be-used-for-groq")
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.setattr(
+        wave_ai,
+        "_provider_http_call",
+        lambda *_args, **_kwargs: pytest.fail("provider must not be called without a key"),
+    )
+
+    status = wave_ai.provider_status()
+    assert status["provider"] == "groq"
+    assert status["status"] == "missing_key"
+    assert "GROQ_API_KEY" in status["detail"]
+    with pytest.raises(wave_ai.WaveAIError) as error:
+        asyncio.run(
+            wave_ai.answer_question("What is happening?", snapshot(), session_id="no-groq-key")
+        )
+    assert error.value.code == "wave_ai_missing_key"
+    assert "WAVE_AI_PROVIDER=groq" in error.value.detail
+    assert "GROQ_API_KEY" in error.value.detail
+
+
+def test_unknown_provider_configuration_fails_closed(monkeypatch):
+    monkeypatch.setenv("WAVE_AI_PROVIDER", "not-a-provider")
+    status = wave_ai.provider_status()
+    assert status["status"] == "unavailable"
+    assert "WAVE_AI_PROVIDER" in status["detail"]
+
+    with pytest.raises(wave_ai.WaveAIError) as error:
+        asyncio.run(
+            wave_ai.answer_question("How is S001?", snapshot(), session_id="bad-provider")
+        )
+    assert error.value.code == "wave_ai_provider_config"
 
 
 def test_context_uses_session_snapshot_and_does_not_promote_disabled_predictions():
@@ -284,7 +325,7 @@ def test_successful_provider_call_is_the_only_way_to_mark_connected(monkeypatch)
         captured.update(payload=payload, key=supplied_key, timeout=timeout)
         return 200, {"choices": [{"message": {"content": "Observed simulated state."}}]}, {}
 
-    monkeypatch.setattr(wave_ai, "_openai_http_call", fake_http)
+    monkeypatch.setattr(wave_ai, "_provider_http_call", fake_http)
     assert wave_ai.provider_status()["status"] == "not_verified"
     result = asyncio.run(
         wave_ai.answer_question(
@@ -314,6 +355,92 @@ def test_successful_provider_call_is_the_only_way_to_mark_connected(monkeypatch)
     assert key not in json.dumps(result)
 
 
+def test_groq_provider_uses_its_own_key_model_and_compatible_token_field(monkeypatch):
+    key = "unit-test-groq-key-not-a-credential"
+    monkeypatch.setenv("WAVE_AI_PROVIDER", "groq")
+    monkeypatch.setenv("GROQ_API_KEY", key)
+    monkeypatch.setenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    wave_ai._rate_limiter.clear()
+    captured: dict = {}
+
+    def fake_http(payload, supplied_key, timeout):
+        captured.update(payload=payload, key=supplied_key, timeout=timeout)
+        return 200, {"choices": [{"message": {"content": "Grounded via Groq."}}]}, {}
+
+    monkeypatch.setattr(wave_ai, "_provider_http_call", fake_http)
+    assert wave_ai.provider_status()["provider"] == "groq"
+    assert wave_ai.provider_status()["status"] == "not_verified"
+    result = asyncio.run(
+        wave_ai.answer_question("How is S001?", snapshot(), session_id="groq-success")
+    )
+
+    assert result["provider"] == "groq"
+    assert result["answer"] == "Grounded via Groq."
+    assert result["ai_connected"] is True
+    assert captured["key"] == key
+    assert captured["payload"]["model"] == "llama-3.3-70b-versatile"
+    assert captured["payload"]["max_tokens"] == 700
+    assert "max_completion_tokens" not in captured["payload"]
+    assert key not in json.dumps(captured["payload"])
+    assert key not in json.dumps(wave_ai.provider_status())
+    assert wave_ai.provider_status()["status"] == "connected"
+
+
+def test_groq_invalid_credentials_are_sanitized_and_never_mark_connected(monkeypatch):
+    key = "unit-test-invalid-groq-key"
+    monkeypatch.setenv("WAVE_AI_PROVIDER", "groq")
+    monkeypatch.setenv("GROQ_API_KEY", key)
+    wave_ai._rate_limiter.clear()
+    monkeypatch.setattr(
+        wave_ai,
+        "_provider_http_call",
+        lambda *_args, **_kwargs: (401, {"error": {"message": key}}, {}),
+    )
+
+    with pytest.raises(wave_ai.WaveAIError) as error:
+        asyncio.run(wave_ai.answer_question("How is S001?", snapshot(), session_id="groq-invalid"))
+
+    assert error.value.status_code == 503
+    assert error.value.code == "wave_ai_auth_failed"
+    assert "GROQ_API_KEY" in error.value.detail
+    assert key not in error.value.detail
+    assert wave_ai.provider_status()["status"] == "unavailable"
+    assert key not in json.dumps(wave_ai.provider_status())
+
+
+def test_groq_transport_uses_fixed_compatible_url_and_server_authorization(monkeypatch):
+    key = "unit-test-groq-transport-key"
+    monkeypatch.setenv("WAVE_AI_PROVIDER", "groq")
+    captured: dict = {}
+
+    class FakeResponse:
+        status = 200
+        headers = {"content-type": "application/json"}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self, _limit):
+            return b'{"choices":[]}'
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["authorization"] = request.get_header("Authorization")
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr(wave_ai, "urlopen", fake_urlopen)
+    wave_ai._provider_http_call({"model": "test-model"}, key, 3)
+
+    assert captured["url"] == wave_ai.GROQ_CHAT_COMPLETIONS_URL
+    assert captured["authorization"] == f"Bearer {key}"
+    assert captured["timeout"] == 3
+
+
 @pytest.mark.parametrize(
     ("status", "headers", "expected_status", "code"),
     [
@@ -329,7 +456,7 @@ def test_provider_errors_are_sanitized(status, headers, expected_status, code, m
     wave_ai._rate_limiter.clear()
     monkeypatch.setattr(
         wave_ai,
-        "_openai_http_call",
+        "_provider_http_call",
         lambda *_args, **_kwargs: (status, {"error": {"message": key}}, headers),
     )
 
@@ -366,7 +493,7 @@ def test_global_rate_limit_bounds_public_api_key_usage(monkeypatch):
         calls += 1
         return 200, {"choices": [{"message": {"content": "ok"}}]}, {}
 
-    monkeypatch.setattr(wave_ai, "_openai_http_call", fake_http)
+    monkeypatch.setattr(wave_ai, "_provider_http_call", fake_http)
     asyncio.run(wave_ai.answer_question("first", snapshot(), session_id="global-a"))
     with pytest.raises(wave_ai.WaveAIError) as error:
         asyncio.run(wave_ai.answer_question("second", snapshot(), session_id="global-b"))

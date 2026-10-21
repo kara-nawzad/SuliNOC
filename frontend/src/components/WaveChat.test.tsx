@@ -16,7 +16,7 @@ vi.mock("../services/api", () => ({
   api: { waveStatus: vi.fn(), waveChat: vi.fn() },
 }));
 
-function makeSnapshot(): Snapshot {
+function makeSnapshot(activeIncidents = 0): Snapshot {
   return {
     run_id: "wave-test-run",
     tick: 42,
@@ -33,7 +33,16 @@ function makeSnapshot(): Snapshot {
         prb: 44,
         drop_rate: 0.2,
       },
-      incidents: [],
+      incidents: Array.from({ length: activeIncidents }, (_, index) => ({
+        id: `incident-${index}`,
+        node_id: `S${index}`,
+        title: `Incident ${index}`,
+        detail: "Simulated incident",
+        severity: "MAJOR",
+        affected: 1,
+        since_tick: 42,
+        dispatched: false,
+      })),
       power: [],
       active_ats: 0,
       fuel_thefts: 0,
@@ -90,9 +99,13 @@ function askWave(question: string) {
   fireEvent.click(screen.getByRole("button", { name: "Send message to Wave" }));
 }
 
-function renderWave() {
+function renderWave(activeIncidents = 0) {
   return render(
-    <WaveChat data={makeSnapshot()} connection="live" refresh={refresh} />,
+    <WaveChat
+      data={makeSnapshot(activeIncidents)}
+      connection="live"
+      refresh={refresh}
+    />,
   );
 }
 
@@ -100,7 +113,52 @@ describe("Wave generative assistant", () => {
   afterEach(() => {
     cleanup();
     sessionStorage.clear();
+    localStorage.clear();
     vi.clearAllMocks();
+  });
+
+  it("shows the greeting once and persists its dismissal without an incident counter", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    const firstRender = renderWave(12);
+
+    expect(
+      screen.getByText("Hey, I’m Wave 👋 Your network, made clearer."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("9+")).not.toBeInTheDocument();
+    expect(firstRender.container.querySelector(".wave-alert-badge")).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Dismiss Wave greeting" }),
+    );
+    expect(
+      screen.queryByText("Hey, I’m Wave 👋 Your network, made clearer."),
+    ).not.toBeInTheDocument();
+    expect(localStorage.getItem("sulinoc-wave-greeting-dismissed:v1")).toBe(
+      "true",
+    );
+
+    firstRender.unmount();
+    renderWave();
+    expect(
+      screen.queryByText("Hey, I’m Wave 👋 Your network, made clearer."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("dismisses and persists the greeting when the launcher opens the chat", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    renderWave();
+    expect(
+      screen.getByText("Hey, I’m Wave 👋 Your network, made clearer."),
+    ).toBeInTheDocument();
+
+    openWave();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Hey, I’m Wave 👋 Your network, made clearer."),
+    ).not.toBeInTheDocument();
+    expect(localStorage.getItem("sulinoc-wave-greeting-dismissed:v1")).toBe(
+      "true",
+    );
   });
 
   it("sends a grounded request, shows thinking/responding, and preserves history on reopen", async () => {
@@ -169,7 +227,9 @@ describe("Wave generative assistant", () => {
 
     renderWave();
     openWave();
-    expect(await screen.findByText("AI setup required")).toBeInTheDocument();
+    expect(
+      await screen.findByText("OpenAI setup required"),
+    ).toBeInTheDocument();
     askWave("List incidents");
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -195,6 +255,52 @@ describe("Wave generative assistant", () => {
     );
     expect(screen.getAllByText("List incidents")).toHaveLength(1);
     expect(await screen.findByText(/OpenAI connected/)).toBeInTheDocument();
+  });
+
+  it("shows the missing Groq key setup when Groq is selected", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue({
+      provider: "groq",
+      model: "llama-3.3-70b-versatile",
+      configured: false,
+      verified: false,
+      status: "missing_key",
+      detail: "Set GROQ_API_KEY in the server environment.",
+    });
+    vi.mocked(api.waveChat).mockRejectedValue(
+      new Error(
+        "Wave’s AI is not configured. Select WAVE_AI_PROVIDER=groq and set GROQ_API_KEY in the backend environment.",
+      ),
+    );
+
+    renderWave();
+    openWave();
+    expect(await screen.findByText("Groq setup required")).toBeInTheDocument();
+    askWave("Summarize the simulation.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("GROQ_API_KEY");
+  });
+
+  it("reports Groq as connected only after its answer arrives", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue({
+      provider: "groq",
+      model: "llama-3.3-70b-versatile",
+      configured: true,
+      verified: false,
+      status: "not_verified",
+    });
+    vi.mocked(api.waveChat).mockResolvedValue({
+      ...reply("Grounded answer from Groq."),
+      provider: "groq",
+      model: "llama-3.3-70b-versatile",
+    });
+
+    renderWave();
+    openWave();
+    askWave("What is happening?");
+
+    expect(
+      await screen.findByText("Grounded answer from Groq."),
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/Groq connected/)).toBeInTheDocument();
   });
 
   it("sends recent conversation turns to the server for follow-up questions", async () => {
