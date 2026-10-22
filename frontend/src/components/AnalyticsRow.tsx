@@ -119,9 +119,11 @@ export function AnalyticsRow({
             ) : (
               <span>—</span>
             )}
-            <p>{data.ai.ai_enabled ? "HIGHEST SITE RISK" : "AI IS DISABLED"}</p>
           </div>
         </div>
+        <p className="oracle-risk-label">
+          {data.ai.ai_enabled ? "HIGHEST SITE RISK" : "AI IS DISABLED"}
+        </p>
         <div className="oracle-target">
           <span className="mono">
             {forecast?.node_id ?? "Awaiting predictions"}

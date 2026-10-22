@@ -114,6 +114,7 @@ describe("Wave generative assistant", () => {
     cleanup();
     sessionStorage.clear();
     localStorage.clear();
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
@@ -142,6 +143,70 @@ describe("Wave generative assistant", () => {
     expect(
       screen.queryByText("Hey, I’m Wave 👋 Your network, made clearer."),
     ).not.toBeInTheDocument();
+  });
+
+  it("lets the launcher drag, persists its position, and suppresses the drag click", () => {
+    class PointerEventShim extends MouseEvent {
+      pointerId: number;
+
+      constructor(type: string, init: PointerEventInit = {}) {
+        super(type, init);
+        this.pointerId = init.pointerId ?? 1;
+      }
+    }
+    vi.stubGlobal("PointerEvent", PointerEventShim);
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    const firstRender = renderWave();
+    const launcher = screen.getByRole("button", {
+      name: "Open Wave assistant",
+    });
+    vi.spyOn(launcher, "getBoundingClientRect").mockReturnValue({
+      x: 860,
+      y: 640,
+      left: 860,
+      top: 640,
+      right: 964,
+      bottom: 744,
+      width: 104,
+      height: 104,
+      toJSON: () => undefined,
+    } as DOMRect);
+
+    fireEvent.pointerDown(launcher, {
+      pointerId: 1,
+      button: 0,
+      clientX: 900,
+      clientY: 680,
+    });
+    fireEvent.pointerMove(launcher, {
+      pointerId: 1,
+      button: 0,
+      clientX: 820,
+      clientY: 620,
+    });
+    fireEvent.pointerUp(launcher, {
+      pointerId: 1,
+      button: 0,
+      clientX: 820,
+      clientY: 620,
+    });
+    fireEvent.click(launcher);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(firstRender.container.querySelector(".wave-assistant")).toHaveStyle({
+      "--wave-launcher-right": "140px",
+      "--wave-launcher-bottom": "84px",
+    });
+    expect(
+      JSON.parse(localStorage.getItem("sulinoc-wave-launcher-position:v1")!),
+    ).toEqual({ right: 140, bottom: 84 });
+
+    firstRender.unmount();
+    const restored = renderWave();
+    expect(restored.container.querySelector(".wave-assistant")).toHaveStyle({
+      "--wave-launcher-right": "140px",
+      "--wave-launcher-bottom": "84px",
+    });
   });
 
   it("dismisses and persists the greeting when the launcher opens the chat", async () => {

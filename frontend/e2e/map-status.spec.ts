@@ -49,11 +49,32 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     "src",
     /^\/assets\/hero-source\.html\?v=.+$/,
   );
-  await expect(
-    welcome.getByRole("heading", {
-      name: "A clearer view of a connected city.",
-    }),
-  ).toBeVisible();
+  const heroHeading = welcome.getByRole("heading", {
+    name: "See your network before it breaks.",
+  });
+  await expect(heroHeading).toBeVisible();
+  await expect(welcome.locator(".top-meta, .hero-shade")).toHaveCount(0);
+  await expect(welcome.locator(".hero-feature")).toHaveCount(3);
+  await expect(welcome.locator(".hero-features")).toHaveCSS(
+    "border-top-width",
+    "0px",
+  );
+  await expect(welcome.locator(".hero-highlight")).toHaveCSS(
+    "color",
+    "rgb(82, 211, 231)",
+  );
+  const heroFontSizes = await welcome
+    .locator("h1, .lede")
+    .evaluateAll((elements) =>
+      elements.map((element) =>
+        Number.parseFloat(getComputedStyle(element).fontSize),
+      ),
+    );
+  expect(heroFontSizes[0]).toBeGreaterThan(heroFontSizes[1] * 2);
+  const enterButton = welcome.getByRole("button", { name: "Enter workspace" });
+  await expect(enterButton).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await enterButton.hover();
+  await expect(enterButton).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(page.locator(".app-shell, .boot-screen")).toHaveCount(0);
   await expect(page.locator("html")).toHaveCSS(
     "background-color",
@@ -87,16 +108,13 @@ test("Esri tile failures show a visible schematic status and retry can recover",
 
   const loadedFonts = await welcome.locator("body").evaluate(async () => {
     const faces = await Promise.all(
-      [
-        "400 12px Manrope",
-        "500 12px Manrope",
-        "600 12px Newsreader",
-        '500 12px "IBM Plex Mono"',
-      ].map((font) => document.fonts.load(font)),
+      ["400 12px Manrope", "500 12px Manrope", '500 12px "IBM Plex Mono"'].map(
+        (font) => document.fonts.load(font),
+      ),
     );
     return faces.map((loaded) => loaded.length > 0);
   });
-  expect(loadedFonts).toEqual([true, true, true, true]);
+  expect(loadedFonts).toEqual([true, true, true]);
 
   await page.setViewportSize({ width: 1280, height: 720 });
   await welcome.getByRole("button", { name: "Enter workspace" }).click();
@@ -225,14 +243,12 @@ test("Esri tile failures show a visible schematic status and retry can recover",
 
   await page.setViewportSize({ width: 700, height: 900 });
   const navigation = page.getByRole("navigation", { name: "Main navigation" });
-  await expect(page.locator(".phone-tools")).toBeHidden();
-  await expect(navigation.locator(".nav-bottom")).toBeVisible();
+  const phoneTools = page.locator(".phone-tools");
+  await expect(phoneTools).toBeVisible();
+  await expect(phoneTools.getByRole("button")).toHaveCount(3);
+  await expect(navigation.locator(".nav-bottom")).toBeHidden();
   await expect(navigation).toHaveCSS("flex-direction", "row");
   await expect(navigation.locator(".nav-items")).toHaveCSS(
-    "flex-direction",
-    "row",
-  );
-  await expect(navigation.locator(".nav-bottom")).toHaveCSS(
     "flex-direction",
     "row",
   );
@@ -241,13 +257,7 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     .evaluateAll((items) =>
       items.map((item) => Math.round(item.getBoundingClientRect().top)),
     );
-  const utilityItemTops = await navigation
-    .locator(".nav-bottom .nav-item")
-    .evaluateAll((items) =>
-      items.map((item) => Math.round(item.getBoundingClientRect().top)),
-    );
   expect(new Set(navItemTops).size).toBe(1);
-  expect(new Set(utilityItemTops).size).toBe(1);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".phone-tools")).toBeVisible();

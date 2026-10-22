@@ -10,7 +10,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { PowerCard } from "./AnalyticsRow";
+import { AnalyticsRow, PowerCard } from "./AnalyticsRow";
 import type { Config, PowerSource, Snapshot } from "../types/api";
 
 vi.mock("../services/api", () => ({
@@ -18,6 +18,7 @@ vi.mock("../services/api", () => ({
     telemetryHistory: vi.fn().mockResolvedValue({ run_id: "r1", samples: [] }),
   },
 }));
+vi.mock("./TrafficQualityCard", () => ({ TrafficQualityCard: () => null }));
 
 const powerColors: Record<PowerSource, string> = {
   Grid: "#00ff00",
@@ -174,5 +175,22 @@ describe("Site power & fleet donut", () => {
       "Diesel DG": "30",
       Solar: "0",
     });
+  });
+});
+
+describe("Oracle outlook layout", () => {
+  it("keeps the highest-site-risk caption below the gauge in normal flow", () => {
+    const data = makeSnapshot({});
+    data.ai.ai_enabled = true;
+    const { container } = render(
+      <AnalyticsRow data={data} config={makeConfig()} onSelect={vi.fn()} />,
+    );
+    const gauge = container.querySelector(".radial-value");
+    const riskLabel = screen.getByText("HIGHEST SITE RISK");
+
+    expect(gauge?.parentElement).toHaveClass("radial-wrap");
+    expect(riskLabel).toHaveClass("oracle-risk-label");
+    expect(gauge?.parentElement?.nextElementSibling).toBe(riskLabel);
+    expect(riskLabel.closest(".radial-value")).toBeNull();
   });
 });

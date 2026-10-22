@@ -8,7 +8,7 @@ def test_only_fingerprinted_assets_are_cached_immutably():
     assert _cache_control_for_path("/api/data") == "no-store"
     assert _cache_control_for_path("/assets/hero-source.html") == "no-store"
     assert (
-        _cache_control_for_path("/assets/hero-city-sunset.jpg")
+        _cache_control_for_path("/assets/hero-city-sunset.png")
         == "no-cache, max-age=0, must-revalidate"
     )
     assert (

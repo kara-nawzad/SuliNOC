@@ -8,14 +8,7 @@
     />
     <meta name="theme-color" content="#081426" />
     <title>SuliNOC · Network operations</title>
-    <link rel="preload" as="image" href="/assets/hero-city-sunset.jpg" />
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      crossorigin
-      href="/assets/fonts/newsreader-latin-600-normal.woff2"
-    />
+    <link rel="preload" as="image" href="/assets/hero-city-sunset.png" />
     <link
       rel="preload"
       as="font"
@@ -43,14 +36,6 @@
         src: url("/assets/fonts/manrope-latin-500-normal.woff2") format("woff2");
         font-style: normal;
         font-weight: 500;
-        font-display: swap;
-      }
-      @font-face {
-        font-family: Newsreader;
-        src: url("/assets/fonts/newsreader-latin-600-normal.woff2")
-          format("woff2");
-        font-style: normal;
-        font-weight: 600;
         font-display: swap;
       }
       @font-face {
@@ -107,31 +92,16 @@
         opacity: 0;
         pointer-events: none;
       }
-      .hero-background,
-      .hero-shade {
+      .hero-background {
         position: absolute;
+        z-index: -3;
         inset: 0;
         width: 100%;
         height: 100%;
-        pointer-events: none;
-        user-select: none;
-      }
-      .hero-background {
-        z-index: -3;
         object-fit: cover;
         object-position: center 56%;
-      }
-      .hero-shade {
-        z-index: -2;
-        background:
-          linear-gradient(
-            90deg,
-            rgb(5 15 31 / 82%) 0%,
-            rgb(5 15 31 / 58%) 43%,
-            rgb(5 15 31 / 8%) 100%
-          ),
-          linear-gradient(0deg, rgb(5 15 31 / 54%) 0%, transparent 48%),
-          linear-gradient(180deg, rgb(5 15 31 / 34%) 0%, transparent 32%);
+        pointer-events: none;
+        user-select: none;
       }
       .hero-topbar {
         position: absolute;
@@ -154,75 +124,84 @@
         object-position: left center;
         filter: brightness(0) invert(1);
       }
-      .top-meta,
-      .eyebrow,
-      .hero-footnote {
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 10px;
-        font-weight: 500;
-        letter-spacing: 0.11em;
-        text-transform: uppercase;
-      }
-      .top-meta {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        color: rgb(246 248 252 / 78%);
-      }
-      .top-meta::before {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #83e6d7;
-        box-shadow: 0 0 13px rgb(131 230 215 / 70%);
-        content: "";
-      }
       .hero-copy {
         position: absolute;
         z-index: 1;
-        left: clamp(24px, 8.3vw, 128px);
-        bottom: max(clamp(46px, 11vh, 112px), env(safe-area-inset-bottom));
-        width: min(690px, calc(100vw - 48px));
+        top: 27%;
+        left: clamp(24px, 5.8vw, 90px);
+        width: min(720px, calc(100vw - 48px));
         animation: appear 850ms 180ms both;
       }
-      .eyebrow {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 0 0 22px;
-        color: #a8eee2;
-      }
-      .eyebrow::before {
-        display: inline-block;
-        width: 29px;
-        height: 1px;
-        background: currentColor;
-        content: "";
-      }
       h1 {
-        max-width: 670px;
+        max-width: 700px;
         margin: 0;
-        font-family: Newsreader, Georgia, serif;
-        font-size: clamp(48px, 7.3vw, 98px);
-        font-weight: 600;
-        line-height: 0.97;
-        letter-spacing: -0.055em;
+        font-family: Manrope, sans-serif;
+        font-size: clamp(48px, 5vw, 76px);
+        font-weight: 500;
+        line-height: 1.04;
+        letter-spacing: -0.045em;
         text-wrap: balance;
-        text-shadow: 0 2px 26px rgb(5 15 31 / 20%);
+        text-shadow: 0 1px 3px rgb(5 15 31 / 38%);
+      }
+      .hero-highlight {
+        display: block;
+        color: #52d3e7;
+        font-synthesis: weight;
+        font-weight: 700;
       }
       .lede {
         max-width: 480px;
-        margin: 22px 0 0;
-        color: rgb(246 248 252 / 83%);
+        margin: 18px 0 0;
+        color: rgb(246 248 252 / 94%);
         font-size: clamp(14px, 1.35vw, 17px);
-        line-height: 1.7;
+        line-height: 1.55;
+        text-shadow: 0 1px 3px rgb(5 15 31 / 42%);
+      }
+      .hero-features {
+        display: grid;
+        max-width: 470px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin: 25px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .hero-feature {
+        display: flex;
+        min-width: 0;
+        min-height: 54px;
+        align-items: center;
+        gap: 9px;
+        padding: 9px 12px;
+      }
+      .hero-feature:first-child {
+        padding-left: 0;
+      }
+      .hero-feature + .hero-feature {
+        border-left: 1px solid rgb(246 248 252 / 22%);
+      }
+      .hero-feature svg {
+        width: 25px;
+        height: 25px;
+        flex: 0 0 25px;
+        fill: none;
+        color: #52d3e7;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.5;
+      }
+      .hero-feature span {
+        max-width: 92px;
+        color: rgb(246 248 252 / 90%);
+        font-size: 11px;
+        line-height: 1.35;
       }
       .hero-actions {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: 12px;
-        margin-top: 32px;
+        margin-top: 21px;
       }
       .hero-button {
         display: inline-flex;
@@ -250,7 +229,7 @@
       }
       #enter {
         color: #081426;
-        background: #eaf9f6;
+        background: #fff;
       }
       #enter:hover {
         background: #fff;
@@ -262,21 +241,6 @@
       }
       #enter:hover svg {
         transform: translateX(3px);
-      }
-      #skip {
-        border-color: rgb(246 248 252 / 38%);
-        color: #f6f8fc;
-        background: rgb(5 15 31 / 16%);
-      }
-      #skip:hover {
-        border-color: rgb(246 248 252 / 72%);
-        background: rgb(5 15 31 / 36%);
-      }
-      .hero-footnote {
-        margin: 27px 0 0;
-        color: rgb(246 248 252 / 66%);
-        font-size: 9px;
-        letter-spacing: 0.08em;
       }
       @keyframes appear {
         from {
@@ -292,16 +256,6 @@
         .hero-background {
           object-position: 74% center;
         }
-        .hero-shade {
-          background:
-            linear-gradient(90deg, rgb(5 15 31 / 58%), rgb(5 15 31 / 12%)),
-            linear-gradient(
-              0deg,
-              rgb(5 15 31 / 90%) 0%,
-              rgb(5 15 31 / 58%) 48%,
-              transparent 100%
-            );
-        }
         .hero-topbar {
           top: max(16px, env(safe-area-inset-top));
           left: 20px;
@@ -312,72 +266,114 @@
           width: 156px;
           height: 60px;
         }
-        .top-meta {
-          max-width: calc(100vw - 200px);
-          overflow: hidden;
-          font-size: 8px;
-          letter-spacing: 0.06em;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
         .hero-copy {
-          bottom: max(34px, env(safe-area-inset-bottom));
-          left: 24px;
-          width: calc(100vw - 48px);
-        }
-        .eyebrow {
-          margin-bottom: 16px;
-          font-size: 9px;
+          top: auto;
+          bottom: max(26px, env(safe-area-inset-bottom));
+          left: 20px;
+          width: calc(100vw - 40px);
         }
         h1 {
           max-width: 560px;
-          font-size: clamp(46px, 12vw, 68px);
+          font-size: clamp(38px, 10vw, 58px);
         }
         .lede {
           max-width: 420px;
-          margin-top: 16px;
+          margin-top: 14px;
           font-size: 14px;
-          line-height: 1.55;
+          line-height: 1.5;
+        }
+        .hero-features {
+          max-width: 500px;
+          margin-top: 20px;
+        }
+        .hero-feature {
+          min-height: 48px;
+          gap: 7px;
+          padding: 8px;
+        }
+        .hero-feature svg {
+          width: 21px;
+          height: 21px;
+          flex-basis: 21px;
+        }
+        .hero-feature span {
+          font-size: 10px;
         }
         .hero-actions {
           gap: 9px;
-          margin-top: 22px;
+          margin-top: 18px;
         }
         .hero-button {
           min-height: 46px;
           padding: 0 15px;
-        }
-        .hero-footnote {
-          margin-top: 19px;
-          font-size: 8px;
         }
       }
       @media (max-width: 420px) {
         .hero-topbar {
           justify-content: flex-start;
         }
-        .top-meta {
-          display: none;
+      }
+      @media (max-width: 380px) {
+        .hero-features {
+          grid-template-columns: 1fr;
+          gap: 2px;
+          margin-top: 14px;
+          border-top: 0;
+        }
+        .hero-feature {
+          min-height: 30px;
+          gap: 8px;
+          padding: 4px 0;
+        }
+        .hero-feature + .hero-feature {
+          border-left: 0;
+        }
+        .hero-feature svg {
+          width: 20px;
+          height: 20px;
+          flex-basis: 20px;
+        }
+        .hero-feature span {
+          max-width: none;
+          font-size: 11px;
+        }
+        .hero-actions {
+          margin-top: 14px;
         }
       }
       @media (max-height: 560px) and (min-width: 701px) {
         .hero-copy {
-          bottom: 24px;
-        }
-        .eyebrow {
-          margin-bottom: 12px;
+          top: auto;
+          bottom: 18px;
         }
         h1 {
-          font-size: clamp(42px, 8vh, 58px);
+          font-size: clamp(36px, 7vh, 56px);
         }
         .lede {
+          margin-top: 9px;
+          line-height: 1.4;
+        }
+        .hero-features {
           margin-top: 12px;
+        }
+        .hero-feature {
+          min-height: 42px;
+          gap: 7px;
+          padding: 6px 9px;
+        }
+        .hero-feature svg {
+          width: 21px;
+          height: 21px;
+          flex-basis: 21px;
+        }
+        .hero-feature span {
+          font-size: 10px;
         }
         .hero-actions {
-          margin-top: 17px;
-        }
-        .hero-footnote {
           margin-top: 12px;
+        }
+        .hero-button {
+          min-height: 42px;
         }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -396,11 +392,10 @@
     <main id="hero" aria-labelledby="hero-title">
       <img
         class="hero-background"
-        src="/assets/hero-city-sunset.jpg"
+        src="/assets/hero-city-sunset.png"
         alt=""
         fetchpriority="high"
       />
-      <div class="hero-shade" aria-hidden="true"></div>
       <header class="hero-topbar">
         <img
           class="hero-logo"
@@ -408,15 +403,48 @@
           alt="SuliNOC"
           fetchpriority="high"
         />
-        <div class="top-meta">SIMULATED NETWORK · 300 MODELED SITES</div>
       </header>
       <section class="hero-copy">
-        <p class="eyebrow">SULAYMANIYAH · NETWORK OPERATIONS</p>
-        <h1 id="hero-title">A clearer view of a connected city.</h1>
+        <h1 id="hero-title">
+          See your network
+          <span class="hero-highlight">before it breaks.</span>
+        </h1>
         <p class="lede">
-          Explore a deterministic telecom simulation where signals, sites, and
-          field teams come together in one operations console.
+          AI-powered telecom operations for a more connected Sulaymaniyah.
         </p>
+        <ul class="hero-features" aria-label="SuliNOC capabilities">
+          <li class="hero-feature">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.5" />
+              <circle cx="12" cy="12" r="4.5" />
+              <path d="m12 12 4-4M12 2.5v2M21.5 12h-2M12 21.5v-2M2.5 12h2" />
+            </svg>
+            <span>Real-time monitoring</span>
+          </li>
+          <li class="hero-feature">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 5.2a3 3 0 0 0-5.7 1.3A3.4 3.4 0 0 0 5 13a3.1 3.1 0 0 0 3 5.2H12z"
+              />
+              <path
+                d="M12 5.2a3 3 0 0 1 5.7 1.3A3.4 3.4 0 0 1 19 13a3.1 3.1 0 0 1-3 5.2H12"
+              />
+              <path
+                d="M8.5 9.5c1.4 0 1.8.8 1.8 1.7M8.1 14.5c1.2 0 2.2.6 2.2 1.7m5-6.7c-1.4 0-1.8.8-1.8 1.7m2.2 3.3c-1.2 0-2.2.6-2.2 1.7"
+              />
+            </svg>
+            <span>AI-powered insights</span>
+          </li>
+          <li class="hero-feature">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 3 19.5 6v5c0 4.7-3 8-7.5 10-4.5-2-7.5-5.3-7.5-10V6z"
+              />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+            <span>Fewer outages, more uptime</span>
+          </li>
+        </ul>
         <div class="hero-actions">
           <button class="hero-button" id="enter" type="button">
             Enter workspace
@@ -430,13 +458,7 @@
               />
             </svg>
           </button>
-          <button class="hero-button" id="skip" type="button">
-            Skip intro
-          </button>
         </div>
-        <p class="hero-footnote">
-          SIMULATION ONLY · NO LIVE OPERATOR NETWORK DATA
-        </p>
       </section>
     </main>
     <script>
@@ -445,7 +467,7 @@
         (event) => {
           const target =
             event.target instanceof Element
-              ? event.target.closest("#enter, #skip")
+              ? event.target.closest("#enter")
               : null;
           if (!target) return;
           event.preventDefault();
