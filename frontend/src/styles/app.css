@@ -7180,7 +7180,7 @@ dialog.dialog::backdrop,
   }
 }
 
-/* Panel information: explicit three-dot controls open the shared modal. */
+/* Panel information: compact three-dot controls open the shared modal. */
 .app-shell .panel-heading-actions {
   display: flex;
   flex: 0 0 auto;
@@ -7190,13 +7190,14 @@ dialog.dialog::backdrop,
   min-width: 0;
 }
 .app-shell .panel-info-button {
+  position: relative;
   display: grid;
   flex: none;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   padding: 0;
   color: var(--sn-t2);
   background: transparent;
@@ -7204,22 +7205,44 @@ dialog.dialog::backdrop,
   border-radius: var(--r-md);
   box-shadow: none;
 }
+.app-shell .panel-info-button::before {
+  position: absolute;
+  inset: 2px;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  content: "";
+  pointer-events: none;
+}
 .app-shell .panel-info-button svg {
+  position: relative;
   display: block;
+  width: 14px;
+  height: 14px;
   color: currentColor;
   opacity: 1;
 }
 .app-shell .panel-info-button:hover {
   color: var(--sn-link);
-  background: var(--sn-s1);
-  border-color: var(--sn-ln);
+  background: transparent;
+  border-color: transparent;
   box-shadow: none;
 }
+.app-shell .panel-info-button:hover::before {
+  background: var(--sn-s1);
+  border-color: var(--sn-ln);
+}
+.app-shell .panel-info-button:focus-visible {
+  outline: none;
+}
+.app-shell .panel-info-button:focus-visible::before {
+  border-color: var(--sn-link);
+  box-shadow: 0 0 0 2px var(--sn-s1);
+}
 .app-shell .panel-info-button.compact {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
 }
 .app-shell .kpi-title {
   min-width: 0;
@@ -7261,6 +7284,9 @@ dialog.dialog::backdrop,
     height: 44px;
     min-width: 44px;
     min-height: 44px;
+  }
+  .app-shell .panel-info-button::before {
+    inset: 9px;
   }
 }
 

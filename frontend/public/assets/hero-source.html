@@ -127,22 +127,26 @@
       .hero-copy {
         position: absolute;
         z-index: 1;
-        isolation: isolate;
         top: 27%;
         left: clamp(24px, 5.8vw, 90px);
         width: min(720px, calc(100vw - 48px));
         animation: appear 850ms 180ms both;
       }
-      .hero-copy::before {
+      .hero-copy-main {
+        position: relative;
+        isolation: isolate;
+        width: fit-content;
+        max-width: 100%;
+      }
+      .hero-copy-main::before {
         content: "";
         position: absolute;
         z-index: -1;
-        inset: -18px -22px;
-        border: 1px solid rgb(246 248 252 / 13%);
-        border-radius: 18px;
-        background: rgb(8 20 38 / 68%);
-        -webkit-backdrop-filter: blur(8px);
-        backdrop-filter: blur(8px);
+        inset: -8px -12px;
+        border-radius: 14px;
+        background: rgb(8 20 38 / 22%);
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
         pointer-events: none;
       }
       h1 {
@@ -285,9 +289,9 @@
           left: 20px;
           width: calc(100vw - 40px);
         }
-        .hero-copy::before {
-          inset: -12px -14px;
-          border-radius: 16px;
+        .hero-copy-main::before {
+          inset: -6px -8px;
+          border-radius: 12px;
         }
         h1 {
           max-width: 560px;
@@ -422,13 +426,15 @@
         />
       </header>
       <section class="hero-copy">
-        <h1 id="hero-title">
-          See your network
-          <span class="hero-highlight">before it breaks.</span>
-        </h1>
-        <p class="lede">
-          AI-powered telecom operations for a more connected Sulaymaniyah.
-        </p>
+        <div class="hero-copy-main">
+          <h1 id="hero-title">
+            See your network
+            <span class="hero-highlight">before it breaks.</span>
+          </h1>
+          <p class="lede">
+            AI-powered telecom operations for a more connected Sulaymaniyah.
+          </p>
+        </div>
         <ul class="hero-features" aria-label="SuliNOC capabilities">
           <li class="hero-feature">
             <svg viewBox="0 0 24 24" aria-hidden="true">

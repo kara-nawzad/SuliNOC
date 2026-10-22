@@ -58,7 +58,7 @@ export function PanelInfoButton({
       aria-haspopup="dialog"
       title={`More information about ${title}`}
     >
-      <MoreHorizontal size={17} strokeWidth={2} aria-hidden="true" />
+      <MoreHorizontal size={14} strokeWidth={2} aria-hidden="true" />
     </button>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { chartPath, Badge } from "./ui";
+import { chartPath, Badge, PanelHeading } from "./ui";
 import { NumberTween } from "./NumberTween";
 import type { Config } from "../types/api";
 
@@ -19,6 +19,16 @@ describe("presentation primitives", () => {
     } as Config;
     render(<Badge config={cfg} severity="CRITICAL" />);
     expect(screen.getByText("CRITICAL")).toHaveStyle("--tone: #123456");
+  });
+  it("renders smaller accessible three-dot controls in panel headings", () => {
+    render(<PanelHeading title="Network health" />);
+    const infoButton = screen.getByRole("button", {
+      name: "More information about Network health",
+    });
+    const icon = infoButton.querySelector("svg");
+
+    expect(icon).toHaveAttribute("width", "14");
+    expect(icon).toHaveAttribute("height", "14");
   });
   it("renders accessible precision before animation begins", () => {
     const { unmount } = render(
