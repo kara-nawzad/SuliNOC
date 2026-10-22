@@ -55,7 +55,7 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(heroHeading).toBeVisible();
   await expect(welcome.locator(".top-meta, .hero-shade")).toHaveCount(0);
   const copyBackdrop = await welcome
-    .locator(".hero-copy")
+    .locator(".hero-copy-main")
     .evaluate((element) => {
       const style = getComputedStyle(element, "::before");
       return {
@@ -64,8 +64,8 @@ test("Esri tile failures show a visible schematic status and retry can recover",
         pointerEvents: style.pointerEvents,
       };
     });
-  expect(copyBackdrop.backgroundColor).toBe("rgba(8, 20, 38, 0.68)");
-  expect(copyBackdrop.backdropFilter).toBe("blur(8px)");
+  expect(copyBackdrop.backgroundColor).toBe("rgba(8, 20, 38, 0.22)");
+  expect(copyBackdrop.backdropFilter).toBe("blur(4px)");
   expect(copyBackdrop.pointerEvents).toBe("none");
   await expect(welcome.locator(".hero-feature")).toHaveCount(3);
   await expect(welcome.locator(".hero-features")).toHaveCSS(
