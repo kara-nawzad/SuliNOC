@@ -4,6 +4,34 @@ const lerpAngle = (a, b, t) => a + (((b - a + 540) % 360) - 180) * t;
 const POSITION_EPSILON = 0.01;
 const FRAME_EPSILON = 0.0001;
 
+// Remaining projected route distance in EPSG:3857 metres -> visual speed factor.
+// Interpolating between points gives longer trips a noticeable lift without
+// abrupt speed jumps as a crew crosses a distance threshold. Backend ETAs and
+// team positions remain authoritative; this affects presentation only.
+const DISTANCE_SPEED_POINTS = [
+  [0, 1],
+  [1500, 1],
+  [4500, 1.2],
+  [9000, 1.45],
+  [15000, 1.6],
+];
+
+function distanceSpeedMultiplier(remainingMeters) {
+  const distance = Number.isFinite(remainingMeters)
+    ? Math.max(0, remainingMeters)
+    : 0;
+  for (let i = 1; i < DISTANCE_SPEED_POINTS.length; i += 1) {
+    const [upperDistance, upperMultiplier] = DISTANCE_SPEED_POINTS[i];
+    if (distance <= upperDistance) {
+      const [lowerDistance, lowerMultiplier] = DISTANCE_SPEED_POINTS[i - 1];
+      const fraction =
+        (distance - lowerDistance) / (upperDistance - lowerDistance || 1);
+      return lowerMultiplier + (upperMultiplier - lowerMultiplier) * fraction;
+    }
+  }
+  return DISTANCE_SPEED_POINTS.at(-1)[1];
+}
+
 function sameRoute(a, b) {
   return (
     a.length === b.length &&
@@ -74,8 +102,10 @@ export class CrewMotion {
       const dt = (now - crew.updatedAt) / 1000;
       if (dt > 0.05) {
         crew.updateGap = dt * 1000;
+        const observedVelocity = Math.max(0, (target - crew.target) / dt);
+        const speedMultiplier = distanceSpeedMultiplier(crew.length - target);
         crew.velocity = moving
-          ? 0.5 * crew.velocity + 0.5 * Math.max(0, (target - crew.target) / dt)
+          ? 0.5 * crew.velocity + 0.5 * observedVelocity * speedMultiplier
           : 0;
       }
     }
