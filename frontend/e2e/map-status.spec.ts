@@ -243,14 +243,12 @@ test("Esri tile failures show a visible schematic status and retry can recover",
 
   await page.setViewportSize({ width: 700, height: 900 });
   const navigation = page.getByRole("navigation", { name: "Main navigation" });
-  await expect(page.locator(".phone-tools")).toBeHidden();
-  await expect(navigation.locator(".nav-bottom")).toBeVisible();
+  const phoneTools = page.locator(".phone-tools");
+  await expect(phoneTools).toBeVisible();
+  await expect(phoneTools.getByRole("button")).toHaveCount(3);
+  await expect(navigation.locator(".nav-bottom")).toBeHidden();
   await expect(navigation).toHaveCSS("flex-direction", "row");
   await expect(navigation.locator(".nav-items")).toHaveCSS(
-    "flex-direction",
-    "row",
-  );
-  await expect(navigation.locator(".nav-bottom")).toHaveCSS(
     "flex-direction",
     "row",
   );
@@ -259,13 +257,7 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     .evaluateAll((items) =>
       items.map((item) => Math.round(item.getBoundingClientRect().top)),
     );
-  const utilityItemTops = await navigation
-    .locator(".nav-bottom .nav-item")
-    .evaluateAll((items) =>
-      items.map((item) => Math.round(item.getBoundingClientRect().top)),
-    );
   expect(new Set(navItemTops).size).toBe(1);
-  expect(new Set(utilityItemTops).size).toBe(1);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".phone-tools")).toBeVisible();
