@@ -334,7 +334,7 @@ and chat returns a clear configuration error instead of a canned local answer.
 1. In the **backend** environment, set `WAVE_AI_PROVIDER=groq`.
 2. Add the key from your Groq console as `GROQ_API_KEY` in that same backend environment.
 3. Optionally set `GROQ_MODEL` to a model ID enabled in your Groq account. The default is
-   `openai/gpt-oss-20b` (verified against the Groq account used for this deployment).
+   `openai/gpt-oss-20b`.
 4. Restart/redeploy the backend.
 5. Check `/api/wave/status` (`not_verified` is expected initially), then send a Wave question. It
    reports `connected` only after a real successful provider response.
