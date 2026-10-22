@@ -2,8 +2,10 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type FormEvent,
   type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { Activity, RefreshCw, Send, X } from "lucide-react";
 import { api } from "../services/api";
@@ -25,7 +27,99 @@ interface WaveMessage {
 
 const MAX_MESSAGES = 80;
 const GREETING_DISMISSED_KEY = "sulinoc-wave-greeting-dismissed:v1";
+const LAUNCHER_POSITION_KEY = "sulinoc-wave-launcher-position:v1";
+const LAUNCHER_EDGE_GAP = 8;
+const MOBILE_NAV_HEIGHT = 76;
 const GREETING_TEXT = "Hey, I’m Wave 👋 Your network, made clearer.";
+
+type LauncherPosition = { right: number; bottom: number };
+type LauncherDrag = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startRight: number;
+  startBottom: number;
+  lastPosition: LauncherPosition;
+  moved: boolean;
+};
+
+function readLauncherPosition(): LauncherPosition | null {
+  try {
+    const value = localStorage.getItem(LAUNCHER_POSITION_KEY);
+    if (!value) return null;
+    const parsed: unknown = JSON.parse(value);
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "right" in parsed &&
+      "bottom" in parsed &&
+      typeof parsed.right === "number" &&
+      Number.isFinite(parsed.right) &&
+      typeof parsed.bottom === "number" &&
+      Number.isFinite(parsed.bottom)
+    ) {
+      return { right: parsed.right, bottom: parsed.bottom };
+    }
+  } catch {
+    // Keep the default CSS position when storage is unavailable or malformed.
+  }
+  return null;
+}
+
+function saveLauncherPosition(position: LauncherPosition) {
+  try {
+    localStorage.setItem(LAUNCHER_POSITION_KEY, JSON.stringify(position));
+  } catch {
+    // Dragging remains available for this session if storage is blocked.
+  }
+}
+
+let cachedSafeAreaInset: { width: number; value: number } | null = null;
+
+function safeAreaBottomInset(): number {
+  const width = typeof window === "undefined" ? 0 : window.innerWidth;
+  if (cachedSafeAreaInset?.width === width) return cachedSafeAreaInset.value;
+  try {
+    const probe = document.createElement("div");
+    probe.style.cssText =
+      "position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom, 0px)";
+    document.body.appendChild(probe);
+    const inset = Number.parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+    probe.remove();
+    cachedSafeAreaInset = { width, value: inset };
+    return inset;
+  } catch {
+    cachedSafeAreaInset = { width, value: 0 };
+    return 0;
+  }
+}
+
+function clampLauncherPosition(
+  position: LauncherPosition,
+  viewportWidth: number,
+  viewportHeight: number,
+  width: number,
+  height: number,
+): LauncherPosition {
+  const minRight = LAUNCHER_EDGE_GAP;
+  const maxRight = Math.max(
+    minRight,
+    viewportWidth - width - LAUNCHER_EDGE_GAP,
+  );
+  const safeInset = safeAreaBottomInset();
+  const minBottom =
+    (viewportWidth <= 767 ? MOBILE_NAV_HEIGHT : LAUNCHER_EDGE_GAP) + safeInset;
+  const maxBottom = Math.max(
+    minBottom,
+    viewportHeight - height - LAUNCHER_EDGE_GAP,
+  );
+  return {
+    right: Math.round(Math.min(maxRight, Math.max(minRight, position.right))),
+    bottom: Math.round(
+      Math.min(maxBottom, Math.max(minBottom, position.bottom)),
+    ),
+  };
+}
 const WELCOME: WaveMessage = {
   id: "wave-welcome",
   role: "assistant",
@@ -151,6 +245,9 @@ export function WaveChat({
   const [greetingVisible, setGreetingVisible] = useState(
     () => !wasGreetingDismissed(),
   );
+  const [launcherPosition, setLauncherPosition] =
+    useState<LauncherPosition | null>(() => readLauncherPosition());
+  const [dragging, setDragging] = useState(false);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -162,6 +259,8 @@ export function WaveChat({
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
+  const launcherDragRef = useRef<LauncherDrag | null>(null);
+  const suppressLauncherClickRef = useRef(false);
   const activeAlerts = data.dashboard.incidents.length;
 
   useEffect(() => {
@@ -226,6 +325,33 @@ export function WaveChat({
     return () => window.clearTimeout(timer);
   }, [responseExpression]);
 
+  useEffect(() => {
+    const clampSavedPosition = () => {
+      const launcher = launcherRef.current;
+      if (!launcher) return;
+      const rect = launcher.getBoundingClientRect();
+      const width = rect.width || (window.innerWidth <= 767 ? 72 : 104);
+      const height = rect.height || (window.innerWidth <= 767 ? 72 : 104);
+      setLauncherPosition((current) => {
+        if (!current) return current;
+        const next = clampLauncherPosition(
+          current,
+          window.innerWidth,
+          window.innerHeight,
+          width,
+          height,
+        );
+        if (next.right === current.right && next.bottom === current.bottom)
+          return current;
+        saveLauncherPosition(next);
+        return next;
+      });
+    };
+    window.addEventListener("resize", clampSavedPosition);
+    clampSavedPosition();
+    return () => window.removeEventListener("resize", clampSavedPosition);
+  }, []);
+
   const lastMessage = messages.at(-1);
   const providerUnavailable =
     providerStatus.status === "missing_key" ||
@@ -254,6 +380,93 @@ export function WaveChat({
   function toggleOpen() {
     if (!open) dismissGreeting();
     setOpen(!open);
+  }
+
+  function beginLauncherDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (open || (Number.isFinite(event.button) && event.button !== 0)) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const startRight = window.innerWidth - rect.right;
+    const startBottom = window.innerHeight - rect.bottom;
+    launcherDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startRight,
+      startBottom,
+      lastPosition: { right: startRight, bottom: startBottom },
+      moved: false,
+    };
+    if (
+      Number.isFinite(event.pointerId) &&
+      typeof event.currentTarget.setPointerCapture === "function"
+    ) {
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer capture is optional; the pointer handlers still work normally.
+      }
+    }
+  }
+
+  function moveLauncher(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = launcherDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+    drag.moved = true;
+    setDragging(true);
+    event.preventDefault();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const next = clampLauncherPosition(
+      { right: drag.startRight - dx, bottom: drag.startBottom - dy },
+      window.innerWidth,
+      window.innerHeight,
+      rect.width || (window.innerWidth <= 767 ? 72 : 104),
+      rect.height || (window.innerWidth <= 767 ? 72 : 104),
+    );
+    drag.lastPosition = next;
+    setLauncherPosition(next);
+  }
+
+  function finishLauncherDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = launcherDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    launcherDragRef.current = null;
+    setDragging(false);
+    if (drag.moved) {
+      saveLauncherPosition(drag.lastPosition);
+      suppressLauncherClickRef.current = true;
+      window.setTimeout(() => {
+        suppressLauncherClickRef.current = false;
+      }, 0);
+    }
+    if (
+      Number.isFinite(event.pointerId) &&
+      typeof event.currentTarget.releasePointerCapture === "function"
+    ) {
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // The pointer may already have been released by the browser.
+      }
+    }
+  }
+
+  function cancelLauncherDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = launcherDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    launcherDragRef.current = null;
+    setDragging(false);
+    if (drag.moved) saveLauncherPosition(drag.lastPosition);
+  }
+
+  function handleLauncherClick() {
+    if (suppressLauncherClickRef.current) {
+      suppressLauncherClickRef.current = false;
+      return;
+    }
+    toggleOpen();
   }
 
   async function refreshProviderStatus() {
@@ -357,9 +570,15 @@ export function WaveChat({
     ? `${String(data.ai.ai_mode).toUpperCase()} predictor on`
     : "Simulation predictor off";
   const serviceStatus = providerLabel(providerStatus);
+  const assistantStyle = launcherPosition
+    ? ({
+        "--wave-launcher-right": `${launcherPosition.right}px`,
+        "--wave-launcher-bottom": `${launcherPosition.bottom}px`,
+      } as CSSProperties)
+    : undefined;
 
   return (
-    <div className="wave-assistant">
+    <div className="wave-assistant" style={assistantStyle}>
       {greetingVisible && !open && (
         <aside className="wave-greeting" role="status" aria-live="polite">
           <p>{GREETING_TEXT}</p>
@@ -526,11 +745,16 @@ export function WaveChat({
       <button
         ref={launcherRef}
         type="button"
-        className={`wave-launcher${open ? " is-open" : ""}`}
+        className={`wave-launcher${open ? " is-open" : ""}${dragging ? " is-dragging" : ""}`}
         aria-label={open ? "Close Wave assistant" : "Open Wave assistant"}
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={toggleOpen}
+        onClick={handleLauncherClick}
+        onPointerDown={beginLauncherDrag}
+        onPointerMove={moveLauncher}
+        onPointerUp={finishLauncherDrag}
+        onPointerCancel={cancelLauncherDrag}
+        onLostPointerCapture={cancelLauncherDrag}
       >
         <WaveMascot expression={expression} className="wave-launcher-mascot" />
         <span className="wave-launcher-label">Wave</span>

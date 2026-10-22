@@ -1699,12 +1699,14 @@ h1 {
   color: #8e79ba;
   margin-left: 2px;
 }
-.radial-value p {
-  font-size: 6px;
+.oracle-risk-label {
+  margin: 2px 0 0;
   color: #7b6a9f;
-  letter-spacing: 0.9px;
-  margin-top: 5px;
+  font-size: 8px;
   font-weight: 500;
+  letter-spacing: 0.9px;
+  line-height: 1.25;
+  text-align: center;
 }
 .oracle-target {
   display: flex;
@@ -1712,7 +1714,7 @@ h1 {
   align-items: center;
   flex-direction: column;
   gap: 5px;
-  margin-top: -7px;
+  margin-top: 2px;
 }
 .oracle-target > span:first-child {
   color: #a4a0bc;
@@ -3176,7 +3178,7 @@ h1 {
     top: 61px;
   }
   .oracle-target {
-    margin-top: -4px;
+    margin-top: 2px;
   }
   .power-chart-row {
     padding: 12px 20px;
@@ -3696,9 +3698,9 @@ input[type="text"] {
 /* Buttons, fields and the clock pill: light surfaces with navy text, except the
  * active segmented tab and the primary accent (kept navy so they read as primary). */
 .app-shell
-  button:not(.selected):not(.active):not(.nav-item):not(.tower-row):not(
-    .segmented button
-  ):not(.timeframe-tabs button):not(.map-button) {
+  button:not(.wave-launcher):not(.selected):not(.active):not(.nav-item):not(
+    .tower-row
+  ):not(.segmented button):not(.timeframe-tabs button):not(.map-button) {
   background: #ffffff;
   border: 1px solid var(--ln);
   color: var(--tx);
@@ -4004,6 +4006,9 @@ button.wordmark {
   border: 2px solid currentColor !important;
   box-shadow: 0 2px 8px rgba(16, 38, 92, 0.28) !important;
   border-radius: 9px;
+}
+.crew-marker.crew-moving {
+  will-change: transform;
 }
 .crew-idle {
   opacity: 0.8;
@@ -4369,7 +4374,7 @@ button.wordmark,
   .analytics-foot {
     font-size: 12px;
   }
-  .radial-value p {
+  .oracle-risk-label {
     font-size: 12px;
   }
   .oracle-target > span:first-child {
@@ -4913,7 +4918,7 @@ button.wordmark,
   .analytics-foot {
     font-size: 12px;
   }
-  .radial-value p {
+  .oracle-risk-label {
     font-size: 12px;
   }
   .oracle-target > span:first-child {
@@ -5279,7 +5284,7 @@ button.wordmark,
   }
 
   /* Every button is at least 44 px on a phone, except inside the map. */
-  .app-shell button:not([class*="leaflet"]) {
+  .app-shell button:not(.wave-launcher):not([class*="leaflet"]) {
     min-height: 44px;
     min-width: 44px;
   }
@@ -5780,7 +5785,7 @@ body {
   text-align: center;
 }
 /* ---------- controls: one button language ---------- */
-.app-shell button:not([class*="leaflet"]) {
+.app-shell button:not(.wave-launcher):not([class*="leaflet"]) {
   min-height: 36px;
   min-width: 36px;
   font-size: var(--fs-body);
@@ -5808,14 +5813,16 @@ body {
   border-radius: var(--r-md);
 }
 .app-shell
-  button:not(.nav-item):not(.selected):not(.active):not(.tower-row):not(
-    .segmented button
-  ):not(.timeframe-tabs button):not([class*="leaflet"]):hover {
+  button:not(.wave-launcher):not(.nav-item):not(.selected):not(.active):not(
+    .tower-row
+  ):not(.segmented button):not(.timeframe-tabs button):not(
+    [class*="leaflet"]
+  ):hover {
   background: var(--sn-s1);
   border-color: var(--sn-link);
   box-shadow: 0 2px 8px -3px rgba(20, 121, 196, 0.35);
 }
-.app-shell button:not([class*="leaflet"]):active {
+.app-shell button:not(.wave-launcher):not([class*="leaflet"]):active {
   transform: translateY(1px) scale(0.985);
 }
 .app-shell :is(button, a, select, input, [tabindex]):focus-visible {
@@ -6424,7 +6431,7 @@ dialog.dialog::backdrop,
   .app-shell .fleet-grid {
     grid-template-columns: 1fr;
   }
-  .app-shell button:not([class*="leaflet"]),
+  .app-shell button:not(.wave-launcher):not([class*="leaflet"]),
   .app-shell select,
   .app-shell input:not([type="checkbox"]):not([type="radio"]) {
     min-height: 44px;
@@ -6452,7 +6459,7 @@ dialog.dialog::backdrop,
   }
 }
 @media (pointer: coarse) {
-  .app-shell button:not([class*="leaflet"]) {
+  .app-shell button:not(.wave-launcher):not([class*="leaflet"]) {
     min-height: 44px;
     min-width: 44px;
   }
@@ -6641,21 +6648,8 @@ dialog.dialog::backdrop,
     scroll-behavior: auto !important;
   }
 }
-/* phone: AI commander card sized to its content (no stretch into empty space) */
+/* Phone: compact empty-state and footer details for the Commander panel. */
 @media (max-width: 767px) {
-  .app-shell .policy-panel {
-    flex: none !important;
-    height: auto !important;
-    min-height: 0 !important;
-    padding: var(--sp-3) var(--card-pad) !important;
-    gap: var(--sp-2);
-  }
-  .app-shell .alerts-rail .policy-panel .policy-list,
-  .app-shell .alerts-rail .policy-panel .policy-empty {
-    flex: none !important;
-    overflow: visible;
-    min-height: 0 !important;
-  }
   .app-shell .policy-empty {
     padding: var(--sp-2) 0 !important;
     gap: var(--sp-3);
@@ -6672,7 +6666,7 @@ dialog.dialog::backdrop,
 
 /* phone: 44px touch targets for buttons and segmented controls */
 @media (max-width: 767px), (pointer: coarse) {
-  .app-shell button:not(.leaflet-control *) {
+  .app-shell button:not(.wave-launcher):not(.leaflet-control *) {
     min-height: 44px;
   }
   .app-shell button:where([class=""], .selected) {
@@ -6694,17 +6688,6 @@ dialog.dialog::backdrop,
 /* the welcome screen covers everything, including the phone bottom bar */
 .hero-frame {
   z-index: 1200 !important;
-}
-
-/* phone: the incident list keeps its own scroll area instead of growing with every alarm */
-@media (max-width: 767px) {
-  .app-shell .alerts-rail .incident-list {
-    flex: none;
-    max-height: min(62vh, 460px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
 }
 
 /* Wrappers behind the playback buttons, the O-RAN badge and the map buttons: no background or outline.
@@ -6755,12 +6738,11 @@ dialog.dialog::backdrop,
   }
 }
 
-/* Gauge caption: two short lines inside the ring so it doesn't run over the arc */
-.app-shell .radial-value p {
+/* Keep the site-risk caption in normal flow below the gauge. */
+.app-shell .oracle-risk-label {
   font-size: 11px !important;
   line-height: 1.25;
-  max-width: 84px;
-  margin: 5px auto 0;
+  margin: 2px 0 0;
   white-space: normal;
 }
 
@@ -7198,32 +7180,6 @@ dialog.dialog::backdrop,
   }
 }
 
-/* On phones, keep the alarm card stable; only its incident list scrolls. */
-@media (max-width: 600px) {
-  .app-shell .alerts-rail {
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: 400px auto !important;
-    align-items: stretch;
-    max-height: none;
-  }
-  .app-shell .alerts-rail .alarms-panel {
-    height: 400px;
-    min-height: 0;
-    max-height: 400px;
-    overflow: hidden;
-  }
-  .app-shell .alerts-rail .incident-list {
-    flex: 1 1 auto;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
 /* Panel information: explicit three-dot controls open the shared modal. */
 .app-shell .panel-heading-actions {
   display: flex;
@@ -7341,8 +7297,8 @@ dialog.dialog::backdrop,
     var(--sh-1);
 }
 
-/* Narrow phones use header utility actions; wider layouts keep them in the rail. */
-@media (max-width: 600px) {
+/* Mobile utility actions live in the header; avoid duplicate rail controls. */
+@media (max-width: 767px) {
   .app-shell .phone-tools {
     display: flex;
   }
@@ -7355,6 +7311,9 @@ dialog.dialog::backdrop,
  * Wave assistant — one reference-faithful character, chat and status
  * ================================================================== */
 .wave-assistant {
+  --wave-launcher-right: 22px;
+  --wave-launcher-bottom: 22px;
+  --wave-launcher-size: 104px;
   position: fixed;
   z-index: 1205;
   inset: 0;
@@ -7579,10 +7538,10 @@ dialog.dialog::backdrop,
 
 .wave-launcher {
   position: absolute;
-  right: 22px;
-  bottom: 22px;
-  width: 104px;
-  height: 104px;
+  right: var(--wave-launcher-right);
+  bottom: var(--wave-launcher-bottom);
+  width: var(--wave-launcher-size);
+  height: var(--wave-launcher-size);
   padding: 0;
   display: grid;
   place-items: center;
@@ -7592,9 +7551,11 @@ dialog.dialog::backdrop,
   color: var(--sn-tx, #10265c);
   background: transparent;
   box-shadow: none;
-  cursor: pointer;
+  cursor: grab;
   pointer-events: auto;
-  touch-action: manipulation;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   transition:
     transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
     filter 200ms ease;
@@ -7615,6 +7576,14 @@ dialog.dialog::backdrop,
 }
 .wave-launcher:active {
   transform: translateY(0) scale(0.97);
+}
+.wave-launcher.is-dragging,
+.wave-launcher.is-dragging:hover,
+.wave-launcher.is-dragging:active {
+  cursor: grabbing;
+  filter: none;
+  transform: none;
+  transition: none;
 }
 .wave-launcher.is-open {
   transform: scale(0.98);
@@ -7650,8 +7619,8 @@ dialog.dialog::backdrop,
 
 .wave-greeting {
   position: absolute;
-  right: calc(22px + 104px + 14px);
-  bottom: 47px;
+  right: calc(var(--wave-launcher-right) + var(--wave-launcher-size) + 14px);
+  bottom: calc(var(--wave-launcher-bottom) + 25px);
   width: min(278px, calc(100vw - 180px));
   min-height: 48px;
   padding: 11px 34px 11px 14px;
@@ -8254,23 +8223,16 @@ dialog.dialog::backdrop,
 }
 
 @media (max-width: 767px) {
-  .wave-greeting {
-    right: 22px;
-    bottom: calc(22px + 104px + 14px);
-    width: min(280px, calc(100vw - 44px));
-  }
-}
-
-@media (max-width: 600px) {
-  .wave-launcher {
-    right: 12px;
-    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-    width: 88px;
-    height: 88px;
+  .wave-assistant {
+    --wave-launcher-right: 12px;
+    --wave-launcher-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    --wave-launcher-size: 72px;
   }
   .wave-greeting {
-    right: 12px;
-    bottom: calc(76px + 88px + 14px + env(safe-area-inset-bottom, 0px));
+    right: var(--wave-launcher-right);
+    bottom: calc(
+      var(--wave-launcher-bottom) + var(--wave-launcher-size) + 14px
+    );
     width: min(280px, calc(100vw - 24px));
   }
   .wave-launcher.is-open {
@@ -8330,5 +8292,46 @@ dialog.dialog::backdrop,
     animation: none !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Final mobile sizing: alarm and Commander cards stay fixed with internal scroll. */
+@media (max-width: 767px) {
+  .app-shell .alerts-rail {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: 400px auto !important;
+    align-items: stretch;
+    max-height: none;
+  }
+  .app-shell .alerts-rail .alarms-panel {
+    height: 400px !important;
+    min-height: 0 !important;
+    max-height: 400px !important;
+    overflow: hidden !important;
+  }
+  .app-shell .alerts-rail .incident-list {
+    flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .app-shell .policy-panel {
+    flex: 0 0 300px !important;
+    height: 300px !important;
+    min-height: 300px !important;
+    max-height: 300px !important;
+    overflow: hidden !important;
+  }
+  .app-shell .policy-panel .policy-list {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
   }
 }

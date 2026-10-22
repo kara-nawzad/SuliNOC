@@ -48,4 +48,106 @@ describe("production crew motion", () => {
     expect(last?.x).toBeCloseTo(100, 0);
     expect(last?.y).toBeCloseTo(100, 0);
   });
+
+  it("renders a settled parked crew once without keeping a frame loop alive", () => {
+    const requestFrame = vi.fn(() => 1);
+    const render = vi.fn();
+    vi.stubGlobal("requestAnimationFrame", requestFrame);
+    const motion = new CrewMotion({ render });
+
+    motion.set(
+      1,
+      {
+        route: [
+          [0, 0],
+          [10, 0],
+        ],
+        progress: 0.5,
+        moving: false,
+      },
+      0,
+    );
+    motion.step(16);
+    motion.step(32);
+
+    expect(render).toHaveBeenCalledOnce();
+    expect(requestFrame).not.toHaveBeenCalled();
+  });
+
+  it("stops requesting frames after a parked crew settles at its new position", () => {
+    const pending: FrameRequestCallback[] = [];
+    const requestFrame = vi.fn((callback: FrameRequestCallback) => {
+      pending.push(callback);
+      return pending.length;
+    });
+    vi.stubGlobal("requestAnimationFrame", requestFrame);
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const frames: CrewRender[] = [];
+    const motion = new CrewMotion({
+      render: (_id, frame) => frames.push(frame),
+    });
+
+    motion.set(
+      1,
+      {
+        route: [
+          [0, 0],
+          [10, 0],
+        ],
+        progress: 0,
+        moving: false,
+      },
+      0,
+    );
+    motion.set(
+      1,
+      {
+        route: [
+          [0, 0],
+          [10, 0],
+        ],
+        progress: 1,
+        moving: false,
+      },
+      1000,
+    );
+
+    let count = 0;
+    while (pending.length && count < 200) {
+      const callback = pending.shift()!;
+      callback(1016 + count * 16);
+      count += 1;
+    }
+
+    expect(count).toBeGreaterThan(0);
+    expect(count).toBeLessThan(200);
+    expect(pending).toHaveLength(0);
+    expect(frames.at(-1)?.x).toBeCloseTo(10, 2);
+  });
+
+  it("cancels the active frame while paused and resumes motion cleanly", () => {
+    const requestFrame = vi.fn(() => 1);
+    const cancelFrame = vi.fn();
+    vi.stubGlobal("requestAnimationFrame", requestFrame);
+    vi.stubGlobal("cancelAnimationFrame", cancelFrame);
+    const frames: CrewRender[] = [];
+    const motion = new CrewMotion({
+      render: (_id, frame) => frames.push(frame),
+    });
+    const route: [number, number][] = [
+      [0, 0],
+      [10, 0],
+    ];
+
+    motion.set(1, { route, progress: 0, moving: false }, 0);
+    motion.set(1, { route, progress: 1, moving: false }, 1000);
+    motion.step(1016);
+    expect(frames.at(-1)?.moving).toBe(true);
+
+    motion.setPaused(true);
+    expect(cancelFrame).toHaveBeenCalledOnce();
+    expect(frames.at(-1)?.moving).toBe(false);
+    motion.setPaused(false);
+    expect(requestFrame).toHaveBeenCalledTimes(2);
+  });
 });

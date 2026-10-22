@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { SyntheticEvent } from "react";
 
 /** Minimal, same-origin welcome page; the iframe contains no copy of the app.
- * The enter and skip actions are intercepted so React can reveal the workspace. */
+ * The enter action is intercepted so React can reveal the workspace. */
 export function HeroFrame({
   onEnter,
   open,

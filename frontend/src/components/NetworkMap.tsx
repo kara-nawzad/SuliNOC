@@ -1,4 +1,12 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   MapContainer,
   Pane,
@@ -18,7 +26,14 @@ import {
   CloudLightning,
   MapPin,
 } from "lucide-react";
-import type { Config, NodeData, Snapshot } from "../types/api";
+import type {
+  Config,
+  Cut,
+  LatLng,
+  NodeData,
+  Ring,
+  Snapshot,
+} from "../types/api";
 import { Dot, PanelHeading, PanelInfoButton, tone } from "./ui";
 import { CrewLayer } from "./CrewLayer";
 import TileBasemap, { type StreetStatus } from "./TileBasemap";
@@ -27,7 +42,11 @@ import TileBasemap, { type StreetStatus } from "./TileBasemap";
  * corridors are drawn. There are deliberately no remote image tiles, API keys,
  * fabricated streets or inferred district boundaries. A dedicated lower pane
  * keeps these reference routes behind the live operational overlays. */
-function LocalBasemap({ config }: { config: Config }) {
+const LocalBasemap = memo(function LocalBasemap({
+  config,
+}: {
+  config: Config;
+}) {
   const renderer = useMemo(
     () => L.svg({ pane: "local-basemap", padding: 0.4 }),
     [],
@@ -67,7 +86,7 @@ function LocalBasemap({ config }: { config: Config }) {
       ))}
     </Pane>
   );
-}
+});
 
 /** Tower markers follow the kit's `.tw` rules (theme.css): solid fill, white
  * 2 px ring, 12 px on screen at every zoom. A halo is drawn only for the
@@ -88,6 +107,76 @@ function towerIcon(cls: string, halo: boolean): L.DivIcon {
   return icon;
 }
 
+interface TowerMarkerProps {
+  node: NodeData;
+  config: Config;
+  selected: boolean;
+  onSelect: (id: string) => void;
+  aiOn: boolean;
+}
+
+function sameTowerMarker(previous: TowerMarkerProps, next: TowerMarkerProps) {
+  const a = previous.node;
+  const b = next.node;
+  return (
+    previous.config === next.config &&
+    previous.selected === next.selected &&
+    previous.onSelect === next.onSelect &&
+    previous.aiOn === next.aiOn &&
+    a.id === b.id &&
+    a.lat === b.lat &&
+    a.lon === b.lon &&
+    a.status === b.status &&
+    a.warn === b.warn &&
+    a.vswr === b.vswr &&
+    a.prb === b.prb
+  );
+}
+
+const TowerMarker = memo(function TowerMarker({
+  node,
+  config,
+  selected,
+  onSelect,
+  aiOn,
+}: TowerMarkerProps) {
+  const offline = config.presentation.offline_statuses.includes(node.status);
+  const faulty = node.status !== config.presentation.healthy_status;
+  const aiFlag = !!node.warn && aiOn;
+  const cls = aiFlag ? "ai" : offline ? "crit" : faulty ? "warn" : "";
+  const halo = selected || faulty || aiFlag;
+  const position = useMemo<[number, number]>(
+    () => [node.lat, node.lon],
+    [node.lat, node.lon],
+  );
+  const handleSelect = useCallback(
+    () => onSelect(node.id),
+    [node.id, onSelect],
+  );
+  const eventHandlers = useMemo(
+    () => ({ click: handleSelect }),
+    [handleSelect],
+  );
+
+  return (
+    <Marker
+      position={position}
+      icon={towerIcon(cls, halo)}
+      zIndexOffset={halo ? 300 : 0}
+      eventHandlers={eventHandlers}
+    >
+      <Tooltip className="network-tooltip" direction="top" offset={[0, -7]}>
+        <strong>{node.id}</strong>
+        <br />
+        {config.status_names[node.status]}
+        <br />
+        {config.metric_labels.vswr} {node.vswr.toFixed(2)} ·{" "}
+        {config.metric_labels.prb} {node.prb.toFixed(1)}%
+      </Tooltip>
+    </Marker>
+  );
+}, sameTowerMarker);
+
 const Towers = memo(function Towers({
   nodes,
   config,
@@ -103,40 +192,120 @@ const Towers = memo(function Towers({
 }) {
   return (
     <>
-      {nodes.map((node) => {
-        const offline = config.presentation.offline_statuses.includes(
-          node.status,
-        );
-        const faulty = node.status !== config.presentation.healthy_status;
-        const aiFlag = !!node.warn && aiOn;
-        const cls = aiFlag ? "ai" : offline ? "crit" : faulty ? "warn" : "";
-        const halo = node.id === selectedId || faulty || aiFlag;
-        return (
-          <Marker
-            key={node.id}
-            position={[node.lat, node.lon]}
-            icon={towerIcon(cls, halo)}
-            zIndexOffset={halo ? 300 : 0}
-            eventHandlers={{ click: () => onSelect(node.id) }}
-          >
-            <Tooltip
-              className="network-tooltip"
-              direction="top"
-              offset={[0, -7]}
-            >
-              <strong>{node.id}</strong>
-              <br />
-              {config.status_names[node.status]}
-              <br />
-              {config.metric_labels.vswr} {node.vswr.toFixed(2)} ·{" "}
-              {config.metric_labels.prb} {node.prb.toFixed(1)}%
-            </Tooltip>
-          </Marker>
-        );
-      })}
+      {nodes.map((node) => (
+        <TowerMarker
+          key={node.id}
+          node={node}
+          config={config}
+          aiOn={aiOn}
+          selected={node.id === selectedId}
+          onSelect={onSelect}
+        />
+      ))}
     </>
   );
 });
+
+function sameCoordinates(previous: LatLng[], next: LatLng[]) {
+  return (
+    previous === next ||
+    (previous.length === next.length &&
+      previous.every(
+        (point, index) =>
+          point[0] === next[index][0] && point[1] === next[index][1],
+      ))
+  );
+}
+
+function sameCut(previous: Cut, next: Cut) {
+  return (
+    previous.lat === next.lat &&
+    previous.lon === next.lon &&
+    previous.seg === next.seg &&
+    previous.cause === next.cause &&
+    ((previous.path === undefined && next.path === undefined) ||
+      (previous.path !== undefined &&
+        next.path !== undefined &&
+        sameCoordinates(previous.path, next.path)))
+  );
+}
+
+function sameRingLayers(previous: Ring[], next: Ring[]) {
+  return (
+    previous === next ||
+    (previous.length === next.length &&
+      previous.every((ring, index) => {
+        const other = next[index];
+        return (
+          ring.id === other.id &&
+          ring.isolated === other.isolated &&
+          sameCoordinates(ring.path, other.path) &&
+          ring.cuts.length === other.cuts.length &&
+          ring.cuts.every((cut, cutIndex) => sameCut(cut, other.cuts[cutIndex]))
+        );
+      }))
+  );
+}
+
+const FiberOverlays = memo(
+  function FiberOverlays({
+    rings,
+    renderer,
+    fiber,
+    warning,
+    critical,
+  }: {
+    rings: Ring[];
+    renderer: L.Renderer;
+    fiber: string;
+    warning: string;
+    critical: string;
+  }) {
+    return (
+      <>
+        {rings.map((ring) => (
+          <Fragment key={ring.id}>
+            <Polyline
+              positions={ring.path}
+              renderer={renderer}
+              className="fiber-flow"
+              pathOptions={{
+                color: fiber,
+                weight: 1.3,
+                opacity: 0.48,
+                dashArray: "5 7",
+              }}
+            />
+            {ring.cuts.map((cut, index) => (
+              <Polyline
+                key={index}
+                renderer={renderer}
+                className="cut-segment"
+                positions={
+                  cut.path ?? [
+                    [cut.lat, cut.lon],
+                    [cut.lat, cut.lon],
+                  ]
+                }
+                pathOptions={{
+                  color: ring.isolated ? critical : warning,
+                  weight: 3,
+                  opacity: 0.95,
+                }}
+              />
+            ))}
+          </Fragment>
+        ))}
+      </>
+    );
+  },
+  (previous, next) =>
+    previous.renderer === next.renderer &&
+    previous.fiber === next.fiber &&
+    previous.warning === next.warning &&
+    previous.critical === next.critical &&
+    sameRingLayers(previous.rings, next.rings),
+);
 
 function MapTools({
   config,
@@ -288,42 +457,15 @@ export function NetworkMap({
           {layers.streets && (
             <TileBasemap key={streetAttempt} onStatus={setStreetStatus} />
           )}
-          {layers.fiber &&
-            data.rings.map((r) => (
-              <Polyline
-                key={r.id}
-                positions={r.path}
-                renderer={svgRenderer}
-                className="fiber-flow"
-                pathOptions={{
-                  color: p.fiber,
-                  weight: 1.3,
-                  opacity: 0.48,
-                  dashArray: "5 7",
-                }}
-              />
-            ))}
-          {layers.fiber &&
-            data.rings.flatMap((r) =>
-              r.cuts.map((c, index) => (
-                <Polyline
-                  key={`${r.id}-${index}`}
-                  renderer={svgRenderer}
-                  className="cut-segment"
-                  positions={
-                    c.path ?? [
-                      [c.lat, c.lon],
-                      [c.lat, c.lon],
-                    ]
-                  }
-                  pathOptions={{
-                    color: r.isolated ? p.critical : p.warning,
-                    weight: 3,
-                    opacity: 0.95,
-                  }}
-                />
-              )),
-            )}
+          {layers.fiber && (
+            <FiberOverlays
+              rings={data.rings}
+              renderer={svgRenderer}
+              fiber={p.fiber}
+              warning={p.warning}
+              critical={p.critical}
+            />
+          )}
           {layers.sites && (
             <Towers
               nodes={data.nodes}

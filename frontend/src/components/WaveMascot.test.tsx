@@ -64,20 +64,55 @@ describe("Wave mascot states", () => {
     expect(container.querySelector(".wave-signal-arcs")).toBeInTheDocument();
   });
 
+  it("moves Home, Settings and About to the header at every mobile width", () => {
+    const mobileActions = styles.slice(
+      styles.lastIndexOf("/* Mobile utility actions live in the header"),
+      styles.indexOf(" * Wave assistant"),
+    );
+    expect(mobileActions).toContain("@media (max-width: 767px)");
+    expect(mobileActions).toMatch(
+      /\.app-shell \.phone-tools \{\s*display: flex;/,
+    );
+    expect(mobileActions).toMatch(
+      /\.app-shell \.navigation-rail \.nav-bottom \{\s*display: none !important;/,
+    );
+  });
+
+  it("keeps mobile alarm and Commander panels fixed with internal scrolling", () => {
+    const finalMobileRules = styles.slice(
+      styles.lastIndexOf("/* Final mobile sizing:"),
+    );
+    expect(finalMobileRules).toContain(
+      "grid-template-rows: 400px auto !important;",
+    );
+    expect(finalMobileRules).toContain("height: 400px !important;");
+    expect(finalMobileRules).toContain("height: 300px !important;");
+    expect(finalMobileRules).toMatch(
+      /\.app-shell \.alerts-rail \.incident-list \{[\s\S]*?overflow-y: auto !important;/,
+    );
+    expect(finalMobileRules).toMatch(
+      /\.app-shell \.policy-panel \.policy-list \{[\s\S]*?overflow-y: auto !important;/,
+    );
+  });
+
   it("keeps the launcher transparent, circular, responsive and motion-safe", () => {
     expect(styles).toMatch(/\.wave-launcher\s*\{[^}]*border-radius:\s*50%/s);
-    expect(styles).toMatch(/\.wave-launcher\s*\{[^}]*width:\s*104px/s);
+    expect(styles).toMatch(
+      /\.wave-assistant\s*\{[^}]*--wave-launcher-size:\s*104px/s,
+    );
     expect(styles).toMatch(
       /\.wave-launcher\s*\{[^}]*background:\s*transparent/s,
     );
+    expect(styles).toMatch(/button:not\(\.wave-launcher\)/);
+    expect(styles).toMatch(/\.wave-launcher\s*\{[^}]*touch-action:\s*none/s);
     expect(styles).toMatch(
-      /@media \(max-width: 600px\)[\s\S]*?\.wave-launcher\s*\{[\s\S]*?width:\s*88px/,
+      /@media \(max-width: 767px\)[\s\S]*?--wave-launcher-size:\s*72px/,
     );
     expect(styles).toMatch(
-      /@media \(max-width: 600px\)[\s\S]*?\.wave-greeting\s*\{[\s\S]*?width:\s*min\(280px,/,
+      /@media \(max-width: 767px\)[\s\S]*?\.wave-greeting\s*\{[\s\S]*?width:\s*min\(280px,/,
     );
     expect(styles).toMatch(
-      /@media \(max-width: 600px\)[\s\S]*?\.wave-panel\s*\{[\s\S]*?width:\s*min\(400px,/,
+      /@media \(max-width: 767px\)[\s\S]*?\.wave-panel\s*\{[\s\S]*?width:\s*min\(400px,/,
     );
     expect(styles).toContain("@media (max-width: 380px)");
     expect(styles).not.toContain(".wave-alert-badge");
