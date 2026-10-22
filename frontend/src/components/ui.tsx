@@ -186,11 +186,11 @@ export function Modal({
             <h2 id={id}>{title}</h2>
           </div>
           <button
-            className="icon-button"
+            className="icon-button dialog-close-button"
             aria-label="Close dialog"
             onClick={onClose}
           >
-            <X size={18} />
+            <X size={14} />
           </button>
         </div>
         {children}

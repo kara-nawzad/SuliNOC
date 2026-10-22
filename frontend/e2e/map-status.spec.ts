@@ -54,19 +54,17 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   });
   await expect(heroHeading).toBeVisible();
   await expect(welcome.locator(".top-meta, .hero-shade")).toHaveCount(0);
-  const copyBackdrop = await welcome
-    .locator(".hero-copy-main")
+  const copyTextShadows = await welcome
+    .locator(".hero-copy")
     .evaluate((element) => {
-      const style = getComputedStyle(element, "::before");
-      return {
-        backgroundColor: style.backgroundColor,
-        backdropFilter: style.backdropFilter,
-        pointerEvents: style.pointerEvents,
-      };
+      const heading = element.querySelector("h1");
+      const lede = element.querySelector(".lede");
+      return [
+        getComputedStyle(heading!).textShadow,
+        getComputedStyle(lede!).textShadow,
+      ];
     });
-  expect(copyBackdrop.backgroundColor).toBe("rgba(8, 20, 38, 0.22)");
-  expect(copyBackdrop.backdropFilter).toBe("blur(4px)");
-  expect(copyBackdrop.pointerEvents).toBe("none");
+  expect(copyTextShadows.every((shadow) => shadow !== "none")).toBe(true);
   await expect(welcome.locator(".hero-feature")).toHaveCount(3);
   await expect(welcome.locator(".hero-features")).toHaveCSS(
     "border-top-width",
@@ -159,6 +157,27 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(
     page.locator(".ring-list-heading [data-panel-info]"),
   ).toHaveCount(1);
+  const infoControlMetrics = await page
+    .locator("[data-panel-info]")
+    .evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const style = getComputedStyle(button);
+        const icon = button.querySelector("svg");
+        return {
+          width: style.width,
+          height: style.height,
+          iconWidth: icon ? getComputedStyle(icon).width : "missing",
+        };
+      }),
+    );
+  expect(
+    infoControlMetrics.every(
+      ({ width, height, iconWidth }) =>
+        ["26px", "30px"].includes(width) &&
+        height === width &&
+        iconWidth === "14px",
+    ),
+  ).toBe(true);
   await page
     .locator('.kpi-card [data-panel-info="Network availability"]')
     .click();
@@ -178,7 +197,12 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     color: "rgba(16, 38, 92, 0.38)",
     filter: "blur(4px)",
   });
-  await panelInfoDialog.getByRole("button", { name: "Close dialog" }).click();
+  const closeInfoButton = panelInfoDialog.getByRole("button", {
+    name: "Close dialog",
+  });
+  await expect(closeInfoButton).toHaveCSS("width", "24px");
+  await expect(closeInfoButton.locator("svg")).toHaveAttribute("width", "14");
+  await closeInfoButton.click();
   await expect(panelInfoDialog).toBeHidden();
 
   const powerCard = page
