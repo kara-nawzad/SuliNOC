@@ -7244,6 +7244,16 @@ dialog.dialog::backdrop,
   min-width: 26px;
   min-height: 26px;
 }
+.app-shell
+  button.panel-info-button:not(.wave-launcher):not([class*="leaflet"]) {
+  min-width: 30px;
+  min-height: 30px;
+}
+.app-shell
+  button.panel-info-button.compact:not(.wave-launcher):not([class*="leaflet"]) {
+  min-width: 26px;
+  min-height: 26px;
+}
 .app-shell .kpi-title {
   min-width: 0;
   white-space: normal;
@@ -7313,6 +7323,11 @@ dialog.dialog::backdrop,
 .app-shell .dialog-close-button:focus-visible::before {
   border-color: var(--sn-link);
   box-shadow: 0 0 0 2px var(--sn-s1);
+}
+.app-shell
+  button.dialog-close-button:not(.wave-launcher):not([class*="leaflet"]) {
+  min-width: 24px;
+  min-height: 24px;
 }
 @media (max-width: 767px), (pointer: coarse) {
   .app-shell .panel-heading-actions {
