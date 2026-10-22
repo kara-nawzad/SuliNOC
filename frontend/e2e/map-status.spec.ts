@@ -162,19 +162,24 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     .evaluateAll((buttons) =>
       buttons.map((button) => {
         const style = getComputedStyle(button);
+        const face = getComputedStyle(button, "::before");
         const icon = button.querySelector("svg");
         return {
           width: style.width,
           height: style.height,
+          faceWidth: face.width,
+          faceHeight: face.height,
           iconWidth: icon ? getComputedStyle(icon).width : "missing",
         };
       }),
     );
   expect(
     infoControlMetrics.every(
-      ({ width, height, iconWidth }) =>
-        ["26px", "30px"].includes(width) &&
+      ({ width, height, faceWidth, faceHeight, iconWidth }) =>
+        ["26px", "30px", "44px"].includes(width) &&
         height === width &&
+        ["22px", "26px"].includes(faceWidth) &&
+        faceHeight === faceWidth &&
         iconWidth === "14px",
     ),
   ).toBe(true);
@@ -200,8 +205,23 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   const closeInfoButton = panelInfoDialog.getByRole("button", {
     name: "Close dialog",
   });
-  await expect(closeInfoButton).toHaveCSS("width", "24px");
-  await expect(closeInfoButton.locator("svg")).toHaveAttribute("width", "14");
+  const closeButtonMetrics = await closeInfoButton.evaluate((button) => {
+    const style = getComputedStyle(button);
+    const face = getComputedStyle(button, "::before");
+    const icon = button.querySelector("svg");
+    return {
+      width: style.width,
+      height: style.height,
+      faceWidth: face.width,
+      faceHeight: face.height,
+      iconWidth: icon ? getComputedStyle(icon).width : "missing",
+    };
+  });
+  expect(["24px", "44px"]).toContain(closeButtonMetrics.width);
+  expect(closeButtonMetrics.height).toBe(closeButtonMetrics.width);
+  expect(["22px", "24px"]).toContain(closeButtonMetrics.faceWidth);
+  expect(closeButtonMetrics.faceHeight).toBe(closeButtonMetrics.faceWidth);
+  expect(closeButtonMetrics.iconWidth).toBe("14px");
   await closeInfoButton.click();
   await expect(panelInfoDialog).toBeHidden();
 
