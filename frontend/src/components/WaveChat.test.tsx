@@ -226,6 +226,21 @@ describe("Wave generative assistant", () => {
     );
   });
 
+  it("shows Wave's updated friendly, read-only in-chat greeting", () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    renderWave();
+    openWave();
+
+    expect(
+      screen.getByText(
+        /your friendly telecom engineer for this SuliNOC simulation/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/one dropped packet at a time/),
+    ).toBeInTheDocument();
+  });
+
   it("sends a grounded request, shows thinking/responding, and preserves history on reopen", async () => {
     vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
     let resolveReply!: (value: WaveChatReply) => void;
@@ -325,7 +340,7 @@ describe("Wave generative assistant", () => {
   it("shows the missing Groq key setup when Groq is selected", async () => {
     vi.mocked(api.waveStatus).mockResolvedValue({
       provider: "groq",
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-20b",
       configured: false,
       verified: false,
       status: "missing_key",
@@ -347,7 +362,7 @@ describe("Wave generative assistant", () => {
   it("reports Groq as connected only after its answer arrives", async () => {
     vi.mocked(api.waveStatus).mockResolvedValue({
       provider: "groq",
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-20b",
       configured: true,
       verified: false,
       status: "not_verified",
@@ -355,7 +370,7 @@ describe("Wave generative assistant", () => {
     vi.mocked(api.waveChat).mockResolvedValue({
       ...reply("Grounded answer from Groq."),
       provider: "groq",
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-20b",
     });
 
     renderWave();

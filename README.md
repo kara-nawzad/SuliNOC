@@ -310,7 +310,7 @@ API documentation is at <http://127.0.0.1:8000/docs>.
 | `OPENAI_API_KEY`                     | unset                       | Optional OpenAI credential; read only by the backend.          |
 | `OPENAI_MODEL`                       | `gpt-4.1-mini`              | OpenAI Chat Completions model.                                 |
 | `GROQ_API_KEY`                       | unset                       | Optional Groq credential; read only by the backend.             |
-| `GROQ_MODEL`                         | `llama-3.3-70b-versatile`   | Groq model ID enabled in your Groq console.                     |
+| `GROQ_MODEL`                         | `openai/gpt-oss-20b`        | Groq model ID enabled in your Groq console.                     |
 | `WAVE_AI_TIMEOUT_SECONDS`            | `12`                        | Maximum provider request time, bounded by the backend.          |
 | `WAVE_AI_RATE_LIMIT_PER_MINUTE`       | `8`                         | Per-browser-session Wave request limit.                         |
 | `WAVE_AI_GLOBAL_RATE_LIMIT_PER_MINUTE` | `60`                        | Per-process request ceiling across sessions.                    |
@@ -334,7 +334,7 @@ and chat returns a clear configuration error instead of a canned local answer.
 1. In the **backend** environment, set `WAVE_AI_PROVIDER=groq`.
 2. Add the key from your Groq console as `GROQ_API_KEY` in that same backend environment.
 3. Optionally set `GROQ_MODEL` to a model ID enabled in your Groq account. The default is
-   `llama-3.3-70b-versatile`.
+   `openai/gpt-oss-20b` (verified against the Groq account used for this deployment).
 4. Restart/redeploy the backend.
 5. Check `/api/wave/status` (`not_verified` is expected initially), then send a Wave question. It
    reports `connected` only after a real successful provider response.

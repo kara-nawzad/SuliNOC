@@ -25,7 +25,7 @@ from autonoc.engine import config as C
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
 SUPPORTED_PROVIDERS = {"openai", "groq"}
 DEFAULT_TIMEOUT_SECONDS = 12.0
 DEFAULT_RATE_LIMIT_PER_MINUTE = 8

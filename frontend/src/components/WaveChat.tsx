@@ -124,7 +124,7 @@ const WELCOME: WaveMessage = {
   id: "wave-welcome",
   role: "assistant",
   content:
-    "Hi, I’m Wave. Ask about incidents, power, crews, forecasts, sites, or trends in this SuliNOC simulation. I describe the supplied data and never operate a network. Generative answers require an AI provider to be configured on the server.",
+    "Hi, I’m Wave (*beep boop*)—your friendly telecom engineer for this SuliNOC simulation. Ask about incidents, power, crews, forecasts, or trends. I’ll stick to the snapshot, keep advice read-only, and say when data is missing. Let’s keep Slemani connected, one dropped packet at a time.",
 };
 const SUGGESTIONS = [
   "What is happening across the network right now?",
