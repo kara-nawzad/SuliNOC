@@ -304,6 +304,13 @@ export function WaveChat({
   }, [messages, sending, open]);
 
   useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.style.height = "auto";
+    input.style.height = `${Math.min(72, Math.max(28, input.scrollHeight))}px`;
+  }, [draft, open]);
+
+  useEffect(() => {
     if (!responseExpression) return;
     const timer = window.setTimeout(() => setResponseExpression(null), 1800);
     return () => window.clearTimeout(timer);

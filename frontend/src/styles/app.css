@@ -7984,9 +7984,8 @@ dialog.dialog::backdrop,
 }
 
 .wave-composer {
-  height: 44px;
   min-height: 44px;
-  max-height: 44px;
+  max-height: 88px;
   margin: 0 13px;
   padding: 5px 6px 5px 10px;
   display: flex;
@@ -8008,7 +8007,7 @@ dialog.dialog::backdrop,
   min-width: 0;
   height: 28px;
   min-height: 28px;
-  max-height: 28px;
+  max-height: 72px;
   padding: 4px 0;
   resize: none;
   overflow-y: auto;

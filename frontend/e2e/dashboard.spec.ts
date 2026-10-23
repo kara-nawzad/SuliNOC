@@ -152,6 +152,14 @@ test("Wave chat has a compact readable composer and uses the Wave avatar", async
   await expect(input).toHaveCSS("resize", "none");
   await expect(chat.locator(".wave-send-button")).toHaveCSS("width", "30px");
 
+  await input.fill("First line");
+  await input.press("Shift+Enter");
+  await input.type("Second line");
+  await expect
+    .poll(() =>
+      input.evaluate((element) => element.getBoundingClientRect().height),
+    )
+    .toBeGreaterThan(28);
   await input.fill("Check the current network.");
   await input.press("Enter");
   const userText = chat.locator(".wave-message--user .wave-message-content p");
