@@ -131,9 +131,11 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await welcome.getByRole("button", { name: "Enter workspace" }).click();
   await expect(welcomeFrame).toHaveCSS("visibility", "hidden");
   await expect(welcomeFrame).toHaveCSS("pointer-events", "none");
+  const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(navigation).toBeVisible();
   await expect(
-    page.getByRole("navigation", { name: "Main navigation" }),
-  ).toBeVisible();
+    navigation.getByRole("button", { name: "AI", exact: true }),
+  ).toHaveCount(0);
   await expect(page.locator(".app-shell")).toHaveCSS(
     "background-color",
     "rgb(214, 231, 251)",
@@ -289,7 +291,6 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(page.locator(".map-mode")).toHaveCount(0);
 
   await page.setViewportSize({ width: 700, height: 900 });
-  const navigation = page.getByRole("navigation", { name: "Main navigation" });
   const phoneTools = page.locator(".phone-tools");
   await expect(phoneTools).toBeVisible();
   await expect(phoneTools.getByRole("button")).toHaveCount(3);

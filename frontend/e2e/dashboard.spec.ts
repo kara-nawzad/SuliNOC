@@ -37,7 +37,13 @@ test("live controls, map inspector, scenarios, and mobile layout", async ({
     before + 1,
   );
 
-  await page.getByRole("button", { name: "Find a site..." }).click();
+  await expect(
+    page.getByRole("button", { name: "Find a site..." }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Control+k");
+  await expect(
+    page.getByRole("dialog", { name: "Find a network site" }),
+  ).toBeVisible();
   const snapshot = await (await request.get("/api/data")).json();
   const node = snapshot.nodes.find((n: { status: number }) => n.status === 0);
   await page
@@ -97,6 +103,61 @@ test("live controls, map inspector, scenarios, and mobile layout", async ({
   await page.setViewportSize({ width: 1512, height: 982 });
   await page.screenshot({ path: "test-results/desktop.png", fullPage: true });
   expect(errors).toEqual([]);
+});
+
+test("Wave chat has a compact readable composer and uses the Wave avatar", async ({
+  page,
+}) => {
+  await page.route("**/api/wave/chat", async (route) => {
+    const { run_id: runId } = route.request().postDataJSON();
+    await route.fulfill({
+      json: {
+        answer: "The test snapshot is stable.",
+        provider: "openai",
+        model: "gpt-4.1-mini",
+        ai_connected: true,
+        run_id: runId,
+        tick: 0,
+        sim_time: "D1 00:00",
+      },
+    });
+  });
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Network overview" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Open Wave assistant" }).click();
+
+  const chat = page.getByRole("dialog", {
+    name: "Wave network operations assistant",
+  });
+  await expect(chat).toBeVisible();
+  await expect(chat.locator(".wave-panel-identity")).toHaveText("Wave");
+  await expect(
+    chat.locator(
+      ".wave-eyebrow, .wave-connection, .wave-provider-status, .wave-predictor",
+    ),
+  ).toHaveCount(0);
+  await expect(chat.locator(".wave-panel-foot")).toHaveCount(0);
+  await expect(chat.locator(".wave-message-mark")).toHaveCount(0);
+  await expect(chat.locator(".wave-message-avatar").first()).toHaveAttribute(
+    "src",
+    "/assets/wave.jpg",
+  );
+
+  const composer = chat.locator(".wave-composer");
+  const input = chat.getByRole("textbox", { name: "Message Wave" });
+  await expect(composer).toHaveCSS("height", "44px");
+  await expect(input).toHaveCSS("height", "28px");
+  await expect(input).toHaveCSS("resize", "none");
+  await expect(chat.locator(".wave-send-button")).toHaveCSS("width", "30px");
+
+  await input.fill("Check the current network.");
+  await input.press("Enter");
+  const userText = chat.locator(".wave-message--user .wave-message-content p");
+  await expect(userText).toHaveText("Check the current network.");
+  await expect(userText).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(chat.getByText("The test snapshot is stable.")).toBeVisible();
 });
 
 test("run reset shows Day 1, clears stale UI state, and histories completions by time", async ({
@@ -160,7 +221,10 @@ test("run reset shows Day 1, clears stale UI state, and histories completions by
   await expect(page.locator(".sim-clock")).toContainText("D1 00:00");
   await expect(page.locator(".sim-clock")).not.toContainText("SEED");
 
-  await page.getByRole("button", { name: "Find a site..." }).click();
+  await page.keyboard.press("Control+k");
+  await expect(
+    page.getByRole("dialog", { name: "Find a network site" }),
+  ).toBeVisible();
   await page
     .getByRole("textbox", { name: "Search site ID or district" })
     .fill(healthy.id);

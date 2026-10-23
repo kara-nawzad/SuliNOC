@@ -7,7 +7,7 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { Activity, RefreshCw, Send, X } from "lucide-react";
+import { RefreshCw, Send, X } from "lucide-react";
 import { api } from "../services/api";
 import type { Snapshot } from "../types/api";
 import type {
@@ -209,22 +209,6 @@ function makeMessage(role: WaveMessage["role"], content: string): WaveMessage {
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
   return "I couldn’t reach Wave’s AI service. Check the connection and try again.";
-}
-
-function providerLabel(state: WaveProviderState): string {
-  const providerName = state.provider === "groq" ? "Groq" : "OpenAI";
-  switch (state.status) {
-    case "checking":
-      return "Checking AI setup";
-    case "missing_key":
-      return `${providerName} setup required`;
-    case "not_verified":
-      return `${providerName} not verified`;
-    case "connected":
-      return `${providerName} connected`;
-    case "unavailable":
-      return "AI unavailable";
-  }
 }
 
 export function WaveChat({
@@ -566,10 +550,6 @@ export function WaveChat({
     }
   }
 
-  const predictorLabel = data.ai.ai_enabled
-    ? `${String(data.ai.ai_mode).toUpperCase()} predictor on`
-    : "Simulation predictor off";
-  const serviceStatus = providerLabel(providerStatus);
   const assistantStyle = launcherPosition
     ? ({
         "--wave-launcher-right": `${launcherPosition.right}px`,
@@ -602,28 +582,7 @@ export function WaveChat({
           <header className="wave-panel-header">
             <WaveMascot expression={expression} className="wave-panel-avatar" />
             <div className="wave-panel-identity">
-              <span className="wave-eyebrow">SULINOC OPERATIONS</span>
               <h2>Wave</h2>
-              <span className={`wave-connection ${connection}`}>
-                <i aria-hidden="true" />
-                {connection === "live"
-                  ? "Sim telemetry connected"
-                  : connection === "connecting"
-                    ? "Connecting to simulation"
-                    : "Simulation reconnecting"}
-              </span>
-              <span
-                className={`wave-provider-status ${providerStatus.status}`}
-                title={providerStatus.detail}
-                aria-live="polite"
-              >
-                <i aria-hidden="true" />
-                {serviceStatus}
-                {providerStatus.model && providerStatus.status === "connected"
-                  ? ` · ${providerStatus.model}`
-                  : ""}
-              </span>
-              <span className="wave-predictor">{predictorLabel}</span>
             </div>
             <button
               className="wave-icon-button"
@@ -651,9 +610,12 @@ export function WaveChat({
                 role={message.error ? "alert" : undefined}
               >
                 {message.role === "assistant" && (
-                  <span className="wave-message-mark" aria-hidden="true">
-                    W
-                  </span>
+                  <img
+                    className="wave-message-avatar"
+                    src="/assets/wave.jpg"
+                    alt=""
+                    aria-hidden="true"
+                  />
                 )}
                 <div className="wave-message-content">
                   <p>{message.content}</p>
@@ -731,14 +693,6 @@ export function WaveChat({
               <Send size={16} />
             </button>
           </form>
-          <footer className="wave-panel-foot">
-            <Activity size={12} />
-            <span>
-              When enabled, your question, up to eight recent chat messages, and
-              this simulation snapshot are sent to the configured AI provider.
-              Wave is read-only; don’t enter passwords or secrets.
-            </span>
-          </footer>
         </section>
       )}
 

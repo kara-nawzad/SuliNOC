@@ -145,6 +145,33 @@ describe("Wave generative assistant", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("keeps only Wave in the header, uses the Wave avatar, and omits the disclosure footer", () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    renderWave();
+    openWave();
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Wave network operations assistant",
+    });
+    expect(screen.getByRole("heading", { name: "Wave" })).toBeInTheDocument();
+    expect(dialog.querySelector(".wave-panel-identity")?.textContent).toBe(
+      "Wave",
+    );
+    expect(
+      dialog.querySelector(
+        ".wave-eyebrow, .wave-connection, .wave-provider-status, .wave-predictor",
+      ),
+    ).toBeNull();
+    expect(dialog.querySelector(".wave-panel-foot")).toBeNull();
+    expect(dialog.querySelector(".wave-message-mark")).toBeNull();
+
+    const avatar = dialog.querySelector<HTMLImageElement>(
+      ".wave-message-avatar",
+    );
+    expect(avatar).not.toBeNull();
+    expect(avatar).toHaveAttribute("src", "/assets/wave.jpg");
+  });
+
   it("lets the launcher drag, persists its position, and suppresses the drag click", () => {
     class PointerEventShim extends MouseEvent {
       pointerId: number;
@@ -281,7 +308,7 @@ describe("Wave generative assistant", () => {
     expect(
       await screen.findAllByRole("img", { name: "Wave, responding state" }),
     ).toHaveLength(2);
-    expect(await screen.findByText(/OpenAI connected/)).toBeInTheDocument();
+    expect(screen.queryByText(/OpenAI connected/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Close Wave panel" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -307,9 +334,6 @@ describe("Wave generative assistant", () => {
 
     renderWave();
     openWave();
-    expect(
-      await screen.findByText("OpenAI setup required"),
-    ).toBeInTheDocument();
     askWave("List incidents");
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -334,7 +358,6 @@ describe("Wave generative assistant", () => {
       [],
     );
     expect(screen.getAllByText("List incidents")).toHaveLength(1);
-    expect(await screen.findByText(/OpenAI connected/)).toBeInTheDocument();
   });
 
   it("shows the missing Groq key setup when Groq is selected", async () => {
@@ -354,12 +377,11 @@ describe("Wave generative assistant", () => {
 
     renderWave();
     openWave();
-    expect(await screen.findByText("Groq setup required")).toBeInTheDocument();
     askWave("Summarize the simulation.");
     expect(await screen.findByRole("alert")).toHaveTextContent("GROQ_API_KEY");
   });
 
-  it("reports Groq as connected only after its answer arrives", async () => {
+  it("shows a successful answer from Groq without adding provider status to the header", async () => {
     vi.mocked(api.waveStatus).mockResolvedValue({
       provider: "groq",
       model: "openai/gpt-oss-20b",
@@ -380,7 +402,7 @@ describe("Wave generative assistant", () => {
     expect(
       await screen.findByText("Grounded answer from Groq."),
     ).toBeInTheDocument();
-    expect(await screen.findByText(/Groq connected/)).toBeInTheDocument();
+    expect(screen.queryByText(/Groq connected/)).not.toBeInTheDocument();
   });
 
   it("sends recent conversation turns to the server for follow-up questions", async () => {
