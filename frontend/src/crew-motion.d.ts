@@ -1,4 +1,4 @@
-// Types for the local crew-motion.js module. The implementation is kept unchanged.
+// Types for the local JavaScript crew-motion module.
 export interface CrewRender {
   x: number;
   y: number;

@@ -309,13 +309,13 @@ function Console({
               { id: "incidents", icon: Bell, label: "Incidents" },
               { id: "analytics", icon: Activity, label: "Analytics" },
               { id: "fleet", icon: Truck, label: "Maintenance" },
-              { id: "commander", icon: Sparkles, label: "AI" },
               { id: "towers", icon: RadioTower, label: "Towers" },
             ].map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
                 className={`nav-item ${section === id ? "active" : ""}`}
                 aria-label={label}
+                data-nav-item={id}
                 data-tip={label}
                 aria-current={section === id ? "page" : undefined}
                 onClick={() => navigate(id)}
@@ -383,17 +383,6 @@ function Console({
               <ChevronRight size={14} />
             </div>
             <div className="header-spacer" />
-            <button
-              className="search-trigger"
-              onClick={() => {
-                setQuery("");
-                setDialog("search");
-              }}
-            >
-              <Search size={14} />
-              <span>Find a site...</span>
-              <kbd>⌘ K</kbd>
-            </button>
             <button
               className="header-bell icon-button"
               aria-label="Open network event history"
@@ -561,13 +550,6 @@ function Console({
                 navigate("network");
               }}
             />
-            <footer className="app-footer">
-              <span>
-                <Dot color={status === "live" ? p.healthy : p.warning} /> Engine{" "}
-                {status === "live" ? "connected" : "disconnected"}
-              </span>
-              <span>Deterministic world. Predictive operations.</span>
-            </footer>
           </main>
         </div>
         <Inspector

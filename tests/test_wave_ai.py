@@ -215,6 +215,14 @@ def test_groq_missing_key_is_reported_without_provider_request(monkeypatch):
     assert "GROQ_API_KEY" in error.value.detail
 
 
+def test_groq_uses_the_current_verified_default_model(monkeypatch):
+    monkeypatch.setenv("WAVE_AI_PROVIDER", "groq")
+    monkeypatch.setenv("GROQ_API_KEY", "unit-test-groq-key-not-a-credential")
+    monkeypatch.delenv("GROQ_MODEL", raising=False)
+
+    assert wave_ai.provider_status()["model"] == "openai/gpt-oss-20b"
+
+
 def test_unknown_provider_configuration_fails_closed(monkeypatch):
     monkeypatch.setenv("WAVE_AI_PROVIDER", "not-a-provider")
     status = wave_ai.provider_status()
@@ -359,7 +367,7 @@ def test_groq_provider_uses_its_own_key_model_and_compatible_token_field(monkeyp
     key = "unit-test-groq-key-not-a-credential"
     monkeypatch.setenv("WAVE_AI_PROVIDER", "groq")
     monkeypatch.setenv("GROQ_API_KEY", key)
-    monkeypatch.setenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    monkeypatch.setenv("GROQ_MODEL", "openai/gpt-oss-20b")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     wave_ai._rate_limiter.clear()
     captured: dict = {}
@@ -379,7 +387,7 @@ def test_groq_provider_uses_its_own_key_model_and_compatible_token_field(monkeyp
     assert result["answer"] == "Grounded via Groq."
     assert result["ai_connected"] is True
     assert captured["key"] == key
-    assert captured["payload"]["model"] == "llama-3.3-70b-versatile"
+    assert captured["payload"]["model"] == "openai/gpt-oss-20b"
     assert captured["payload"]["max_tokens"] == 700
     assert "max_completion_tokens" not in captured["payload"]
     assert key not in json.dumps(captured["payload"])

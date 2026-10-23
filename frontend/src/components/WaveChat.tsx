@@ -7,7 +7,7 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { Activity, RefreshCw, Send, X } from "lucide-react";
+import { RefreshCw, Send, X } from "lucide-react";
 import { api } from "../services/api";
 import type { Snapshot } from "../types/api";
 import type {
@@ -124,7 +124,7 @@ const WELCOME: WaveMessage = {
   id: "wave-welcome",
   role: "assistant",
   content:
-    "Hi, I’m Wave. Ask about incidents, power, crews, forecasts, sites, or trends in this SuliNOC simulation. I describe the supplied data and never operate a network. Generative answers require an AI provider to be configured on the server.",
+    "Hi, I’m Wave (*beep boop*)—your friendly telecom engineer for this SuliNOC simulation. Ask about incidents, power, crews, forecasts, or trends. I’ll stick to the snapshot, keep advice read-only, and say when data is missing. Let’s keep Slemani connected, one dropped packet at a time.",
 };
 const SUGGESTIONS = [
   "What is happening across the network right now?",
@@ -211,22 +211,6 @@ function errorMessage(error: unknown): string {
   return "I couldn’t reach Wave’s AI service. Check the connection and try again.";
 }
 
-function providerLabel(state: WaveProviderState): string {
-  const providerName = state.provider === "groq" ? "Groq" : "OpenAI";
-  switch (state.status) {
-    case "checking":
-      return "Checking AI setup";
-    case "missing_key":
-      return `${providerName} setup required`;
-    case "not_verified":
-      return `${providerName} not verified`;
-    case "connected":
-      return `${providerName} connected`;
-    case "unavailable":
-      return "AI unavailable";
-  }
-}
-
 export function WaveChat({
   data,
   connection,
@@ -258,6 +242,7 @@ export function WaveChat({
   const statusRequestRef = useRef(0);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const assistantRef = useRef<HTMLDivElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const launcherDragRef = useRef<LauncherDrag | null>(null);
   const suppressLauncherClickRef = useRef(false);
@@ -318,6 +303,62 @@ export function WaveChat({
     const list = listRef.current;
     if (list) list.scrollTop = list.scrollHeight;
   }, [messages, sending, open]);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.style.height = "auto";
+    input.style.height = `${Math.min(72, Math.max(28, input.scrollHeight))}px`;
+  }, [draft, open]);
+
+  useEffect(() => {
+    const assistant = assistantRef.current;
+    if (!assistant) return;
+
+    const updateViewport = () => {
+      const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportHeight = viewport?.height ?? window.innerHeight;
+      const keyboardInset = Math.max(
+        0,
+        window.innerHeight - viewportTop - viewportHeight,
+      );
+      const keyboardOpen =
+        window.innerWidth <= 767 &&
+        inputRef.current === document.activeElement &&
+        (keyboardInset > 120 || window.screen.height - viewportHeight > 200);
+
+      assistant.style.setProperty(
+        "--wave-visual-viewport-top",
+        `${viewportTop}px`,
+      );
+      assistant.style.setProperty(
+        "--wave-visual-viewport-height",
+        `${viewportHeight}px`,
+      );
+      assistant.style.setProperty(
+        "--wave-keyboard-inset",
+        `${keyboardInset}px`,
+      );
+      assistant.toggleAttribute("data-keyboard-open", keyboardOpen);
+    };
+    const updateAfterFocus = () => window.requestAnimationFrame(updateViewport);
+
+    window.addEventListener("resize", updateViewport);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+    window.visualViewport?.addEventListener("scroll", updateViewport);
+    document.addEventListener("focusin", updateViewport);
+    document.addEventListener("focusout", updateAfterFocus);
+    updateViewport();
+
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+      window.visualViewport?.removeEventListener("scroll", updateViewport);
+      document.removeEventListener("focusin", updateViewport);
+      document.removeEventListener("focusout", updateAfterFocus);
+    };
+  }, []);
 
   useEffect(() => {
     if (!responseExpression) return;
@@ -566,10 +607,6 @@ export function WaveChat({
     }
   }
 
-  const predictorLabel = data.ai.ai_enabled
-    ? `${String(data.ai.ai_mode).toUpperCase()} predictor on`
-    : "Simulation predictor off";
-  const serviceStatus = providerLabel(providerStatus);
   const assistantStyle = launcherPosition
     ? ({
         "--wave-launcher-right": `${launcherPosition.right}px`,
@@ -578,7 +615,7 @@ export function WaveChat({
     : undefined;
 
   return (
-    <div className="wave-assistant" style={assistantStyle}>
+    <div ref={assistantRef} className="wave-assistant" style={assistantStyle}>
       {greetingVisible && !open && (
         <aside className="wave-greeting" role="status" aria-live="polite">
           <p>{GREETING_TEXT}</p>
@@ -602,28 +639,7 @@ export function WaveChat({
           <header className="wave-panel-header">
             <WaveMascot expression={expression} className="wave-panel-avatar" />
             <div className="wave-panel-identity">
-              <span className="wave-eyebrow">SULINOC OPERATIONS</span>
               <h2>Wave</h2>
-              <span className={`wave-connection ${connection}`}>
-                <i aria-hidden="true" />
-                {connection === "live"
-                  ? "Sim telemetry connected"
-                  : connection === "connecting"
-                    ? "Connecting to simulation"
-                    : "Simulation reconnecting"}
-              </span>
-              <span
-                className={`wave-provider-status ${providerStatus.status}`}
-                title={providerStatus.detail}
-                aria-live="polite"
-              >
-                <i aria-hidden="true" />
-                {serviceStatus}
-                {providerStatus.model && providerStatus.status === "connected"
-                  ? ` · ${providerStatus.model}`
-                  : ""}
-              </span>
-              <span className="wave-predictor">{predictorLabel}</span>
             </div>
             <button
               className="wave-icon-button"
@@ -651,9 +667,12 @@ export function WaveChat({
                 role={message.error ? "alert" : undefined}
               >
                 {message.role === "assistant" && (
-                  <span className="wave-message-mark" aria-hidden="true">
-                    W
-                  </span>
+                  <img
+                    className="wave-message-avatar"
+                    src="/assets/wave-avatar.png"
+                    alt=""
+                    aria-hidden="true"
+                  />
                 )}
                 <div className="wave-message-content">
                   <p>{message.content}</p>
@@ -731,14 +750,6 @@ export function WaveChat({
               <Send size={16} />
             </button>
           </form>
-          <footer className="wave-panel-foot">
-            <Activity size={12} />
-            <span>
-              When enabled, your question, up to eight recent chat messages, and
-              this simulation snapshot are sent to the configured AI provider.
-              Wave is read-only; don’t enter passwords or secrets.
-            </span>
-          </footer>
         </section>
       )}
 

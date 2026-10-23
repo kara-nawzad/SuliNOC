@@ -40,6 +40,11 @@ it("keeps the hero copy, capability row, and Enter action in the intro", () => {
   expect(html).toContain("color: #52d3e7;");
   expect(html).toContain("max-width: 470px;");
   expect(html).not.toContain('class="hero-shade"');
+  expect(html).toContain("text-shadow: 0 2px 8px rgb(5 15 31 / 40%);");
+  expect(html).toContain("text-shadow: 0 1px 6px rgb(5 15 31 / 44%);");
+  expect(html).not.toContain(".hero-copy::before");
+  expect(html).not.toContain(".hero-copy-main");
+  expect(html).not.toContain(".hero-topbar::before");
   expect(html).not.toContain("SIMULATED NETWORK · 300 MODELED SITES");
   expect(html).not.toContain("border-top: 1px solid rgb(168 238 226 / 38%);");
   expect(html).not.toContain('class="hero-tower"');

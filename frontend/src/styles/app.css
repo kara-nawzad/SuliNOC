@@ -759,21 +759,6 @@ h1 {
   background: var(--tone);
   opacity: 0.9;
 }
-.site-microbar {
-  position: absolute;
-  bottom: 0;
-  left: 15px;
-  right: 15px;
-  height: 2px;
-  display: flex;
-  gap: 2px;
-  opacity: 0.6;
-}
-.site-microbar i {
-  min-width: 0;
-  transition: flex 0.8s;
-}
-
 /* Live stage */
 .primary-grid {
   display: grid;
@@ -3699,8 +3684,10 @@ input[type="text"] {
  * active segmented tab and the primary accent (kept navy so they read as primary). */
 .app-shell
   button:not(.wave-launcher):not(.selected):not(.active):not(.nav-item):not(
-    .tower-row
-  ):not(.segmented button):not(.timeframe-tabs button):not(.map-button) {
+    .panel-info-button
+  ):not(.dialog-close-button):not(.tower-row):not(.segmented button):not(
+    .timeframe-tabs button
+  ):not(.map-button) {
   background: #ffffff;
   border: 1px solid var(--ln);
   color: var(--tx);
@@ -5547,7 +5534,7 @@ body {
   height: 24px;
 }
 .app-shell .overview-heading {
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-4);
   gap: var(--sp-4);
   align-items: flex-end;
 }
@@ -5567,7 +5554,7 @@ body {
 }
 .app-shell .command-bar {
   margin-bottom: var(--sp-5);
-  padding: var(--sp-3) 0;
+  padding: var(--sp-2) 0;
   gap: var(--sp-3);
   border-top: 0;
   border-bottom: 1px solid var(--sn-line);
@@ -5814,10 +5801,10 @@ body {
 }
 .app-shell
   button:not(.wave-launcher):not(.nav-item):not(.selected):not(.active):not(
-    .tower-row
-  ):not(.segmented button):not(.timeframe-tabs button):not(
-    [class*="leaflet"]
-  ):hover {
+    .panel-info-button
+  ):not(.dialog-close-button):not(.tower-row):not(.segmented button):not(
+    .timeframe-tabs button
+  ):not([class*="leaflet"]):hover {
   background: var(--sn-s1);
   border-color: var(--sn-link);
   box-shadow: 0 2px 8px -3px rgba(20, 121, 196, 0.35);
@@ -6046,8 +6033,7 @@ dialog.dialog::backdrop,
 }
 /* ---------- data motion ---------- */
 .app-shell .load-bar,
-.app-shell .range-fill,
-.app-shell .site-microbar > * {
+.app-shell .range-fill {
   transition:
     width var(--t-slow) var(--ease),
     background-color var(--t-base) ease;
@@ -6237,6 +6223,12 @@ dialog.dialog::backdrop,
     min-width: 0;
     margin-top: 0 !important;
   }
+  .app-shell .navigation-rail .nav-items .nav-item[data-nav-item="towers"] {
+    order: 5;
+  }
+  .app-shell .navigation-rail .nav-items .nav-item[data-nav-item="fleet"] {
+    order: 6;
+  }
   .app-shell .navigation-rail .nav-bottom {
     flex: 0 0 auto;
     margin: 0;
@@ -6314,7 +6306,7 @@ dialog.dialog::backdrop,
     align-items: flex-start;
     flex-direction: column;
     gap: var(--sp-2);
-    margin-bottom: var(--sp-4);
+    margin-bottom: var(--sp-3);
   }
   .app-shell .overview-meta {
     align-self: stretch;
@@ -6324,36 +6316,30 @@ dialog.dialog::backdrop,
     flex-direction: column;
     align-items: stretch;
     gap: var(--sp-3);
-    padding: var(--sp-3) 0;
+    padding: var(--sp-2) 0;
   }
   .app-shell .command-context {
     display: none;
   }
   .app-shell .sim-controls {
     width: 100%;
+    max-width: 100%;
     justify-content: flex-start;
-    overflow-x: auto;
-    flex-wrap: nowrap;
+    overflow: visible;
+    flex-wrap: wrap;
     scrollbar-width: none;
-    margin-inline: calc(var(--pad-x) * -1);
-    padding-inline: var(--pad-x);
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
+    margin-inline: 0;
+    padding-inline: 0;
+    scroll-snap-type: none;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
   .app-shell .sim-controls::-webkit-scrollbar {
     display: none;
   }
-  .app-shell .sim-controls {
-    -webkit-mask-image: linear-gradient(
-      90deg,
-      #000 calc(100% - 28px),
-      transparent
-    );
-    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-  }
   .app-shell .sim-controls > * {
     flex: 0 0 auto;
-    scroll-snap-align: start;
+    scroll-snap-align: none;
   }
   .app-shell .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7180,7 +7166,7 @@ dialog.dialog::backdrop,
   }
 }
 
-/* Panel information: explicit three-dot controls open the shared modal. */
+/* Panel information: compact three-dot controls open the shared modal. */
 .app-shell .panel-heading-actions {
   display: flex;
   flex: 0 0 auto;
@@ -7190,13 +7176,14 @@ dialog.dialog::backdrop,
   min-width: 0;
 }
 .app-shell .panel-info-button {
+  position: relative;
   display: grid;
   flex: none;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   padding: 0;
   color: var(--sn-t2);
   background: transparent;
@@ -7204,22 +7191,54 @@ dialog.dialog::backdrop,
   border-radius: var(--r-md);
   box-shadow: none;
 }
+.app-shell .panel-info-button::before {
+  position: absolute;
+  inset: 2px;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  content: "";
+  pointer-events: none;
+}
 .app-shell .panel-info-button svg {
+  position: relative;
   display: block;
+  width: 14px;
+  height: 14px;
   color: currentColor;
   opacity: 1;
 }
 .app-shell .panel-info-button:hover {
   color: var(--sn-link);
-  background: var(--sn-s1);
-  border-color: var(--sn-ln);
+  background: transparent;
+  border-color: transparent;
   box-shadow: none;
 }
+.app-shell .panel-info-button:hover::before {
+  background: var(--sn-s1);
+  border-color: var(--sn-ln);
+}
+.app-shell .panel-info-button:focus-visible {
+  outline: none;
+}
+.app-shell .panel-info-button:focus-visible::before {
+  border-color: var(--sn-link);
+  box-shadow: 0 0 0 2px var(--sn-s1);
+}
 .app-shell .panel-info-button.compact {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+}
+.app-shell
+  button.panel-info-button:not(.wave-launcher):not([class*="leaflet"]) {
   min-width: 30px;
   min-height: 30px;
+}
+.app-shell
+  button.panel-info-button.compact:not(.wave-launcher):not([class*="leaflet"]) {
+  min-width: 26px;
+  min-height: 26px;
 }
 .app-shell .kpi-title {
   min-width: 0;
@@ -7251,16 +7270,76 @@ dialog.dialog::backdrop,
 .app-shell .ring-list-heading .ring-list-title {
   margin: 0;
 }
+.app-shell .dialog-close-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  color: var(--sn-t2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.app-shell .dialog-close-button::before {
+  position: absolute;
+  inset: 1px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  content: "";
+  pointer-events: none;
+}
+.app-shell .dialog-close-button svg {
+  position: relative;
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+.app-shell .dialog-close-button:hover {
+  background: transparent;
+  border-color: transparent;
+}
+.app-shell .dialog-close-button:hover::before {
+  background: rgb(255 255 255 / 4.5%);
+  border-color: rgb(255 255 255 / 16%);
+}
+.app-shell .dialog-close-button:focus-visible {
+  outline: none;
+}
+.app-shell .dialog-close-button:focus-visible::before {
+  border-color: var(--sn-link);
+  box-shadow: 0 0 0 2px var(--sn-s1);
+}
+.app-shell
+  button.dialog-close-button:not(.wave-launcher):not([class*="leaflet"]) {
+  min-width: 24px;
+  min-height: 24px;
+}
 @media (max-width: 767px), (pointer: coarse) {
   .app-shell .panel-heading-actions {
     gap: var(--sp-1);
   }
   .app-shell .panel-info-button,
-  .app-shell .panel-info-button.compact {
+  .app-shell .panel-info-button.compact,
+  .app-shell .dialog-close-button {
     width: 44px;
     height: 44px;
     min-width: 44px;
     min-height: 44px;
+  }
+  .app-shell .panel-info-button::before {
+    inset: 12px;
+  }
+  .app-shell .panel-info-button svg {
+    width: 12px;
+    height: 12px;
+  }
+  .app-shell .dialog-close-button::before {
+    inset: 10px;
   }
 }
 
@@ -7691,7 +7770,7 @@ dialog.dialog::backdrop,
   animation: wave-panel-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .wave-panel-header {
-  min-height: 91px;
+  min-height: 72px;
   padding: 10px 13px 9px 10px;
   display: flex;
   align-items: center;
@@ -7714,16 +7793,6 @@ dialog.dialog::backdrop,
   flex-direction: column;
   gap: 2px;
 }
-.wave-eyebrow {
-  overflow: hidden;
-  color: var(--sn-t3, #5f739f);
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .wave-panel-identity h2 {
   color: var(--sn-tx, #10265c);
   font-family: var(--sn-display, Georgia, serif);
@@ -7731,51 +7800,6 @@ dialog.dialog::backdrop,
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.05;
-}
-.wave-connection,
-.wave-provider-status {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  overflow: hidden;
-  color: var(--sn-live, #0c9c83);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1.3;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.wave-connection i,
-.wave-provider-status i {
-  width: 6px;
-  height: 6px;
-  flex: none;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 15%, transparent);
-}
-.wave-connection.connecting,
-.wave-connection.reconnecting,
-.wave-provider-status.checking,
-.wave-provider-status.not_verified {
-  color: var(--sn-warn, #b86e00);
-}
-.wave-provider-status.missing_key,
-.wave-provider-status.unavailable {
-  color: var(--sn-critical, #d64d5d);
-}
-.wave-provider-status.connected {
-  color: var(--sn-live, #0c9c83);
-}
-.wave-predictor {
-  overflow: hidden;
-  color: var(--sn-t2, #4b6192);
-  font-size: 8px;
-  font-weight: 600;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .wave-icon-button {
   width: 32px;
@@ -7828,19 +7852,15 @@ dialog.dialog::backdrop,
 .wave-message--assistant {
   align-self: flex-start;
 }
-.wave-message-mark {
-  width: 21px;
-  height: 21px;
+.wave-message-avatar {
+  width: 36px;
+  height: 36px;
   flex: none;
-  display: grid;
-  place-items: center;
-  border: 1px solid #a9d9e9;
-  border-radius: 7px;
-  color: #0c6e8f;
-  background: #d5f1f7;
-  font-family: var(--sn-display, Georgia, serif);
-  font-size: 12px;
-  font-weight: 700;
+  display: block;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  background: transparent;
 }
 .wave-message-content {
   min-width: 0;
@@ -7865,6 +7885,9 @@ dialog.dialog::backdrop,
   line-height: 1.65;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+.wave-message--user .wave-message-content p {
+  color: #fff;
 }
 .wave-message.is-error .wave-message-content {
   border-color: rgba(212, 47, 82, 0.35);
@@ -7925,7 +7948,7 @@ dialog.dialog::backdrop,
 }
 .wave-thinking {
   align-self: flex-start;
-  margin-left: 28px;
+  margin-left: 31px;
   padding: 3px 0;
   display: flex;
   align-items: center;
@@ -7954,12 +7977,13 @@ dialog.dialog::backdrop,
 }
 
 .wave-composer {
+  min-height: 44px;
+  max-height: 88px;
   margin: 0 13px;
-  padding: 8px 8px 8px 11px;
-  min-height: 48px;
+  padding: 5px 6px 5px 10px;
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--sn-ln, #a9c2e6);
   border-radius: 12px;
   background: var(--sn-s2, #f6faff);
@@ -7974,10 +7998,12 @@ dialog.dialog::backdrop,
 .wave-composer textarea {
   width: 100%;
   min-width: 0;
+  height: 28px;
   min-height: 28px;
-  max-height: 100px;
-  padding: 5px 0;
-  resize: vertical;
+  max-height: 72px;
+  padding: 4px 0;
+  resize: none;
+  overflow-y: auto;
   border: 0;
   outline: 0;
   color: var(--sn-tx, #10265c);
@@ -8009,6 +8035,14 @@ dialog.dialog::backdrop,
     transform 140ms ease,
     background-color 140ms ease;
 }
+.app-shell .wave-panel .wave-composer .wave-send-button {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  padding: 0;
+}
 .wave-send-button:not(:disabled):hover {
   transform: translateY(-1px);
   background: var(--sn-link-strong, #0c6e8f);
@@ -8019,25 +8053,6 @@ dialog.dialog::backdrop,
   box-shadow: none;
   cursor: not-allowed;
 }
-.wave-panel-foot {
-  min-height: 42px;
-  padding: 7px 12px 9px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 5px;
-  color: var(--sn-t3, #5f739f);
-  font-size: 8px;
-  font-weight: 600;
-  line-height: 1.45;
-  text-align: center;
-}
-.wave-panel-foot svg {
-  flex: none;
-  margin-top: 1px;
-  color: var(--sn-ai, #6a4bd8);
-}
-
 @keyframes wave-panel-enter {
   from {
     opacity: 0;
@@ -8251,7 +8266,31 @@ dialog.dialog::backdrop,
     border-radius: 18px;
   }
   .wave-panel-header {
-    min-height: 88px;
+    min-height: 72px;
+  }
+  .wave-composer textarea {
+    height: 32px;
+    min-height: 32px;
+    font-size: 16px;
+    line-height: 1.35;
+  }
+  .app-shell .speed-popover {
+    top: calc(100% + 8px);
+    right: auto;
+    left: 0;
+    width: min(225px, calc(100vw - 32px));
+  }
+  .wave-assistant[data-keyboard-open] .wave-panel {
+    top: calc(
+      var(--wave-visual-viewport-top, 0px) + var(--header-h, 56px) + 8px
+    );
+    right: 10px;
+    bottom: calc(var(--wave-keyboard-inset, 0px) + 10px);
+    left: 10px;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
   }
 }
 
@@ -8264,18 +8303,11 @@ dialog.dialog::backdrop,
     width: 46px;
     height: 46px;
   }
-  .wave-connection,
-  .wave-provider-status {
-    font-size: 8px;
-  }
   .wave-messages {
     padding-inline: 10px;
   }
   .wave-message {
     max-width: 98%;
-  }
-  .wave-panel-foot {
-    font-size: 7px;
   }
 }
 

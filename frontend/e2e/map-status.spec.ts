@@ -54,6 +54,17 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   });
   await expect(heroHeading).toBeVisible();
   await expect(welcome.locator(".top-meta, .hero-shade")).toHaveCount(0);
+  const copyTextShadows = await welcome
+    .locator(".hero-copy")
+    .evaluate((element) => {
+      const heading = element.querySelector("h1");
+      const lede = element.querySelector(".lede");
+      return [
+        getComputedStyle(heading!).textShadow,
+        getComputedStyle(lede!).textShadow,
+      ];
+    });
+  expect(copyTextShadows.every((shadow) => shadow !== "none")).toBe(true);
   await expect(welcome.locator(".hero-feature")).toHaveCount(3);
   await expect(welcome.locator(".hero-features")).toHaveCSS(
     "border-top-width",
@@ -120,9 +131,17 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await welcome.getByRole("button", { name: "Enter workspace" }).click();
   await expect(welcomeFrame).toHaveCSS("visibility", "hidden");
   await expect(welcomeFrame).toHaveCSS("pointer-events", "none");
+  const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(navigation).toBeVisible();
   await expect(
-    page.getByRole("navigation", { name: "Main navigation" }),
+    navigation.getByRole("button", { name: "Maintenance" }),
   ).toBeVisible();
+  await expect(
+    navigation.getByRole("button", { name: "Towers" }),
+  ).toBeVisible();
+  await expect(
+    navigation.getByRole("button", { name: "AI", exact: true }),
+  ).toHaveCount(0);
   await expect(page.locator(".app-shell")).toHaveCSS(
     "background-color",
     "rgb(214, 231, 251)",
@@ -138,6 +157,16 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     "QCI 9 throughput",
     "E-RAB drop rate",
   ]);
+  await expect(page.locator(".app-footer")).toHaveCount(0);
+  await expect(page.locator(".site-microbar")).toHaveCount(0);
+  await expect(
+    page.locator(".kpi-card").nth(2).locator(".tiny-dash"),
+  ).toHaveCSS("background-color", "rgb(244, 63, 94)");
+  await expect(page.locator(".overview-heading")).toHaveCSS(
+    "margin-bottom",
+    "16px",
+  );
+  await expect(page.locator(".command-bar")).toHaveCSS("padding-top", "8px");
 
   await expect(page.locator(".kpi-grid [data-panel-info]")).toHaveCount(6);
   await expect(
@@ -146,6 +175,27 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(
     page.locator(".ring-list-heading [data-panel-info]"),
   ).toHaveCount(1);
+  const infoControlMetrics = await page
+    .locator("[data-panel-info]")
+    .evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const style = getComputedStyle(button);
+        const icon = button.querySelector("svg");
+        return {
+          width: style.width,
+          height: style.height,
+          iconWidth: icon ? getComputedStyle(icon).width : "missing",
+        };
+      }),
+    );
+  expect(
+    infoControlMetrics.every(
+      ({ width, height, iconWidth }) =>
+        ["26px", "30px", "44px"].includes(width) &&
+        height === width &&
+        iconWidth === "14px",
+    ),
+  ).toBe(true);
   await page
     .locator('.kpi-card [data-panel-info="Network availability"]')
     .click();
@@ -154,6 +204,7 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   });
   await expect(panelInfoDialog).toBeVisible();
   await expect(panelInfoDialog).toHaveAttribute("open", "");
+  await expect(panelInfoDialog.locator(".eyebrow")).toHaveCount(0);
   await expect(panelInfoDialog).toContainText(
     "share of sites that are in service",
   );
@@ -165,7 +216,22 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     color: "rgba(16, 38, 92, 0.38)",
     filter: "blur(4px)",
   });
-  await panelInfoDialog.getByRole("button", { name: "Close dialog" }).click();
+  const closeInfoButton = panelInfoDialog.getByRole("button", {
+    name: "Close dialog",
+  });
+  const closeButtonMetrics = await closeInfoButton.evaluate((button) => {
+    const style = getComputedStyle(button);
+    const icon = button.querySelector("svg");
+    return {
+      width: style.width,
+      height: style.height,
+      iconWidth: icon ? getComputedStyle(icon).width : "missing",
+    };
+  });
+  expect(["24px", "44px"]).toContain(closeButtonMetrics.width);
+  expect(closeButtonMetrics.height).toBe(closeButtonMetrics.width);
+  expect(closeButtonMetrics.iconWidth).toBe("14px");
+  await closeInfoButton.click();
   await expect(panelInfoDialog).toBeHidden();
 
   const powerCard = page
@@ -242,7 +308,6 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(page.locator(".map-mode")).toHaveCount(0);
 
   await page.setViewportSize({ width: 700, height: 900 });
-  const navigation = page.getByRole("navigation", { name: "Main navigation" });
   const phoneTools = page.locator(".phone-tools");
   await expect(phoneTools).toBeVisible();
   await expect(phoneTools.getByRole("button")).toHaveCount(3);
@@ -252,8 +317,14 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     "flex-direction",
     "row",
   );
+  await expect(
+    navigation.getByRole("button", { name: "Maintenance" }),
+  ).toBeVisible();
+  await expect(
+    navigation.getByRole("button", { name: "Towers" }),
+  ).toBeVisible();
   const navItemTops = await navigation
-    .locator(".nav-items .nav-item")
+    .locator(".nav-items .nav-item:visible")
     .evaluateAll((items) =>
       items.map((item) => Math.round(item.getBoundingClientRect().top)),
     );
@@ -261,11 +332,113 @@ test("Esri tile failures show a visible schematic status and retry can recover",
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".phone-tools")).toBeVisible();
+  await expect(navigation.locator(".nav-bottom")).toBeHidden();
   await expect(
-    page
-      .getByRole("navigation", { name: "Main navigation" })
-      .locator(".nav-bottom"),
-  ).toBeHidden();
+    navigation.getByRole("button", { name: "Maintenance" }),
+  ).toBeVisible();
+  await expect(
+    navigation.getByRole("button", { name: "Towers" }),
+  ).toBeVisible();
+  await expect(navigation.locator(".nav-items .nav-item:visible")).toHaveCount(
+    6,
+  );
+  const mobileNavigationOrder = await navigation
+    .locator(".nav-items .nav-item:visible")
+    .evaluateAll((items) =>
+      items
+        .map((item) => ({
+          id: item.getAttribute("data-nav-item"),
+          left: item.getBoundingClientRect().left,
+        }))
+        .sort((a, b) => a.left - b.left)
+        .map(({ id }) => id),
+    );
+  expect(mobileNavigationOrder).toEqual([
+    "overview",
+    "network",
+    "incidents",
+    "analytics",
+    "towers",
+    "fleet",
+  ]);
+  await expect(page.locator(".overview-heading")).toHaveCSS(
+    "margin-bottom",
+    "12px",
+  );
+  await expect(page.locator(".command-bar")).toHaveCSS("padding-top", "8px");
+
+  const speedButton = page.locator(".speed-button");
+  await speedButton.scrollIntoViewIfNeeded();
+  await speedButton.click();
+  const speedPopover = page.locator(".speed-popover");
+  await expect(speedPopover).toBeVisible();
+  await expect(speedPopover.locator('input[type="range"]')).toBeVisible();
+  const speedPopoverBox = await speedPopover.boundingBox();
+  expect(speedPopoverBox).not.toBeNull();
+  expect(speedPopoverBox!.x).toBeGreaterThanOrEqual(0);
+  expect(speedPopoverBox!.x + speedPopoverBox!.width).toBeLessThanOrEqual(390);
+  await speedButton.click();
+
+  const mobileInfoButton = page.locator(".kpi-card [data-panel-info]").first();
+  const mobileInfoMetrics = await mobileInfoButton.evaluate((button) => {
+    const style = getComputedStyle(button);
+    const icon = button.querySelector("svg");
+    return {
+      width: style.width,
+      height: style.height,
+      backgroundColor: style.backgroundColor,
+      borderColor: style.borderTopColor,
+      iconWidth: icon ? getComputedStyle(icon).width : "missing",
+      visibleWidth: getComputedStyle(button, "::before").width,
+      visibleHeight: getComputedStyle(button, "::before").height,
+    };
+  });
+  expect(mobileInfoMetrics).toMatchObject({
+    backgroundColor: "rgba(0, 0, 0, 0)",
+    borderColor: "rgba(0, 0, 0, 0)",
+    width: "44px",
+    height: "44px",
+    iconWidth: "12px",
+  });
+  expect(Number.parseFloat(mobileInfoMetrics.visibleWidth)).toBeLessThanOrEqual(
+    18,
+  );
+  expect(
+    Number.parseFloat(mobileInfoMetrics.visibleHeight),
+  ).toBeLessThanOrEqual(18);
+  await mobileInfoButton.click();
+  const mobileNote = page.getByRole("dialog", { name: "Network availability" });
+  await expect(mobileNote).toBeVisible();
+  await expect(mobileNote.locator(".eyebrow")).toHaveCount(0);
+  const mobileClose = mobileNote.getByRole("button", { name: "Close dialog" });
+  const mobileCloseMetrics = await mobileClose.evaluate((button) => {
+    const style = getComputedStyle(button);
+    const icon = button.querySelector("svg");
+    return {
+      width: style.width,
+      height: style.height,
+      backgroundColor: style.backgroundColor,
+      borderColor: style.borderTopColor,
+      iconWidth: icon ? getComputedStyle(icon).width : "missing",
+      visibleWidth: getComputedStyle(button, "::before").width,
+      visibleHeight: getComputedStyle(button, "::before").height,
+    };
+  });
+  expect(mobileCloseMetrics).toMatchObject({
+    backgroundColor: "rgba(0, 0, 0, 0)",
+    borderColor: "rgba(0, 0, 0, 0)",
+    width: "44px",
+    height: "44px",
+    iconWidth: "14px",
+  });
+  expect(
+    Number.parseFloat(mobileCloseMetrics.visibleWidth),
+  ).toBeLessThanOrEqual(24);
+  expect(
+    Number.parseFloat(mobileCloseMetrics.visibleHeight),
+  ).toBeLessThanOrEqual(24);
+  await mobileClose.click();
+
   const incidentPanel = page.locator(".alerts-rail .alarms-panel");
   await expect(incidentPanel).toHaveCSS("height", "400px");
   const incidentList = incidentPanel.locator(".incident-list");
@@ -281,4 +454,24 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   const historyTabs = page.getByRole("tablist", { name: "History type" });
   await expect(historyTabs).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(historyTabs).toHaveCSS("border-top-width", "0px");
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("button", { name: "Open Wave assistant" }).click();
+  const wavePanel = page.getByRole("dialog", {
+    name: "Wave network operations assistant",
+  });
+  await expect(wavePanel).toBeVisible();
+  await expect(wavePanel.locator(".wave-panel-identity")).toHaveText("Wave");
+  await expect(wavePanel.locator(".wave-panel-foot")).toHaveCount(0);
+  const waveAvatar = wavePanel.locator(".wave-message-avatar").first();
+  await expect(waveAvatar).toHaveAttribute("src", "/assets/wave-avatar.png");
+  await expect(waveAvatar).toHaveCSS("width", "36px");
+  await expect(waveAvatar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(
+    wavePanel.getByRole("textbox", { name: "Message Wave" }),
+  ).toHaveCSS("font-size", "16px");
+  const wavePanelBox = await wavePanel.boundingBox();
+  expect(wavePanelBox).not.toBeNull();
+  expect(wavePanelBox!.x).toBeGreaterThanOrEqual(0);
+  expect(wavePanelBox!.x + wavePanelBox!.width).toBeLessThanOrEqual(390);
 });

@@ -49,6 +49,38 @@ describe("production crew motion", () => {
     expect(last?.y).toBeCloseTo(100, 0);
   });
 
+  it("gently speeds up farther dispatches and avoids tier-boundary jumps", () => {
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn(() => 1),
+    );
+
+    const progressAfter = (routeLength: number) => {
+      const frames: CrewRender[] = [];
+      const motion = new CrewMotion({
+        render: (_id, frame) => frames.push(frame),
+      });
+      const route: [number, number][] = [
+        [0, 0],
+        [routeLength, 0],
+      ];
+      motion.set(1, { route, progress: 0, moving: true }, 0);
+      motion.set(1, { route, progress: 0.1, moving: true }, 1000);
+      for (let now = 1016; now <= 1500; now += 16) motion.step(now);
+      return frames.at(-1)!.progress;
+    };
+
+    const nearby = progressAfter(1500);
+    const midrange = progressAfter(6000);
+    const distant = progressAfter(15000);
+    expect(midrange).toBeGreaterThan(nearby);
+    expect(distant).toBeGreaterThan(midrange);
+    expect(distant).toBeLessThan(1);
+    expect(Math.abs(progressAfter(5999) - progressAfter(6001))).toBeLessThan(
+      0.002,
+    );
+  });
+
   it("renders a settled parked crew once without keeping a frame loop alive", () => {
     const requestFrame = vi.fn(() => 1);
     const render = vi.fn();

@@ -58,7 +58,7 @@ export function PanelInfoButton({
       aria-haspopup="dialog"
       title={`More information about ${title}`}
     >
-      <MoreHorizontal size={17} strokeWidth={2} aria-hidden="true" />
+      <MoreHorizontal size={14} strokeWidth={2} aria-hidden="true" />
     </button>
   );
 }
@@ -156,11 +156,13 @@ export function Modal({
   children,
   onClose,
   wide = false,
+  hideEyebrow = false,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
+  hideEyebrow?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
@@ -182,15 +184,15 @@ export function Modal({
       <div className="dialog-content">
         <div className="dialog-heading">
           <div>
-            <span className="eyebrow">SULINOC COMMAND</span>
+            {!hideEyebrow && <span className="eyebrow">SULINOC COMMAND</span>}
             <h2 id={id}>{title}</h2>
           </div>
           <button
-            className="icon-button"
+            className="icon-button dialog-close-button"
             aria-label="Close dialog"
             onClick={onClose}
           >
-            <X size={18} />
+            <X size={14} />
           </button>
         </div>
         {children}
