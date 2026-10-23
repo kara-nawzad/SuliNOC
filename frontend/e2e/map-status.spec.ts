@@ -354,8 +354,8 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     width: "44px",
     height: "44px",
     iconWidth: "14px",
-    visibleWidth: "26px",
-    visibleHeight: "26px",
+    visibleWidth: "24px",
+    visibleHeight: "24px",
   });
   await mobileInfoButton.click();
   const mobileNote = page.getByRole("dialog", { name: "Network availability" });
