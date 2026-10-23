@@ -242,6 +242,7 @@ export function WaveChat({
   const statusRequestRef = useRef(0);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const assistantRef = useRef<HTMLDivElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const launcherDragRef = useRef<LauncherDrag | null>(null);
   const suppressLauncherClickRef = useRef(false);
@@ -309,6 +310,55 @@ export function WaveChat({
     input.style.height = "auto";
     input.style.height = `${Math.min(72, Math.max(28, input.scrollHeight))}px`;
   }, [draft, open]);
+
+  useEffect(() => {
+    const assistant = assistantRef.current;
+    if (!assistant) return;
+
+    const updateViewport = () => {
+      const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportHeight = viewport?.height ?? window.innerHeight;
+      const keyboardInset = Math.max(
+        0,
+        window.innerHeight - viewportTop - viewportHeight,
+      );
+      const keyboardOpen =
+        window.innerWidth <= 767 &&
+        inputRef.current === document.activeElement &&
+        (keyboardInset > 120 || window.screen.height - viewportHeight > 200);
+
+      assistant.style.setProperty(
+        "--wave-visual-viewport-top",
+        `${viewportTop}px`,
+      );
+      assistant.style.setProperty(
+        "--wave-visual-viewport-height",
+        `${viewportHeight}px`,
+      );
+      assistant.style.setProperty(
+        "--wave-keyboard-inset",
+        `${keyboardInset}px`,
+      );
+      assistant.toggleAttribute("data-keyboard-open", keyboardOpen);
+    };
+    const updateAfterFocus = () => window.requestAnimationFrame(updateViewport);
+
+    window.addEventListener("resize", updateViewport);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+    window.visualViewport?.addEventListener("scroll", updateViewport);
+    document.addEventListener("focusin", updateViewport);
+    document.addEventListener("focusout", updateAfterFocus);
+    updateViewport();
+
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+      window.visualViewport?.removeEventListener("scroll", updateViewport);
+      document.removeEventListener("focusin", updateViewport);
+      document.removeEventListener("focusout", updateAfterFocus);
+    };
+  }, []);
 
   useEffect(() => {
     if (!responseExpression) return;
@@ -565,7 +615,7 @@ export function WaveChat({
     : undefined;
 
   return (
-    <div className="wave-assistant" style={assistantStyle}>
+    <div ref={assistantRef} className="wave-assistant" style={assistantStyle}>
       {greetingVisible && !open && (
         <aside className="wave-greeting" role="status" aria-live="polite">
           <p>{GREETING_TEXT}</p>

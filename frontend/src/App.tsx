@@ -315,6 +315,7 @@ function Console({
                 key={id}
                 className={`nav-item ${section === id ? "active" : ""}`}
                 aria-label={label}
+                data-nav-item={id}
                 data-tip={label}
                 aria-current={section === id ? "page" : undefined}
                 onClick={() => navigate(id)}

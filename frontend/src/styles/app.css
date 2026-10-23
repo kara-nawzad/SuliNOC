@@ -6237,6 +6237,9 @@ dialog.dialog::backdrop,
     min-width: 0;
     margin-top: 0 !important;
   }
+  .app-shell .navigation-rail .nav-items .nav-item[data-nav-item="fleet"] {
+    display: none;
+  }
   .app-shell .navigation-rail .nav-bottom {
     flex: 0 0 auto;
     margin: 0;
@@ -6331,29 +6334,23 @@ dialog.dialog::backdrop,
   }
   .app-shell .sim-controls {
     width: 100%;
+    max-width: 100%;
     justify-content: flex-start;
-    overflow-x: auto;
-    flex-wrap: nowrap;
+    overflow: visible;
+    flex-wrap: wrap;
     scrollbar-width: none;
-    margin-inline: calc(var(--pad-x) * -1);
-    padding-inline: var(--pad-x);
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
+    margin-inline: 0;
+    padding-inline: 0;
+    scroll-snap-type: none;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
   .app-shell .sim-controls::-webkit-scrollbar {
     display: none;
   }
-  .app-shell .sim-controls {
-    -webkit-mask-image: linear-gradient(
-      90deg,
-      #000 calc(100% - 28px),
-      transparent
-    );
-    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-  }
   .app-shell .sim-controls > * {
     flex: 0 0 auto;
-    scroll-snap-align: start;
+    scroll-snap-align: none;
   }
   .app-shell .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -8274,6 +8271,30 @@ dialog.dialog::backdrop,
   }
   .wave-panel-header {
     min-height: 72px;
+  }
+  .wave-composer textarea {
+    height: 32px;
+    min-height: 32px;
+    font-size: 16px;
+    line-height: 1.35;
+  }
+  .app-shell .speed-popover {
+    top: calc(100% + 8px);
+    right: auto;
+    left: 0;
+    width: min(225px, calc(100vw - 32px));
+  }
+  .wave-assistant[data-keyboard-open] .wave-panel {
+    top: calc(
+      var(--wave-visual-viewport-top, 0px) + var(--header-h, 56px) + 8px
+    );
+    right: 10px;
+    bottom: calc(var(--wave-keyboard-inset, 0px) + 10px);
+    left: 10px;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
   }
 }
 
