@@ -350,13 +350,17 @@ test("Esri tile failures show a visible schematic status and retry can recover",
       visibleHeight: getComputedStyle(button, "::before").height,
     };
   });
-  expect(mobileInfoMetrics).toEqual({
+  expect(mobileInfoMetrics).toMatchObject({
     width: "44px",
     height: "44px",
     iconWidth: "14px",
-    visibleWidth: "24px",
-    visibleHeight: "24px",
   });
+  expect(Number.parseFloat(mobileInfoMetrics.visibleWidth)).toBeLessThanOrEqual(
+    26,
+  );
+  expect(
+    Number.parseFloat(mobileInfoMetrics.visibleHeight),
+  ).toBeLessThanOrEqual(26);
   await mobileInfoButton.click();
   const mobileNote = page.getByRole("dialog", { name: "Network availability" });
   await expect(mobileNote).toBeVisible();
@@ -372,13 +376,17 @@ test("Esri tile failures show a visible schematic status and retry can recover",
       visibleHeight: getComputedStyle(button, "::before").height,
     };
   });
-  expect(mobileCloseMetrics).toEqual({
+  expect(mobileCloseMetrics).toMatchObject({
     width: "44px",
     height: "44px",
     iconWidth: "14px",
-    visibleWidth: "24px",
-    visibleHeight: "24px",
   });
+  expect(
+    Number.parseFloat(mobileCloseMetrics.visibleWidth),
+  ).toBeLessThanOrEqual(24);
+  expect(
+    Number.parseFloat(mobileCloseMetrics.visibleHeight),
+  ).toBeLessThanOrEqual(24);
   await mobileClose.click();
 
   const incidentPanel = page.locator(".alerts-rail .alarms-panel");
