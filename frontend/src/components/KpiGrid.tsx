@@ -117,20 +117,17 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
                   <ArrowDownRight size={12} />
                 )
               ) : (
-                <span className="tiny-dash" />
+                <span
+                  className="tiny-dash"
+                  style={
+                    key === "incidents"
+                      ? { backgroundColor: p.critical }
+                      : undefined
+                  }
+                />
               )}
               {note}
             </div>
-            {key === "online" && (
-              <div
-                className="site-microbar"
-                aria-label={`${now.online} online, ${now.degraded} degraded, ${now.offline} offline`}
-              >
-                <i style={{ flex: now.online, background: p.healthy }} />
-                <i style={{ flex: now.degraded, background: p.warning }} />
-                <i style={{ flex: now.offline, background: p.critical }} />
-              </div>
-            )}
           </article>
         ),
       )}

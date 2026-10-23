@@ -759,21 +759,6 @@ h1 {
   background: var(--tone);
   opacity: 0.9;
 }
-.site-microbar {
-  position: absolute;
-  bottom: 0;
-  left: 15px;
-  right: 15px;
-  height: 2px;
-  display: flex;
-  gap: 2px;
-  opacity: 0.6;
-}
-.site-microbar i {
-  min-width: 0;
-  transition: flex 0.8s;
-}
-
 /* Live stage */
 .primary-grid {
   display: grid;
@@ -5547,7 +5532,7 @@ body {
   height: 24px;
 }
 .app-shell .overview-heading {
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-4);
   gap: var(--sp-4);
   align-items: flex-end;
 }
@@ -5567,7 +5552,7 @@ body {
 }
 .app-shell .command-bar {
   margin-bottom: var(--sp-5);
-  padding: var(--sp-3) 0;
+  padding: var(--sp-2) 0;
   gap: var(--sp-3);
   border-top: 0;
   border-bottom: 1px solid var(--sn-line);
@@ -6046,8 +6031,7 @@ dialog.dialog::backdrop,
 }
 /* ---------- data motion ---------- */
 .app-shell .load-bar,
-.app-shell .range-fill,
-.app-shell .site-microbar > * {
+.app-shell .range-fill {
   transition:
     width var(--t-slow) var(--ease),
     background-color var(--t-base) ease;
@@ -6237,9 +6221,6 @@ dialog.dialog::backdrop,
     min-width: 0;
     margin-top: 0 !important;
   }
-  .app-shell .navigation-rail .nav-items .nav-item[data-nav-item="fleet"] {
-    display: none;
-  }
   .app-shell .navigation-rail .nav-bottom {
     flex: 0 0 auto;
     margin: 0;
@@ -6317,7 +6298,7 @@ dialog.dialog::backdrop,
     align-items: flex-start;
     flex-direction: column;
     gap: var(--sp-2);
-    margin-bottom: var(--sp-4);
+    margin-bottom: var(--sp-3);
   }
   .app-shell .overview-meta {
     align-self: stretch;
@@ -6327,7 +6308,7 @@ dialog.dialog::backdrop,
     flex-direction: column;
     align-items: stretch;
     gap: var(--sp-3);
-    padding: var(--sp-3) 0;
+    padding: var(--sp-2) 0;
   }
   .app-shell .command-context {
     display: none;
@@ -7339,7 +7320,11 @@ dialog.dialog::backdrop,
     min-height: 44px;
   }
   .app-shell .panel-info-button::before {
-    inset: 9px;
+    inset: 12px;
+  }
+  .app-shell .panel-info-button svg {
+    width: 12px;
+    height: 12px;
   }
   .app-shell .dialog-close-button::before {
     inset: 10px;

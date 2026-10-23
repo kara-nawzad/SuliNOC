@@ -550,13 +550,6 @@ function Console({
                 navigate("network");
               }}
             />
-            <footer className="app-footer">
-              <span>
-                <Dot color={status === "live" ? p.healthy : p.warning} /> Engine{" "}
-                {status === "live" ? "connected" : "disconnected"}
-              </span>
-              <span>Deterministic world. Predictive operations.</span>
-            </footer>
           </main>
         </div>
         <Inspector

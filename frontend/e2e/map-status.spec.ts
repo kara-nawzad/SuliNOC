@@ -157,6 +157,16 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     "QCI 9 throughput",
     "E-RAB drop rate",
   ]);
+  await expect(page.locator(".app-footer")).toHaveCount(0);
+  await expect(page.locator(".site-microbar")).toHaveCount(0);
+  await expect(
+    page.locator(".kpi-card").nth(2).locator(".tiny-dash"),
+  ).toHaveCSS("background-color", "rgb(244, 63, 94)");
+  await expect(page.locator(".overview-heading")).toHaveCSS(
+    "margin-bottom",
+    "16px",
+  );
+  await expect(page.locator(".command-bar")).toHaveCSS("padding-top", "8px");
 
   await expect(page.locator(".kpi-grid [data-panel-info]")).toHaveCount(6);
   await expect(
@@ -306,6 +316,12 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     "flex-direction",
     "row",
   );
+  await expect(
+    navigation.getByRole("button", { name: "Maintenance" }),
+  ).toBeVisible();
+  await expect(
+    navigation.getByRole("button", { name: "Towers" }),
+  ).toBeVisible();
   const navItemTops = await navigation
     .locator(".nav-items .nav-item:visible")
     .evaluateAll((items) =>
@@ -318,13 +334,18 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(navigation.locator(".nav-bottom")).toBeHidden();
   await expect(
     navigation.getByRole("button", { name: "Maintenance" }),
-  ).toHaveCount(0);
+  ).toBeVisible();
   await expect(
     navigation.getByRole("button", { name: "Towers" }),
   ).toBeVisible();
   await expect(navigation.locator(".nav-items .nav-item:visible")).toHaveCount(
-    5,
+    6,
   );
+  await expect(page.locator(".overview-heading")).toHaveCSS(
+    "margin-bottom",
+    "12px",
+  );
+  await expect(page.locator(".command-bar")).toHaveCSS("padding-top", "8px");
 
   const speedButton = page.locator(".speed-button");
   await speedButton.scrollIntoViewIfNeeded();
@@ -353,14 +374,14 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   expect(mobileInfoMetrics).toMatchObject({
     width: "44px",
     height: "44px",
-    iconWidth: "14px",
+    iconWidth: "12px",
   });
   expect(Number.parseFloat(mobileInfoMetrics.visibleWidth)).toBeLessThanOrEqual(
-    26,
+    18,
   );
   expect(
     Number.parseFloat(mobileInfoMetrics.visibleHeight),
-  ).toBeLessThanOrEqual(26);
+  ).toBeLessThanOrEqual(18);
   await mobileInfoButton.click();
   const mobileNote = page.getByRole("dialog", { name: "Network availability" });
   await expect(mobileNote).toBeVisible();
