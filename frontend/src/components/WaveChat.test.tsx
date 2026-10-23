@@ -169,7 +169,7 @@ describe("Wave generative assistant", () => {
       ".wave-message-avatar",
     );
     expect(avatar).not.toBeNull();
-    expect(avatar).toHaveAttribute("src", "/assets/wave.jpg");
+    expect(avatar).toHaveAttribute("src", "/assets/wave-avatar.png");
   });
 
   it("lets the launcher drag, persists its position, and suppresses the drag click", () => {

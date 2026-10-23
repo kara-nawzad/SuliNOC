@@ -669,7 +669,7 @@ export function WaveChat({
                 {message.role === "assistant" && (
                   <img
                     className="wave-message-avatar"
-                    src="/assets/wave.jpg"
+                    src="/assets/wave-avatar.png"
                     alt=""
                     aria-hidden="true"
                   />

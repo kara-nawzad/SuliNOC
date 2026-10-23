@@ -3684,8 +3684,10 @@ input[type="text"] {
  * active segmented tab and the primary accent (kept navy so they read as primary). */
 .app-shell
   button:not(.wave-launcher):not(.selected):not(.active):not(.nav-item):not(
-    .tower-row
-  ):not(.segmented button):not(.timeframe-tabs button):not(.map-button) {
+    .panel-info-button
+  ):not(.dialog-close-button):not(.tower-row):not(.segmented button):not(
+    .timeframe-tabs button
+  ):not(.map-button) {
   background: #ffffff;
   border: 1px solid var(--ln);
   color: var(--tx);
@@ -5799,10 +5801,10 @@ body {
 }
 .app-shell
   button:not(.wave-launcher):not(.nav-item):not(.selected):not(.active):not(
-    .tower-row
-  ):not(.segmented button):not(.timeframe-tabs button):not(
-    [class*="leaflet"]
-  ):hover {
+    .panel-info-button
+  ):not(.dialog-close-button):not(.tower-row):not(.segmented button):not(
+    .timeframe-tabs button
+  ):not([class*="leaflet"]):hover {
   background: var(--sn-s1);
   border-color: var(--sn-link);
   box-shadow: 0 2px 8px -3px rgba(20, 121, 196, 0.35);
@@ -6220,6 +6222,12 @@ dialog.dialog::backdrop,
     flex: 1 1 auto;
     min-width: 0;
     margin-top: 0 !important;
+  }
+  .app-shell .navigation-rail .nav-items .nav-item[data-nav-item="towers"] {
+    order: 5;
+  }
+  .app-shell .navigation-rail .nav-items .nav-item[data-nav-item="fleet"] {
+    order: 6;
   }
   .app-shell .navigation-rail .nav-bottom {
     flex: 0 0 auto;
@@ -7271,7 +7279,11 @@ dialog.dialog::backdrop,
   min-width: 24px;
   min-height: 24px;
   padding: 0;
+  color: var(--sn-t2);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 6px;
+  box-shadow: none;
 }
 .app-shell .dialog-close-button::before {
   position: absolute;
@@ -7841,15 +7853,14 @@ dialog.dialog::backdrop,
   align-self: flex-start;
 }
 .wave-message-avatar {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
   flex: none;
   display: block;
-  border: 1px solid var(--sn-ln-soft, #c4d7ef);
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--sn-s2, #f6faff);
-  box-shadow: 0 2px 5px rgba(16, 38, 92, 0.12);
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  background: transparent;
 }
 .wave-message-content {
   min-width: 0;

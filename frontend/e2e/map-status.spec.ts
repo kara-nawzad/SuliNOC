@@ -204,6 +204,7 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   });
   await expect(panelInfoDialog).toBeVisible();
   await expect(panelInfoDialog).toHaveAttribute("open", "");
+  await expect(panelInfoDialog.locator(".eyebrow")).toHaveCount(0);
   await expect(panelInfoDialog).toContainText(
     "share of sites that are in service",
   );
@@ -341,6 +342,25 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(navigation.locator(".nav-items .nav-item:visible")).toHaveCount(
     6,
   );
+  const mobileNavigationOrder = await navigation
+    .locator(".nav-items .nav-item:visible")
+    .evaluateAll((items) =>
+      items
+        .map((item) => ({
+          id: item.getAttribute("data-nav-item"),
+          left: item.getBoundingClientRect().left,
+        }))
+        .sort((a, b) => a.left - b.left)
+        .map(({ id }) => id),
+    );
+  expect(mobileNavigationOrder).toEqual([
+    "overview",
+    "network",
+    "incidents",
+    "analytics",
+    "towers",
+    "fleet",
+  ]);
   await expect(page.locator(".overview-heading")).toHaveCSS(
     "margin-bottom",
     "12px",
@@ -366,12 +386,16 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     return {
       width: style.width,
       height: style.height,
+      backgroundColor: style.backgroundColor,
+      borderColor: style.borderTopColor,
       iconWidth: icon ? getComputedStyle(icon).width : "missing",
       visibleWidth: getComputedStyle(button, "::before").width,
       visibleHeight: getComputedStyle(button, "::before").height,
     };
   });
   expect(mobileInfoMetrics).toMatchObject({
+    backgroundColor: "rgba(0, 0, 0, 0)",
+    borderColor: "rgba(0, 0, 0, 0)",
     width: "44px",
     height: "44px",
     iconWidth: "12px",
@@ -385,6 +409,7 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await mobileInfoButton.click();
   const mobileNote = page.getByRole("dialog", { name: "Network availability" });
   await expect(mobileNote).toBeVisible();
+  await expect(mobileNote.locator(".eyebrow")).toHaveCount(0);
   const mobileClose = mobileNote.getByRole("button", { name: "Close dialog" });
   const mobileCloseMetrics = await mobileClose.evaluate((button) => {
     const style = getComputedStyle(button);
@@ -392,12 +417,16 @@ test("Esri tile failures show a visible schematic status and retry can recover",
     return {
       width: style.width,
       height: style.height,
+      backgroundColor: style.backgroundColor,
+      borderColor: style.borderTopColor,
       iconWidth: icon ? getComputedStyle(icon).width : "missing",
       visibleWidth: getComputedStyle(button, "::before").width,
       visibleHeight: getComputedStyle(button, "::before").height,
     };
   });
   expect(mobileCloseMetrics).toMatchObject({
+    backgroundColor: "rgba(0, 0, 0, 0)",
+    borderColor: "rgba(0, 0, 0, 0)",
     width: "44px",
     height: "44px",
     iconWidth: "14px",
@@ -434,6 +463,10 @@ test("Esri tile failures show a visible schematic status and retry can recover",
   await expect(wavePanel).toBeVisible();
   await expect(wavePanel.locator(".wave-panel-identity")).toHaveText("Wave");
   await expect(wavePanel.locator(".wave-panel-foot")).toHaveCount(0);
+  const waveAvatar = wavePanel.locator(".wave-message-avatar").first();
+  await expect(waveAvatar).toHaveAttribute("src", "/assets/wave-avatar.png");
+  await expect(waveAvatar).toHaveCSS("width", "36px");
+  await expect(waveAvatar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(
     wavePanel.getByRole("textbox", { name: "Message Wave" }),
   ).toHaveCSS("font-size", "16px");

@@ -140,10 +140,11 @@ test("Wave chat has a compact readable composer and uses the Wave avatar", async
   ).toHaveCount(0);
   await expect(chat.locator(".wave-panel-foot")).toHaveCount(0);
   await expect(chat.locator(".wave-message-mark")).toHaveCount(0);
-  await expect(chat.locator(".wave-message-avatar").first()).toHaveAttribute(
-    "src",
-    "/assets/wave.jpg",
-  );
+  const waveAvatar = chat.locator(".wave-message-avatar").first();
+  await expect(waveAvatar).toHaveAttribute("src", "/assets/wave-avatar.png");
+  await expect(waveAvatar).toHaveCSS("width", "36px");
+  await expect(waveAvatar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(waveAvatar).toHaveCSS("border-width", "0px");
 
   const composer = chat.locator(".wave-composer");
   const input = chat.getByRole("textbox", { name: "Message Wave" });

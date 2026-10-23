@@ -110,7 +110,7 @@ export function PanelNote() {
 
   if (!note) return null;
   return (
-    <Modal title={note.title} onClose={() => setNote(null)}>
+    <Modal title={note.title} onClose={() => setNote(null)} hideEyebrow>
       <p className="dialog-intro">{note.text}</p>
     </Modal>
   );
