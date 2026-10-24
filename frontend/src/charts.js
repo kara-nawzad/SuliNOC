@@ -122,8 +122,11 @@ export function lineChart(
       for (let i = 0; i < 5; i++) {
         const x = x0 + (span * i) / 4,
           lab = xLabel(x, span);
+        // The label is placed at sx(x): the minute value itself is not a
+        // pixel position. Passing it raw piled every label at one "x" and
+        // pushed them off-canvas, so the axis showed no times at all.
         if (lab)
-          addXLabel(x, lab, i === 0 ? "start" : i === 4 ? "end" : "middle");
+          addXLabel(sx(x), lab, i === 0 ? "start" : i === 4 ? "end" : "middle");
       }
     }
     for (const label of xLabels.sort((a, b) => a.x - b.x))

@@ -89,14 +89,14 @@ export function AlertsSidebar({
                     aria-label="Open event history"
                     onClick={onActivity}
                   >
-                    <History size={15} />
+                    <History size={14} />
                   </button>
                 </div>
               }
             />
             <div className="rail-subhead">
               <span>
-                <BellRing size={12} /> ITU-T X.733 ALARM STREAM
+                <BellRing size={14} /> ITU-T X.733 ALARM STREAM
               </span>
               <select
                 aria-label="Filter alarm severity"
@@ -146,7 +146,7 @@ export function AlertsSidebar({
                         onClick={() => alarm.node_id && onSelect(alarm.node_id)}
                       >
                         {alarm.node_id ?? alarm.detail}
-                        {alarm.node_id && <ChevronRight size={12} />}
+                        {alarm.node_id && <ChevronRight size={14} />}
                       </button>
                       <div className="incident-meta">
                         <span>
@@ -181,8 +181,8 @@ export function AlertsSidebar({
               )}
             </div>
             <button className="rail-footer" onClick={onActivity}>
-              <History size={12} /> View event history{" "}
-              <ChevronRight size={13} />
+              <History size={14} /> View event history{" "}
+              <ChevronRight size={14} />
             </button>
           </section>
         </>
@@ -194,7 +194,7 @@ export function AlertsSidebar({
             title="A1 Commander"
             right={
               <span className="ai-chip" style={tone(p.prediction)}>
-                <Sparkles size={11} />{" "}
+                <Sparkles size={14} />{" "}
                 {data.ai.ai_enabled ? data.ai.ai_mode.toUpperCase() : "OFF"}
               </span>
             }
@@ -225,7 +225,7 @@ export function AlertsSidebar({
                   </div>
                   <p>{action.label}</p>
                   <div className="intent-window">
-                    <Clock3 size={11} /> Risk within{" "}
+                    <Clock3 size={14} /> Risk within{" "}
                     {config.presentation.prediction_horizon_min} sim min
                     {action.eta
                       ? ` · approval in ${Math.ceil(action.eta)}s`
@@ -236,14 +236,14 @@ export function AlertsSidebar({
                       onClick={() => void decide(action.action_id, true)}
                       className="approve-button"
                     >
-                      <Check size={13} /> Approve pre-dispatch
+                      <Check size={14} /> Approve pre-dispatch
                     </button>
                     <button
                       className="veto-button"
                       aria-label={`Veto action ${action.action_id}`}
                       onClick={() => void decide(action.action_id, false)}
                     >
-                      <X size={13} /> Veto
+                      <X size={14} /> Veto
                     </button>
                   </div>
                 </motion.div>
@@ -252,7 +252,7 @@ export function AlertsSidebar({
             {!pending.length && (
               <div className="policy-empty">
                 <div className="oracle-orb">
-                  <Sparkles size={19} />
+                  <Sparkles size={18} />
                 </div>
                 <div>
                   <strong>

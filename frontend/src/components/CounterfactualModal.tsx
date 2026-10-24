@@ -88,7 +88,7 @@ export function CounterfactualModal({
         >
           <div className="impact-live-heading">
             <span>
-              <Sparkles size={13} /> LIVE SCENARIO ESTIMATE
+              <Sparkles size={14} /> LIVE SCENARIO ESTIMATE
             </span>
             <span className={data.ai.ai_enabled ? "live-on" : "live-off"}>
               {data.ai.ai_enabled ? "AI ACTIVE" : "AI INACTIVE"}

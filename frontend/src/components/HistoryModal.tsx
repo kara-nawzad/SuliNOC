@@ -165,7 +165,7 @@ export function HistoryModal({
           )}
           {summaries === null && !historyError && (
             <div className="history-loading" role="status">
-              <Loader2 className="spin" size={17} /> Loading summaries…
+              <Loader2 className="spin" size={18} /> Loading summaries…
             </div>
           )}
           {summaries?.length ? (

@@ -15,6 +15,7 @@ import {
   ChevronRight,
   CircleHelp,
   Clock3,
+  History,
   Layers3,
   LayoutDashboard,
   Loader2,
@@ -35,7 +36,6 @@ import { NetworkMap } from "./components/NetworkMap";
 import { greetingFor } from "./utils/greeting";
 import { simTimeToMinutes } from "./adapters.js";
 import { AlertsSidebar, type Execute } from "./components/AlertsSidebar";
-import { PowerCard } from "./components/AnalyticsRow";
 import { AnalyticsRow } from "./components/AnalyticsRow";
 import { PanelNote } from "./components/PanelNote";
 import { Inspector } from "./components/Inspector";
@@ -173,6 +173,15 @@ function Console({
     },
     [refresh],
   );
+  // Freeze decorative CSS animations while the tab is hidden (see .tab-hidden
+  // rules in app.css); polling pauses separately in useTelemetry.
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => root.classList.toggle("tab-hidden", document.hidden);
+    document.addEventListener("visibilitychange", sync);
+    sync();
+    return () => document.removeEventListener("visibilitychange", sync);
+  }, []);
   // Keep the rail highlight on the section currently in view.
   useEffect(() => {
     const ids = [
@@ -236,7 +245,9 @@ function Console({
     };
   }, [Boolean(config && data)]);
 
-  function navigate(id: string) {
+  // Stable identity so memoized panels (tower table, analytics row) can skip
+  // re-renders while telemetry keeps arriving every second.
+  const navigate = useCallback(function navigate(id: string) {
     setSection(id);
     if (id === "fleet") setDialog("fleet");
     else
@@ -247,7 +258,14 @@ function Console({
           behavior: "instant",
           block: "start",
         });
-  }
+  }, []);
+  const selectOnMap = useCallback(
+    (id: string) => {
+      selectNode(id);
+      navigate("network");
+    },
+    [selectNode, navigate],
+  );
   // Keep all console surfaces off-screen while the welcome iframe is loading or open.
   if (heroOpen) return null;
 
@@ -308,8 +326,8 @@ function Console({
               { id: "network", icon: Layers3, label: "Live network" },
               { id: "incidents", icon: Bell, label: "Incidents" },
               { id: "analytics", icon: Activity, label: "Analytics" },
-              { id: "fleet", icon: Truck, label: "Maintenance" },
               { id: "towers", icon: RadioTower, label: "Towers" },
+              { id: "fleet", icon: Truck, label: "Maintenance" },
             ].map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
@@ -335,7 +353,7 @@ function Console({
               aria-label="Hero"
               onClick={() => setHeroOpen(true)}
             >
-              <Home size={19} />
+              <Home size={18} />
             </button>
             <button
               className="nav-item"
@@ -344,7 +362,7 @@ function Console({
               aria-label="Simulation settings"
               onClick={() => setDialog("settings")}
             >
-              <Settings2 size={19} />
+              <Settings2 size={18} />
             </button>
             <button
               className="nav-item"
@@ -353,7 +371,7 @@ function Console({
               aria-label="About this simulation"
               onClick={() => setDialog("about")}
             >
-              <CircleHelp size={19} />
+              <CircleHelp size={18} />
             </button>
           </div>
         </nav>
@@ -374,7 +392,7 @@ function Console({
             <span className="header-divider" />
             <div className="network-switch">
               <span className="network-symbol">
-                <RadioTower size={17} />
+                <RadioTower size={18} />
               </span>
               <div>
                 <strong>{config.presentation.network_name}</strong>
@@ -388,7 +406,7 @@ function Console({
               aria-label="Open network event history"
               onClick={() => setDialog("activity")}
             >
-              <Bell size={18} />
+              <History size={18} />
               {data.dashboard.current.incidents > 0 && <i />}
             </button>
             {/* Phones only (see phone-layout.css): these three live in the bottom bar on desktop. */}
@@ -423,7 +441,7 @@ function Console({
             </span>
             <span className="header-divider" />
             <div className="header-system">
-              <ShieldCheck size={16} />
+              <ShieldCheck size={18} />
               <div>O-RAN · Non-RT RIC</div>
             </div>
           </header>
@@ -447,7 +465,7 @@ function Console({
                     : "RECONNECTING"}
                 </span>
                 <div className="sim-clock">
-                  <Clock3 size={13} />
+                  <Clock3 size={14} />
                   <span className="mono">{data.kpis.sim_time}</span>
                 </div>
               </div>
@@ -476,7 +494,7 @@ function Console({
             </div>
             {status !== "live" && (
               <div className="connection-banner" role="alert">
-                <Wifi size={16} />
+                <Wifi size={18} />
                 <span>
                   Telemetry connection interrupted. Showing the last received
                   state. {error}
@@ -486,7 +504,7 @@ function Console({
             )}
             {data.run_error && (
               <div className="run-error-banner" role="alert">
-                <X size={16} />
+                <X size={18} />
                 <span>{data.run_error}</span>
               </div>
             )}
@@ -505,17 +523,11 @@ function Console({
                 onSelect={selectNode}
                 onActivity={() => setDialog("activity")}
                 execute={execute}
-              >
-                <PowerCard
-                  data={data}
-                  config={config}
-                  onFleet={() => setDialog("fleet")}
-                />
-              </AlertsSidebar>
+              />
             </div>
             <div className="section-label">
               <span>
-                <Activity size={13} /> TELEMETRY & INTELLIGENCE
+                <Activity size={14} /> TELEMETRY & INTELLIGENCE
               </span>
               <span>
                 Server-derived metrics <span className="label-dot">·</span> Last{" "}
@@ -526,10 +538,8 @@ function Console({
               key={data.run_id}
               data={data}
               config={config}
-              onSelect={(id) => {
-                selectNode(id);
-                navigate("network");
-              }}
+              onSelect={selectOnMap}
+              onFleet={() => setDialog("fleet")}
               commander={
                 <AlertsSidebar
                   key={`cmd-${data.run_id}`}
@@ -542,14 +552,7 @@ function Console({
                 />
               }
             />
-            <TowerList
-              data={data}
-              config={config}
-              onSelect={(id) => {
-                selectNode(id);
-                navigate("network");
-              }}
-            />
+            <TowerList data={data} config={config} onSelect={selectOnMap} />
           </main>
         </div>
         <Inspector
@@ -619,7 +622,7 @@ function Console({
         {dialog === "search" && (
           <Modal title="Find a network site" onClose={closeDialog}>
             <label className="search-field">
-              <Search size={17} />
+              <Search size={18} />
               <input
                 autoFocus
                 placeholder="Search site ID or district..."
@@ -756,7 +759,7 @@ function Console({
               rel="noreferrer"
               className="button secondary"
             >
-              Explore the API <ArrowUpRight size={13} />
+              Explore the API <ArrowUpRight size={14} />
             </a>
           </Modal>
         )}
@@ -777,7 +780,7 @@ function Console({
                 aria-label="Dismiss notification"
                 onClick={() => setToast(null)}
               >
-                <X size={15} />
+                <X size={14} />
               </button>
             </motion.div>
           )}

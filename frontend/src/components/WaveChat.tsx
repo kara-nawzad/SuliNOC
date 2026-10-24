@@ -26,11 +26,10 @@ interface WaveMessage {
 }
 
 const MAX_MESSAGES = 80;
-const GREETING_DISMISSED_KEY = "sulinoc-wave-greeting-dismissed:v1";
 const LAUNCHER_POSITION_KEY = "sulinoc-wave-launcher-position:v1";
 const LAUNCHER_EDGE_GAP = 8;
 const MOBILE_NAV_HEIGHT = 76;
-const GREETING_TEXT = "Hey, I’m Wave 👋 Your network, made clearer.";
+const GREETING_TEXT = "Hey, I’m Wave 👋";
 
 type LauncherPosition = { right: number; bottom: number };
 type LauncherDrag = {
@@ -151,33 +150,6 @@ function storageKey(runId: string) {
   return `sulinoc-wave-chat:${runId}`;
 }
 
-function wasGreetingDismissed(): boolean {
-  try {
-    if (localStorage.getItem(GREETING_DISMISSED_KEY) === "true") return true;
-  } catch {
-    // Fall back to this tab's session when persistent storage is unavailable.
-  }
-  try {
-    return sessionStorage.getItem(GREETING_DISMISSED_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
-function rememberGreetingDismissal() {
-  try {
-    localStorage.setItem(GREETING_DISMISSED_KEY, "true");
-    return;
-  } catch {
-    // Continue with session storage when browser privacy settings block local storage.
-  }
-  try {
-    sessionStorage.setItem(GREETING_DISMISSED_KEY, "true");
-  } catch {
-    // The greeting remains dismissed for this mounted instance even without storage.
-  }
-}
-
 function readMessages(key: string): WaveMessage[] {
   try {
     const stored = sessionStorage.getItem(key);
@@ -211,6 +183,46 @@ function errorMessage(error: unknown): string {
   return "I couldn’t reach Wave’s AI service. Check the connection and try again.";
 }
 
+/** Wave's providers answer in Markdown-flavoured prose, but the panel renders
+ * plain text, so `**` markers would print literally. They are stripped at
+ * render time only — stored history keeps the original text for follow-ups. */
+function waveReplyLines(content: string): string[] {
+  return content
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*\*/g, "")
+    .split("\n");
+}
+
+/** Assistant replies are revealed line by line; older messages render the same
+ * lines without motion, so reopening the chat with history stays instant. */
+function AssistantLines({
+  content,
+  animate,
+}: {
+  content: string;
+  animate: boolean;
+}) {
+  const lines = waveReplyLines(content);
+  return (
+    <>
+      {lines.map((line, index) => (
+        <span
+          key={index}
+          className={animate ? "wave-line" : undefined}
+          style={
+            animate
+              ? { animationDelay: `${Math.min(index * 110, 880)}ms` }
+              : undefined
+          }
+        >
+          {line || "\u00A0"}
+          {index < lines.length - 1 ? <br /> : null}
+        </span>
+      ))}
+    </>
+  );
+}
+
 export function WaveChat({
   data,
   connection,
@@ -226,9 +238,6 @@ export function WaveChat({
   );
   const [providerStatus, setProviderStatus] =
     useState<WaveProviderState>(CHECKING_PROVIDER);
-  const [greetingVisible, setGreetingVisible] = useState(
-    () => !wasGreetingDismissed(),
-  );
   const [launcherPosition, setLauncherPosition] =
     useState<LauncherPosition | null>(() => readLauncherPosition());
   const [dragging, setDragging] = useState(false);
@@ -371,8 +380,8 @@ export function WaveChat({
       const launcher = launcherRef.current;
       if (!launcher) return;
       const rect = launcher.getBoundingClientRect();
-      const width = rect.width || (window.innerWidth <= 767 ? 72 : 104);
-      const height = rect.height || (window.innerWidth <= 767 ? 72 : 104);
+      const width = rect.width || (window.innerWidth <= 767 ? 72 : 88);
+      const height = rect.height || (window.innerWidth <= 767 ? 72 : 88);
       setLauncherPosition((current) => {
         if (!current) return current;
         const next = clampLauncherPosition(
@@ -413,13 +422,7 @@ export function WaveChat({
                 ? "offline"
                 : "idle"));
 
-  function dismissGreeting() {
-    setGreetingVisible(false);
-    rememberGreetingDismissal();
-  }
-
   function toggleOpen() {
-    if (!open) dismissGreeting();
     setOpen(!open);
   }
 
@@ -463,8 +466,8 @@ export function WaveChat({
       { right: drag.startRight - dx, bottom: drag.startBottom - dy },
       window.innerWidth,
       window.innerHeight,
-      rect.width || (window.innerWidth <= 767 ? 72 : 104),
-      rect.height || (window.innerWidth <= 767 ? 72 : 104),
+      rect.width || (window.innerWidth <= 767 ? 72 : 88),
+      rect.height || (window.innerWidth <= 767 ? 72 : 88),
     );
     drag.lastPosition = next;
     setLauncherPosition(next);
@@ -616,17 +619,9 @@ export function WaveChat({
 
   return (
     <div ref={assistantRef} className="wave-assistant" style={assistantStyle}>
-      {greetingVisible && !open && (
+      {!open && (
         <aside className="wave-greeting" role="status" aria-live="polite">
           <p>{GREETING_TEXT}</p>
-          <button
-            type="button"
-            aria-label="Dismiss Wave greeting"
-            title="Dismiss greeting"
-            onClick={dismissGreeting}
-          >
-            <X size={14} />
-          </button>
         </aside>
       )}
       {open && (
@@ -648,7 +643,7 @@ export function WaveChat({
               title="Close assistant"
               onClick={() => setOpen(false)}
             >
-              <X size={17} />
+              <X size={18} />
             </button>
           </header>
 
@@ -660,7 +655,7 @@ export function WaveChat({
             aria-live="polite"
             aria-relevant="additions text"
           >
-            {messages.map((message) => (
+            {messages.map((message, index) => (
               <article
                 key={message.id}
                 className={`wave-message wave-message--${message.role}${message.error ? " is-error" : ""}`}
@@ -675,7 +670,16 @@ export function WaveChat({
                   />
                 )}
                 <div className="wave-message-content">
-                  <p>{message.content}</p>
+                  <p>
+                    {message.role === "assistant" ? (
+                      <AssistantLines
+                        content={message.content}
+                        animate={index === messages.length - 1}
+                      />
+                    ) : (
+                      message.content
+                    )}
+                  </p>
                   {message.error && (
                     <div className="wave-error-actions">
                       <button
@@ -686,7 +690,7 @@ export function WaveChat({
                             : refresh()
                         }
                       >
-                        <RefreshCw size={12} /> Retry
+                        <RefreshCw size={14} /> Retry
                       </button>
                       <button type="button" onClick={refresh}>
                         Refresh telemetry
@@ -747,7 +751,7 @@ export function WaveChat({
               title="Send message"
               disabled={!draft.trim() || sending}
             >
-              <Send size={16} />
+              <Send size={18} />
             </button>
           </form>
         </section>

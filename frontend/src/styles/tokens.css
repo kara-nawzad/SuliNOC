@@ -1,0 +1,246 @@
+/* =====================================================================
+   SuliNOC design tokens — the single source of truth
+   =====================================================================
+   Every custom property the console uses is declared here and nowhere
+   else. app.css imports this file first and then only *consumes* the
+   tokens; if a value is missing, add it here rather than inline.
+
+   Rules of the system
+   -------------------
+   1. Type: one scale (see §2). Sizes that are not on the scale are marked
+      `legacy` with the step they should collapse into.
+   2. Space: one scale on the 4/8/12/16/24/32 grid (§3). Values outside it
+      are marked `legacy` and are retired in the spacing task.
+   3. Shape: radii come from §4 only.
+   4. Panel padding comes from --panel-pad (§5) only.
+   5. Colour values are unchanged from the published UI; they live here so
+      a theme change is a one-file edit. Semantic colours that the backend
+      owns (site status, X.733 severity, power source) are still served by
+      /api/config and must never be hard-coded in the frontend.
+
+   Responsive token steps are at the end of the file. They only ever
+   re-declare tokens; no component styles live here.
+   ===================================================================== */
+
+:root {
+  /* ---------------------------------------------------------------
+   * 1. FONTS
+   * --------------------------------------------------------------- */
+  --font-ui:
+    "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ---------------------------------------------------------------
+   * 2. TYPE SCALE  (px) — nine text sizes plus three display/metric steps
+   *
+   *   page title      30 → 42   greeting on the overview, boot headline
+   *   display-s       28        boot splash headline
+   *   section title   20        dialog headings, impact report
+   *   panel title     18        every panel and card <h2>, inspector id
+   *   lead            16        dialog intro, impact subtitle
+   *   emphasis        14        chart titles, row labels, card names
+   *   body            13        default UI text, prose, buttons, inputs
+   *   caption         12        units, states, sub-labels, tab labels
+   *   small           11        labels, eyebrows, notes, footers (the floor)
+   *   metric          30        KPI values, radial gauge (32 / 26 / 24 steps)
+   *   metric-sm       22        donut / chart readouts, impact live values
+   *
+   *   No raw px size may appear in app.css: every font-size is a token,
+   *   every font-weight is 400/500/600/700, and nothing resolves below 11px.
+   * --------------------------------------------------------------- */
+  --fs-page-title: clamp(30px, 2.4vw + 14px, 42px);
+  --fs-section-title: 20px;
+  --fs-panel-title: 18px;
+  --fs-lead: 16px;
+  --fs-emphasis: 14px;
+  --fs-body: 13px;
+  --fs-caption: 12px;
+  --fs-small: 11px;
+  --fs-metric: 30px; /* responsive: see the steps at the end of the file */
+  --fs-metric-sm: 22px;
+  /* scale step kept for the (currently unused) display-s slot */
+  --fs-display-s: 28px;
+
+  /* line heights, paired with the scale above */
+  --lh-tight: 1.15;
+  --lh-title: 1.25;
+  --lh-body: 1.5;
+  --lh-prose: 1.65;
+  --lh-metric: 1.1; /* numerals set in their own box */
+
+  /* letter spacing */
+  --ls-title: -0.015em;
+  --ls-label: 0.08em;
+  --ls-metric: -0.02em;
+
+  /* ---------------------------------------------------------------
+   * 3. SPACING SCALE  (4 / 8 / 12 / 16 / 24 / 32)
+   * --------------------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* ---------------------------------------------------------------
+   * 4. RADII
+   * --------------------------------------------------------------- */
+  --radius-xs: 4px; /* chips, badges, kbd */
+  --radius-sm: 8px; /* inner tabs, small keys */
+  --radius-md: 12px; /* buttons, inputs, popovers */
+  --radius-lg: 16px; /* panels, cards, dialogs */
+  --radius-pill: 999px; /* pills, switches, avatars */
+
+  /* ---------------------------------------------------------------
+   * 4b. CONTROL GEOMETRY  (one height for every control)
+   * --------------------------------------------------------------- */
+  --control-h: 36px; /* buttons, inputs, tabs, icon buttons */
+  --control-h-sm: 28px; /* dense icon buttons inside panel headings */
+
+  /* ---------------------------------------------------------------
+   * 5. PANEL PADDING  (one value for every panel and card)
+   * legacy: 18 px at ≤1280 and 16 px at ≤767 — see the bottom of the file
+   * --------------------------------------------------------------- */
+  --panel-pad: var(--space-4);
+
+  /* grid gutter between cards: same value as the panel inset, so the space
+     between two panels equals the space inside them */
+  --gap: var(--space-4);
+  /* outer page padding */
+  --pad-x: clamp(16px, 2.2vw, 32px);
+
+  /* ---------------------------------------------------------------
+   * 6. ELEVATION
+   * --------------------------------------------------------------- */
+  --shadow-1:
+    0 1px 2px rgba(16, 38, 92, 0.06), 0 6px 18px -10px rgba(16, 38, 92, 0.16);
+  --shadow-2:
+    0 2px 4px rgba(16, 38, 92, 0.06), 0 14px 32px -12px rgba(16, 38, 92, 0.22);
+  --shadow-pop: 0 18px 50px -12px rgba(16, 38, 92, 0.35);
+  --focus-ring: 0 0 0 3px rgba(20, 121, 196, 0.28);
+
+  /* ---------------------------------------------------------------
+   * 7. MOTION
+   * --------------------------------------------------------------- */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --t-fast: 140ms;
+  --t-base: 220ms;
+  --t-slow: 420ms;
+
+  /* ---------------------------------------------------------------
+   * 8. COLOUR  (values unchanged — branding stays exactly as published)
+   * --------------------------------------------------------------- */
+  --sn-bg: #d6e7fb;
+  --sn-s1: #eaf3fe;
+  --sn-s2: #f6faff;
+  --sn-s3: #e1edfb;
+  --sn-ln: #a9c2e6;
+  --sn-ln-soft: #c4d7ef;
+  --sn-line: rgba(16, 38, 92, 0.1);
+  --sn-tx: #10265c;
+  --sn-t2: #4b6192;
+  --sn-t3: #5f739f;
+  --sn-link: #1479c4;
+  --sn-link-strong: #0c6e8f;
+  --sn-link-wash: #d5f1f7;
+  --sn-live: #0c9c83; /* used through the --live alias */
+  --sn-crit: #d42f52;
+  --sn-ai: #6a4bd8;
+  /* the canvas stays dark until the welcome overlay is ready */
+  --canvas: #081426;
+
+  /* ---------------------------------------------------------------
+   * 9. STRUCTURE
+   * --------------------------------------------------------------- */
+  --nav-w: 72px;
+  --header-h: 64px;
+  --shell-max: 1760px;
+  --rail-w: clamp(320px, 23vw, 384px);
+  --page-top: var(--space-5);
+  --page-bottom: var(--space-6);
+  --tap-min: 44px;
+
+  /* ---------------------------------------------------------------
+   * 10. SHORT COLOUR ALIASES
+   * Kept because ~150 rules use the short form. They are pure aliases:
+   * change the colour in §8 and every surface follows.
+   * --------------------------------------------------------------- */
+  --bg: var(--sn-bg);
+  --s1: var(--sn-s1);
+  --s2: var(--sn-s2);
+  --ln: var(--sn-ln);
+  --tx: var(--sn-tx);
+  --t2: var(--sn-t2);
+  --live: var(--sn-live);
+  --link: var(--sn-link);
+  --crit: var(--sn-crit);
+  --line: var(--sn-line);
+  --muted-text: var(--sn-t2);
+
+  /* ---------------------------------------------------------------
+   * 11. RETIRED VOCABULARY
+   * The old stepping stones (--r-*, --sh-*, --fs-label/strong/title/display,
+   * --card-pad, the font aliases and the 20 px --sp-5) are gone: every rule
+   * now uses the canonical scales above, so no off-grid step is left.
+   * --------------------------------------------------------------- */
+}
+
+/* =====================================================================
+   Responsive token steps
+   ===================================================================== */
+
+/* laptops: tighten gutters, keep panel padding as close as possible */
+@media (max-width: 1280px) {
+  :root {
+    --gap: var(--space-4);
+    --panel-pad: var(--space-4);
+    --fs-metric: 26px; /* six KPI cards across a narrower screen */
+  }
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --nav-w: 64px;
+  }
+}
+
+/* phones & small tablets: bottom bar, single column, thumb-size targets */
+@media (max-width: 767px) {
+  :root {
+    --nav-w: 0px;
+    --header-h: 56px;
+    --gap: var(--space-3);
+    --panel-pad: var(--space-4);
+    --pad-x: var(--space-4);
+    --fs-page-title: 30px;
+  }
+}
+
+/* large desktops get one extra step of breathing room */
+@media (min-width: 1700px) {
+  :root {
+    --pad-x: 40px;
+    --gap: var(--space-5);
+    --panel-pad: var(--space-5);
+    --fs-metric: 32px;
+  }
+}
+
+/* small phones: the KPI value keeps two decimals readable in a 143 px box */
+@media (max-width: 420px) {
+  :root {
+    --fs-metric: 24px;
+  }
+}
+
+/* short desktop viewports (1366×768, 1280×800) */
+@media (min-width: 1025px) and (max-height: 860px) {
+  :root {
+    --page-top: var(--space-4);
+    --fs-page-title: 32px;
+  }
+}
