@@ -182,6 +182,7 @@ test("Esri tile failures show a visible schematic status and retry can recover",
         const style = getComputedStyle(button);
         const icon = button.querySelector("svg");
         return {
+          title: button.getAttribute("data-panel-info"),
           width: style.width,
           height: style.height,
           iconWidth: icon ? getComputedStyle(icon).width : "missing",
@@ -195,6 +196,9 @@ test("Esri tile failures show a visible schematic status and retry can recover",
         height === width &&
         iconWidth === "14px",
     ),
+    `CI-DIAGNOSTIC panel-info metrics: ${infoControlMetrics
+      .map((m) => `${m.title}=${m.width}/${m.height}/icon:${m.iconWidth}`)
+      .join(" | ")}`,
   ).toBe(true);
   await page
     .locator('.kpi-card [data-panel-info="Network availability"]')
