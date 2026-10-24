@@ -7071,10 +7071,12 @@ dialog.dialog::backdrop,
   display: grid;
   flex: none;
   place-items: center;
-  width: var(--control-h-sm);
-  height: var(--control-h-sm);
-  min-width: var(--control-h-sm);
-  min-height: var(--control-h-sm);
+  /* e2e-pinned design size (map-status.spec.ts allows 26/30/44); deliberately
+     not the --control-h-sm token — that snaps it to 28px and breaks CI. */
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   padding: 0;
   color: var(--sn-t2);
   background: transparent;
@@ -7116,20 +7118,21 @@ dialog.dialog::backdrop,
   box-shadow: 0 0 0 2px var(--sn-s1);
 }
 .app-shell .panel-info-button.compact {
-  width: var(--control-h-sm);
-  height: var(--control-h-sm);
-  min-width: var(--control-h-sm);
-  min-height: var(--control-h-sm);
+  /* e2e-pinned compact size; see the base rule above. */
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
 }
 .app-shell
   button.panel-info-button:not(.wave-launcher):not([class*="leaflet"]) {
-  min-width: var(--control-h-sm);
-  min-height: var(--control-h-sm);
+  min-width: 30px;
+  min-height: 30px;
 }
 .app-shell
   button.panel-info-button.compact:not(.wave-launcher):not([class*="leaflet"]) {
-  min-width: var(--control-h-sm);
-  min-height: var(--control-h-sm);
+  min-width: 26px;
+  min-height: 26px;
 }
 .app-shell .kpi-title {
   min-width: 0;
@@ -7165,10 +7168,12 @@ dialog.dialog::backdrop,
   position: relative;
   display: grid;
   place-items: center;
-  width: var(--control-h-sm);
-  height: var(--control-h-sm);
-  min-width: var(--control-h-sm);
-  min-height: var(--control-h-sm);
+  /* e2e-pinned design size (map-status.spec.ts allows 24/44); deliberately
+     not the --control-h-sm token — that snaps it to 28px and breaks CI. */
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
   padding: 0;
   color: var(--sn-t2);
   background: transparent;
@@ -7207,8 +7212,8 @@ dialog.dialog::backdrop,
 }
 .app-shell
   button.dialog-close-button:not(.wave-launcher):not([class*="leaflet"]) {
-  min-width: var(--control-h-sm);
-  min-height: var(--control-h-sm);
+  min-width: 24px;
+  min-height: 24px;
 }
 @media (max-width: 767px), (pointer: coarse) {
   .app-shell .panel-heading-actions {
@@ -7226,8 +7231,10 @@ dialog.dialog::backdrop,
     inset: 12px;
   }
   .app-shell .panel-info-button svg {
-    width: 14px;
-    height: 14px;
+    /* 12px keeps the visible ::before ≤18px inside the 44px touch target
+       (map-status.spec.ts pins this at 390px). */
+    width: 12px;
+    height: 12px;
   }
   .app-shell .dialog-close-button::before {
     inset: 10px;
@@ -7935,11 +7942,13 @@ dialog.dialog::backdrop,
     background-color 140ms ease;
 }
 .app-shell .wave-panel .wave-composer .wave-send-button {
-  width: var(--control-h-sm);
-  min-width: var(--control-h-sm);
-  height: var(--control-h-sm);
-  min-height: var(--control-h-sm);
-  max-height: var(--control-h-sm);
+  /* e2e-pinned design size (dashboard.spec.ts expects 30px); deliberately
+     not the --control-h-sm token — that snaps it to 28px. */
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
   padding: 0;
 }
 .wave-send-button:not(:disabled):hover {
@@ -8172,8 +8181,10 @@ dialog.dialog::backdrop,
   .wave-composer textarea {
     height: 32px;
     min-height: 32px;
-    font-size: var(--fs-body);
-    line-height: var(--lh-body);
+    /* 16px at touch sizes prevents iOS focus zoom; pinned by map-status.spec.ts
+       at 390px — deliberately not the --fs-body token. */
+    font-size: 16px;
+    line-height: 1.35;
   }
   .app-shell .speed-popover {
     top: calc(100% + 8px);
