@@ -1,10 +1,40 @@
-import { useMemo, useState } from "react";
-import type { Config, Snapshot } from "../types/api";
+import { memo, useMemo, useState } from "react";
+import { Search } from "lucide-react";
+import type { Config, NodeData, Snapshot } from "../types/api";
 import { PanelHeading } from "./ui";
+
+/** Telemetry replaces every node object each second, even when nothing visible
+ * changed. This is the table's data slice: exactly the fields a row renders
+ * (plus the header's length/faulty counts), so 300 rows only re-render when a
+ * shown value actually moves. Exported for the slice tests. */
+export function sameTowerRows(
+  previous: { data: Snapshot; config: Config; onSelect: (id: string) => void },
+  next: { data: Snapshot; config: Config; onSelect: (id: string) => void },
+) {
+  if (previous.config !== next.config || previous.onSelect !== next.onSelect)
+    return false;
+  const a = previous.data.nodes;
+  const b = next.data.nodes;
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const row: NodeData = a[i];
+    const other: NodeData = b[i];
+    if (
+      row.id !== other.id ||
+      row.status !== other.status ||
+      row.prb !== other.prb ||
+      row.cqi !== other.cqi ||
+      row.ring !== other.ring
+    )
+      return false;
+  }
+  return true;
+}
 
 /** Every tower in the current run, faulty ones first. Values are the backend's
  * live fields for this tick; nothing is estimated here. */
-export function TowerList({
+export const TowerList = memo(function TowerList({
   data,
   config,
   onSelect,
@@ -33,22 +63,28 @@ export function TowerList({
       <PanelHeading
         title="Towers"
         right={
-          <span className="mono">
+          <span className="mono towers-count">
             {data.nodes.length} SITES · {faulty} FAULTY
           </span>
         }
       />
-      <p className="note">
-        Live status of every tower in the current run. Select a row to inspect
-        it on the live network.
-      </p>
-      <input
-        type="search"
-        placeholder="Filter by tower ID"
-        aria-label="Filter towers"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+      {/* Search and the count share one row: the table starts higher and the
+          panel reads as a data table rather than a form. */}
+      <div className="towers-tools">
+        <label className="towers-search">
+          <Search size={14} aria-hidden="true" />
+          <input
+            type="search"
+            placeholder="Filter by tower ID"
+            aria-label="Filter towers"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <span className="towers-hint">
+          Faulty sites first · select a row to inspect it on the network
+        </span>
+      </div>
       <div className="tower-table" role="table" aria-label="Tower status">
         <div className="tower-row tower-head" role="row">
           <span role="columnheader">Tower</span>
@@ -79,6 +115,11 @@ export function TowerList({
           </button>
         ))}
       </div>
+      {!rows.length && (
+        <p className="towers-empty" role="status">
+          No tower matches “{query}”.
+        </p>
+      )}
     </section>
   );
-}
+}, sameTowerRows);

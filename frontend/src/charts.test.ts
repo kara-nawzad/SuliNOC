@@ -76,6 +76,53 @@ describe("chart x-axis window", () => {
     host.remove();
   });
 
+  it("spreads five in-window time labels across a 30-minute window", () => {
+    let frame: FrameRequestCallback | undefined;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frame = callback;
+      return 1;
+    });
+
+    const host = document.createElement("div");
+    Object.defineProperty(host, "clientWidth", {
+      configurable: true,
+      value: 430,
+    });
+    document.body.append(host);
+    const chart = lineChart(host);
+    chart.setWindow(30);
+    chart.setData([
+      [600, 37.2],
+      [605, 37.1],
+      [610, 37.3],
+      [615, 37.2],
+      [620, 37.4],
+      [625, 37.3],
+      [630, 37.65],
+    ]);
+    frame?.(0);
+
+    const labels = [...host.querySelectorAll("text.ax")];
+    expect(labels.map((label) => label.textContent)).toEqual([
+      "10:00",
+      "10:07",
+      "10:15",
+      "10:22",
+      "10:30",
+    ]);
+    // Every label sits inside the plot area, first flush left, last flush right.
+    for (const label of labels) {
+      const x = Number(label.getAttribute("x"));
+      expect(x).toBeGreaterThanOrEqual(46);
+      expect(x).toBeLessThanOrEqual(430 - 12);
+    }
+    expect(labels[0].getAttribute("text-anchor")).toBe("start");
+    expect(labels.at(-1)?.getAttribute("text-anchor")).toBe("end");
+
+    chart.destroy();
+    host.remove();
+  });
+
   it("shows only one endpoint label when a long window has one sample", () => {
     let frame: FrameRequestCallback | undefined;
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {

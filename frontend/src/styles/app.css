@@ -1,8 +1,11 @@
-/* Tailwind (v4) base and utilities come first: @import must be the first rule. Path is relative to this file. */
+/* Design tokens first: @import rules must precede every other rule, and the
+ * token file has to win the cascade. Do not declare --tokens below. */
+@import "./tokens.css";
 @import "tailwindcss";
 @config "../../tailwind.config.js";
 
-/* SuliNOC console stylesheet: the single source of truth for all app styles.
+/* SuliNOC console stylesheet. Tokens are NOT declared here: they live in
+ * styles/tokens.css (imported above) and this file only consumes them.
  * Sections are concatenated in the exact cascade order the app used before the merge
  * (base -> skin -> readable -> desktop type -> components -> phone -> phone layout -> design layer).
  * Edit rules here. Later sections win ties, so keep overrides in the section they belong to. */
@@ -14,9 +17,6 @@
 :root {
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
-  --muted-text: #79869d;
-  --line: rgba(255, 255, 255, 0.065);
-  --cyan-ui: #38bdf8;
 }
 * {
   box-sizing: border-box;
@@ -73,8 +73,8 @@ select {
   color: #abb8cc;
   background: #121b2a;
   border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
   cursor: pointer;
 }
 option {
@@ -97,13 +97,13 @@ input[type="checkbox"] {
 }
 ::-webkit-scrollbar-thumb {
   background: #263247;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 .mono {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 .muted,
@@ -111,8 +111,8 @@ input[type="checkbox"] {
   color: var(--muted-text);
 }
 .small-muted {
-  font-size: 11px;
-  line-height: 1.7;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-prose);
 }
 .status-dot {
   display: inline-block;
@@ -126,7 +126,7 @@ input[type="checkbox"] {
   animation: breathe 2.5s ease-in-out infinite;
 }
 .eyebrow {
-  font-size: 9px;
+  font-size: var(--fs-small);
   font-weight: 600;
   letter-spacing: 0.14em;
   color: #718199;
@@ -135,9 +135,9 @@ input[type="checkbox"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
+  width: var(--control-h);
+  height: var(--control-h);
+  border-radius: var(--radius-sm);
   background: transparent;
   border: 1px solid transparent;
   color: #8c9bb1;
@@ -151,15 +151,15 @@ input[type="checkbox"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   white-space: nowrap;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   background: transparent;
   padding: 8px 12px;
-  font-size: 11px;
+  font-size: var(--fs-body);
   font-weight: 500;
-  line-height: 1.5;
+  line-height: var(--lh-body);
 }
 .button:hover {
   background: rgba(255, 255, 255, 0.045);
@@ -181,8 +181,8 @@ input[type="checkbox"] {
 .text-link {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 10px;
+  gap: 8px;
+  font-size: var(--fs-body);
   color: #8bbfd1;
   background: none;
   border: 0;
@@ -217,7 +217,7 @@ input[type="checkbox"] {
   flex-direction: column;
   align-items: center;
   border-right: 1px solid var(--line);
-  padding: 20px 0;
+  padding: 24px 0;
   z-index: 50;
 }
 .nav-items {
@@ -232,7 +232,7 @@ input[type="checkbox"] {
   display: grid;
   place-content: center;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: none;
   color: #586b85;
 }
@@ -246,7 +246,7 @@ input[type="checkbox"] {
   top: 12px;
   height: 16px;
   width: 2px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   background: #3dd4eb;
   box-shadow: 0 0 10px #06b6d4;
 }
@@ -264,7 +264,7 @@ input[type="checkbox"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
 }
 .main-shell {
   margin-left: 72px;
@@ -274,24 +274,24 @@ input[type="checkbox"] {
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
-  gap: 23px;
-  padding: 0 27px;
+  gap: 24px;
+  padding: 0 24px;
   background: rgba(10, 16, 27, 0.7);
 }
 .wordmark {
-  font-size: 19px;
+  font-size: var(--fs-panel-title);
   color: #e7edf8;
   letter-spacing: -0.6px;
-  font-weight: 650;
-  line-height: 1.15;
+  font-weight: 600;
+  line-height: var(--lh-tight);
 }
 .wordmark > span {
   display: block;
-  font-size: 7px;
+  font-size: var(--fs-caption);
   letter-spacing: 2.1px;
   color: #697a91;
-  margin-top: 5px;
-  font-weight: 500;
+  margin-top: 4px;
+  font-weight: 600;
 }
 .header-divider {
   height: 24px;
@@ -301,51 +301,30 @@ input[type="checkbox"] {
 .network-switch {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .network-symbol {
-  padding: 7px;
+  padding: 8px;
   border: 1px solid #22374b;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
 }
 .network-switch strong {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 500;
   display: block;
 }
 .network-switch div > span {
   display: block;
-  font-size: 9px;
+  font-size: var(--fs-caption);
   color: #667890;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 .network-switch > svg {
   color: #52667e;
-  margin-left: 13px;
+  margin-left: 12px;
 }
 .header-spacer {
   flex: 1;
-}
-.search-trigger {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 10px;
-  width: 190px;
-  padding: 8px 10px;
-  border: 1px solid #ffffff0b;
-  border-radius: 7px;
-}
-.search-trigger:hover {
-  border-color: #ffffff24;
-}
-.search-trigger kbd {
-  font:
-    9px Inter,
-    sans-serif;
-  margin-left: auto;
-  padding: 1px 5px;
-  border-radius: 3px;
 }
 .header-bell {
   position: relative;
@@ -366,13 +345,13 @@ input[type="checkbox"] {
   color: #65ae9b;
 }
 .header-system div {
-  font-size: 8px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.09em;
   color: #94a8b9;
 }
 .header-system span {
   display: block;
-  font-size: 8px;
+  font-size: var(--fs-caption);
   letter-spacing: 0;
   color: #51647e;
   margin-top: 4px;
@@ -380,44 +359,44 @@ input[type="checkbox"] {
 main {
   max-width: 2040px;
   margin: auto;
-  padding: 23px 26px 0;
+  padding: 24px 24px 0;
   scroll-margin-top: 15px;
 }
 .overview-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 23px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 h1 {
-  font-size: 26px;
+  font-size: var(--fs-page-title);
   letter-spacing: -0.9px;
   font-weight: 600;
   color: #edf2fb;
-  line-height: 1.3;
+  line-height: var(--lh-title);
   display: flex;
   align-items: center;
   gap: 12px;
 }
 .overview-heading p {
   color: #77879c;
-  font-size: 11px;
-  margin-top: 7px;
+  font-size: var(--fs-caption);
+  margin-top: 8px;
   letter-spacing: 0.05px;
 }
 .overview-meta {
   display: flex;
-  gap: 17px;
+  gap: 16px;
   align-items: center;
 }
 .connection {
-  font-size: 8px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   letter-spacing: 0.9px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--healthy);
 }
 .connection.reconnecting {
@@ -427,36 +406,36 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 10px;
+  font-size: var(--fs-caption);
   border: 1px solid var(--line);
-  padding: 9px 10px;
-  border-radius: 7px;
+  padding: 8px 8px;
+  border-radius: var(--radius-sm);
 }
 .sim-clock svg {
   color: #687d98;
 }
 .sim-clock .seed {
   border-left: 1px solid var(--line);
-  padding-left: 9px;
-  margin-left: 3px;
-  font-size: 8px;
+  padding-left: 8px;
+  margin-left: 4px;
+  font-size: var(--fs-caption);
   color: #687c95;
   letter-spacing: 0.6px;
 }
 .command-bar {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
-  padding: 10px 0;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 8px 0;
   border-top: 1px solid #ffffff04;
   border-bottom: 1px solid #ffffff06;
 }
 .command-context {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 8px;
+  gap: 8px;
+  font-size: var(--fs-caption);
   letter-spacing: 1px;
   color: #92a1b6;
   white-space: nowrap;
@@ -472,56 +451,56 @@ h1 {
   height: 12px;
   width: 2px;
   background: #38bdf8;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
 }
 .sim-controls {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 .play-controls {
   display: flex;
   align-items: center;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: #0f1725;
   padding: 1px;
 }
 .play-controls .icon-button {
-  height: 26px;
-  width: 29px;
+  height: var(--control-h);
+  width: var(--control-h);
 }
 .speed-control {
   position: relative;
 }
 .speed-button {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   background: transparent;
   border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
   color: #98abc1;
-  font-size: 10px;
+  font-size: var(--fs-body);
 }
 .speed-popover {
   position: absolute;
   top: 42px;
   right: 0;
   width: 225px;
-  padding: 17px;
+  padding: 16px;
   border: 1px solid #2b3b52;
   background: #111b2b;
   box-shadow: 0 8px 32px #0009;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   z-index: 500;
 }
 .speed-popover label {
-  font-size: 11px;
+  font-size: var(--fs-caption);
   display: flex;
   justify-content: space-between;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 .speed-popover input {
   width: 100%;
@@ -530,8 +509,8 @@ h1 {
   display: flex;
   justify-content: space-between;
   color: #778ba4;
-  font-size: 9px;
-  margin-bottom: 15px;
+  font-size: var(--fs-caption);
+  margin-bottom: 16px;
 }
 .speed-popover .button {
   width: 100%;
@@ -543,8 +522,8 @@ h1 {
   margin: 0 4px;
 }
 .scenario-button {
-  font-size: 10px;
-  padding: 7px 11px;
+  font-size: var(--fs-body);
+  padding: 8px 12px;
   color: #96a8c0;
   background: #111a27;
 }
@@ -552,12 +531,12 @@ h1 {
   color: #7e92ae;
 }
 .ai-toggle {
-  font-size: 10px;
-  padding: 7px 11px;
+  font-size: var(--fs-caption);
+  padding: 8px 8px;
   color: #b5a0d9;
   border-color: #8b5cf62d;
   background: #8b5cf60c;
-  margin-left: 3px;
+  margin-left: 4px;
 }
 .ai-toggle.enabled {
   background: #8b5cf61a;
@@ -565,10 +544,10 @@ h1 {
   color: #c6aff8;
 }
 .roi-pill {
-  min-height: 30px;
-  padding: 6px 9px;
-  gap: 6px;
-  font-size: 9px;
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  gap: var(--space-2);
+  font-size: var(--fs-body);
   border: 1px solid transparent;
   box-shadow: 0 0 16px #10b9810d;
   font-variant-numeric: tabular-nums;
@@ -593,18 +572,18 @@ h1 {
 .roi-hours {
   display: inline-flex;
   align-items: baseline;
-  gap: 1px;
+  gap: 4px;
   white-space: nowrap;
 }
 .roi-money {
   color: #a7f3d0;
-  font-weight: 650;
+  font-weight: 600;
 }
 .roi-money small {
-  margin-left: 2px;
+  margin-left: 4px;
   color: #67bd9c;
-  font-family: Inter, sans-serif;
-  font-size: 7px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-caption);
   font-weight: 500;
 }
 .roi-separator {
@@ -612,12 +591,12 @@ h1 {
 }
 .roi-hours {
   color: #c5b5f6;
-  font-size: 8px;
+  font-size: var(--fs-caption);
 }
 .toggle-track {
   width: 22px;
   height: 12px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   padding: 2px;
@@ -639,14 +618,14 @@ h1 {
 .connection-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 14px;
+  gap: 8px;
+  padding: 8px 12px;
   background: #f59e0b0c;
   border: 1px solid #f59e0b30;
   color: #d6b56e;
-  border-radius: 8px;
-  margin-bottom: 14px;
-  font-size: 11px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  font-size: var(--fs-body);
 }
 .connection-banner button {
   margin-left: auto;
@@ -658,20 +637,20 @@ h1 {
 .run-error-banner {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  gap: 8px;
+  padding: 12px 12px;
+  margin-bottom: 12px;
   color: #fecaca;
   background: #f43f5e12;
   border: 1px solid #f43f5e45;
-  border-radius: 8px;
-  font-size: 11px;
-  line-height: 1.7;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
 }
 .run-error-banner svg {
   color: #fb7185;
   flex: none;
-  margin-top: 1px;
+  margin-top: 4px;
 }
 
 /* Metric ribbon */
@@ -679,14 +658,14 @@ h1 {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 19px;
+  margin-bottom: 16px;
 }
 .kpi-card {
   position: relative;
-  padding: 16px 16px 14px;
+  padding: 16px 16px 12px;
   overflow: hidden;
   min-height: 120px;
-  border-radius: 11px;
+  border-radius: var(--radius-md);
   transition:
     border-color 0.2s,
     transform 0.2s;
@@ -699,8 +678,8 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 5px;
-  font-size: 10px;
+  gap: 4px;
+  font-size: var(--fs-small);
   color: #95a4b9;
   white-space: nowrap;
 }
@@ -712,20 +691,20 @@ h1 {
   display: flex;
   align-items: baseline;
   gap: 4px;
-  margin-top: 18px;
+  margin-top: 16px;
   position: relative;
   isolation: isolate;
 }
 .kpi-value > span:first-child {
-  font-family: Inter, sans-serif;
+  font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
-  font-size: 26px;
+  font-size: inherit;
   font-weight: 600;
-  letter-spacing: -1px;
+  letter-spacing: var(--ls-metric);
   z-index: 2;
 }
 .kpi-unit {
-  font-size: 11px;
+  font-size: var(--fs-caption);
   color: #6f839d;
   letter-spacing: 0;
   z-index: 2;
@@ -742,11 +721,11 @@ h1 {
 .kpi-note {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 8px;
+  gap: 4px;
+  font-size: var(--fs-small);
   color: #6e8099;
-  margin-top: 10px;
-  white-space: nowrap;
+  margin-top: 8px;
+  white-space: normal;
   letter-spacing: -0.1px;
 }
 .kpi-note svg {
@@ -763,15 +742,15 @@ h1 {
 .primary-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 332px;
-  gap: 17px;
+  gap: 16px;
   align-items: stretch;
 }
 .panel-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 17px 18px;
+  gap: 8px;
+  padding: 16px 16px;
 }
 .panel-heading h2 {
   letter-spacing: -0.15px;
@@ -784,15 +763,15 @@ h1 {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   scroll-margin-top: 20px;
 }
 .map-heading-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: #638094;
-  font-size: 7px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.65px;
 }
 .map-heading-right > .status-dot {
@@ -803,10 +782,10 @@ h1 {
   height: 10px;
   width: 1px;
   background: var(--line);
-  margin: 0 5px;
+  margin: 0 4px;
 }
 .map-heading-right > .mono {
-  font-size: 8px;
+  font-size: var(--fs-caption);
   color: #8494a9;
   letter-spacing: 0;
 }
@@ -830,7 +809,7 @@ h1 {
     auto,
     40px 40px,
     40px 40px;
-  font-family: Inter, sans-serif;
+  font-family: var(--font-ui);
   z-index: 1;
 }
 .leaflet-container:after {
@@ -842,24 +821,23 @@ h1 {
   box-shadow: inset 0 0 55px #060d1690;
 }
 .leaflet-control-attribution {
-  font-size: 9px !important;
+  font-size: var(--fs-caption) !important;
   background: #0a101be8 !important;
   color: #a5b8c9 !important;
-  padding: 2px 5px !important;
+  padding: 4px 4px !important;
 }
 .network-tooltip {
   border: 1px solid #38516a !important;
-  border-radius: 7px !important;
+  border-radius: var(--radius-sm) !important;
   box-shadow: 0 5px 20px #0005 !important;
-  padding: 10px 13px !important;
-  font-size: 10px !important;
-  line-height: 1.7 !important;
+  padding: 8px 12px !important;
+  font-size: var(--fs-caption) !important;
+  line-height: var(--lh-prose) !important;
 }
 .network-tooltip strong {
   color: #e1edf9;
-  font:
-    11px "JetBrains Mono",
-    monospace;
+  font-size: var(--fs-small);
+  font-family: var(--font-mono);
 }
 .network-tooltip:before {
   display: none !important;
@@ -869,10 +847,10 @@ h1 {
   border: 0 !important;
   box-shadow: none !important;
   color: #93a7b4 !important;
-  font-size: 8px !important;
-  letter-spacing: 0.4px !important;
-  border-radius: 3px !important;
-  padding: 2px 5px !important;
+  font-size: var(--fs-small) !important;
+  letter-spacing: 0.06em !important;
+  border-radius: var(--radius-xs) !important;
+  padding: var(--space-1) var(--space-2) !important;
   font-weight: 500;
   text-shadow: 0 2px 5px #000;
   pointer-events: none;
@@ -904,6 +882,9 @@ h1 {
 .crew-marker svg {
   height: 100%;
   width: 100%;
+  /* Inline SVG sits on the text baseline and leaves descender space below,
+     nudging the truck off-centre inside its tile. Block layout removes that. */
+  display: block;
 }
 .map-top-overlay {
   position: absolute;
@@ -920,22 +901,22 @@ h1 {
   pointer-events: auto;
 }
 .map-top-overlay select {
-  font-size: 9px;
-  padding: 8px 10px;
+  font-size: var(--fs-caption);
+  padding: 8px 12px;
   background: #0c1622eb;
   border-color: #26394b;
 }
 .layer-control {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   position: relative;
 }
 .map-button {
-  width: 30px;
-  height: 30px;
+  width: var(--control-h);
+  height: var(--control-h);
   background: #0c1622eb;
   border: 1px solid #26394b;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   display: grid;
   place-content: center;
   color: #94afc4;
@@ -952,16 +933,16 @@ h1 {
   min-width: 135px;
   background: #101c2bf5;
   border: 1px solid #293b50;
-  border-radius: 7px;
-  padding: 10px;
+  border-radius: var(--radius-sm);
+  padding: 8px;
   box-shadow: 0 4px 20px #0005;
 }
 .layer-menu label {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 7px;
-  font-size: 11px;
+  gap: 8px;
+  padding: 8px;
+  font-size: var(--fs-body);
   text-transform: capitalize;
   color: #a1b3ca;
 }
@@ -973,12 +954,12 @@ h1 {
   display: flex;
   flex-direction: column;
   border: 1px solid #26394b;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 .map-zoom button {
-  width: 30px;
-  height: 30px;
+  width: var(--control-h);
+  height: var(--control-h);
   background: #0c1622eb;
   border: 0;
   display: grid;
@@ -998,18 +979,18 @@ h1 {
   z-index: 450;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 7px;
+  gap: 8px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.65px;
   color: #9ab6c7;
   text-shadow: 0 1px 6px #000;
   background: #0b1623cc;
   border: 1px solid #23364b6e;
-  border-radius: 5px;
-  padding: 7px 9px;
+  border-radius: var(--radius-xs);
+  padding: 8px 8px;
 }
 .map-location > span {
-  margin: 0 3px;
+  margin: 0 4px;
   color: #536d88;
 }
 .weather-chip {
@@ -1023,18 +1004,18 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 11px;
-  border-radius: 7px;
+  padding: 8px 8px;
+  border-radius: var(--radius-sm);
 }
 .weather-chip strong {
   display: block;
-  font-size: 9px;
+  font-size: var(--fs-caption);
   color: #c7d4e4;
   font-weight: 500;
 }
 .weather-chip span {
   display: block;
-  font-size: 8px;
+  font-size: var(--fs-caption);
   margin-top: 4px;
   opacity: 0.8;
 }
@@ -1046,11 +1027,11 @@ h1 {
   left: 17px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   pointer-events: none;
   color: #8da5b9;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   z-index: 449;
@@ -1059,7 +1040,7 @@ h1 {
   width: 4px;
   height: 4px;
   border: 1px solid currentColor;
-  border-radius: 1px;
+  border-radius: var(--radius-xs);
 }
 .map-north {
   position: absolute;
@@ -1067,16 +1048,15 @@ h1 {
   top: 58px;
   display: grid;
   justify-items: center;
-  gap: 2px;
+  gap: 4px;
   color: #8da5b9;
-  font:
-    8px "JetBrains Mono",
-    monospace;
+  font-size: var(--fs-small);
+  font-family: var(--font-mono);
   pointer-events: none;
   z-index: 449;
 }
 .map-north > span:last-child {
-  font-size: 20px;
+  font-size: var(--fs-section-title);
 }
 .leaflet-control-scale {
   margin-right: 14px !important;
@@ -1086,9 +1066,8 @@ h1 {
   color: #91a8bc;
   border-color: #51687d;
   background: #0a121ec9;
-  font:
-    8px "JetBrains Mono",
-    monospace;
+  font-size: var(--fs-small);
+  font-family: var(--font-mono);
   text-shadow: none;
 }
 .map-footer {
@@ -1097,7 +1076,7 @@ h1 {
   justify-content: space-between;
   gap: 12px;
   min-height: 42px;
-  padding: 9px 16px;
+  padding: 8px 16px;
   border-top: 1px solid var(--line);
 }
 .map-legend {
@@ -1110,7 +1089,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 7px;
+  font-size: var(--fs-small);
   color: #7c90a6;
 }
 .map-legend .status-dot {
@@ -1118,19 +1097,19 @@ h1 {
   height: 4px;
 }
 .map-footer-hint {
-  font-size: 8px;
+  font-size: var(--fs-small);
   color: #536b87;
   white-space: nowrap;
 }
 .map-footer-hint > span {
   color: #84b3c2;
-  padding-left: 5px;
+  padding-left: 4px;
 }
 /* FLIP alarm stream and A1 recommendations */
 .alerts-rail {
   display: grid;
   grid-template-rows: minmax(230px, 1.1fr) minmax(190px, 1fr);
-  gap: 14px;
+  gap: 12px;
   min-height: 0;
   max-height: calc(clamp(345px, 40vh, 510px) + 93px);
   scroll-margin-top: 20px;
@@ -1141,46 +1120,46 @@ h1 {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 .heading-actions {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 .count-badge {
-  font-size: 9px;
-  font-family: "JetBrains Mono", monospace;
+  font-size: var(--fs-small);
+  font-family: var(--font-mono);
   color: var(--tone);
-  padding: 2px 6px;
+  padding: 4px 8px;
   border: 1px solid color-mix(in srgb, var(--tone) 20%, transparent);
   background: color-mix(in srgb, var(--tone) 9%, transparent);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 .alerts-rail .panel-heading {
-  padding: 13px 15px 10px;
+  padding: 12px 16px 8px;
 }
 .alerts-rail .panel-heading h2 {
-  font-size: 11px;
+  font-size: var(--fs-panel-title);
 }
 .rail-subhead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px 9px;
-  gap: 7px;
+  padding: 0 12px 8px;
+  gap: 8px;
 }
 .rail-subhead > span {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 6px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.7px;
   color: #5c708e;
 }
 .rail-subhead select {
-  font-size: 8px;
-  padding: 4px 5px;
+  font-size: var(--fs-caption);
+  padding: 4px 8px;
   background: #121d2b;
   max-width: 100px;
 }
@@ -1192,9 +1171,9 @@ h1 {
 }
 .incident {
   display: flex;
-  gap: 9px;
+  gap: 8px;
   position: relative;
-  padding: 12px 13px;
+  padding: 12px 12px;
   border-bottom: 1px solid #ffffff04;
 }
 .incident:hover {
@@ -1208,7 +1187,7 @@ h1 {
   color: var(--tone);
   background: color-mix(in srgb, var(--tone) 9%, transparent);
   border: 1px solid color-mix(in srgb, var(--tone) 15%, transparent);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   flex: none;
 }
 .incident-body {
@@ -1219,24 +1198,25 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
 }
 .incident-title strong {
-  font-size: 9px;
-  font-weight: 500;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: var(--lh-body);
   color: #bfcee0;
-  white-space: nowrap;
+  white-space: normal;
 }
 .severity {
   display: inline-flex;
   align-items: center;
   color: var(--tone);
-  font-size: 6px;
+  font-size: var(--fs-small);
   letter-spacing: 0.6px;
-  font-weight: 650;
-  line-height: 1.3;
-  padding: 3px 5px;
-  border-radius: 4px;
+  font-weight: 600;
+  line-height: var(--lh-body);
+  padding: 4px 4px;
+  border-radius: var(--radius-xs);
   border: 1px solid color-mix(in srgb, var(--tone) 18%, transparent);
   background: color-mix(in srgb, var(--tone) 8%, transparent);
   white-space: nowrap;
@@ -1247,8 +1227,8 @@ h1 {
   gap: 4px;
   background: none;
   border: 0;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
   color: #8b9fbb;
   padding: 0;
   margin-top: 4px;
@@ -1263,10 +1243,10 @@ h1 {
 .incident-meta {
   display: flex;
   justify-content: space-between;
-  gap: 5px;
-  font-size: 7px;
+  gap: 4px;
+  font-size: var(--fs-caption);
   color: #526985;
-  margin-top: 5px;
+  margin-top: 4px;
 }
 .incident-meta > span {
   overflow: hidden;
@@ -1276,13 +1256,13 @@ h1 {
 .rail-footer {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   justify-content: center;
   border: 0;
   border-top: 1px solid var(--line);
   padding: 8px;
   background: #ffffff01;
-  font-size: 8px;
+  font-size: var(--fs-caption);
   color: #6b90ac;
 }
 .rail-footer:hover {
@@ -1294,39 +1274,39 @@ h1 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 8px;
   text-align: center;
   min-height: 130px;
-  padding: 18px;
+  padding: 16px;
   color: #6d829e;
 }
 .empty-state strong {
   color: #b6c6da;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--fs-emphasis);
+  font-weight: 600;
 }
 .empty-state span {
-  font-size: 9px;
-  line-height: 1.6;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
 }
 .ai-chip {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 7px;
+  font-size: var(--fs-small);
   letter-spacing: 0.6px;
   border: 1px solid #8b5cf62b;
   background: #8b5cf60b;
   color: var(--tone);
-  padding: 4px 6px;
-  border-radius: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
 }
 .policy-description {
   display: flex;
-  gap: 5px;
-  padding: 1px 15px 10px;
+  gap: 4px;
+  padding: 4px 16px 8px;
   color: #6c7b9a;
-  font-size: 7px;
+  font-size: var(--fs-caption);
   align-items: center;
 }
 .policy-description svg {
@@ -1334,55 +1314,55 @@ h1 {
   flex: none;
 }
 .policy-list {
-  padding: 0 13px;
+  padding: 0 12px;
   overflow: auto;
   min-height: 0;
   flex: 1;
 }
 .intent-card {
-  padding: 10px;
+  padding: 8px;
   background: linear-gradient(135deg, #8b5cf60b, #17233550);
   border: 1px solid #8b5cf629;
-  border-radius: 8px;
-  margin-bottom: 9px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
   overflow: hidden;
 }
 .intent-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 9px;
+  font-size: var(--fs-caption);
 }
 .probability {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
 }
 .intent-card > p {
-  font-size: 9px;
+  font-size: var(--fs-body);
   color: #bccbe0;
-  margin-top: 5px;
+  margin-top: 4px;
 }
 .intent-window {
   display: flex;
   align-items: center;
   gap: 4px;
   color: #687f9a;
-  font-size: 7px;
+  font-size: var(--fs-small);
   margin-top: 4px;
 }
 .intent-actions {
   display: flex;
-  gap: 5px;
-  margin-top: 10px;
+  gap: 4px;
+  margin-top: 8px;
 }
 .intent-actions button {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 5px;
-  font-size: 8px;
-  padding: 6px 7px;
+  border-radius: var(--radius-xs);
+  font-size: var(--fs-body);
+  padding: 8px 8px;
 }
 .approve-button {
   border: 1px solid #8b5cf645;
@@ -1404,7 +1384,7 @@ h1 {
 .policy-empty {
   min-height: 87px;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   justify-content: center;
 }
@@ -1415,7 +1395,7 @@ h1 {
   box-shadow:
     0 0 25px #8b5cf610,
     inset 0 0 10px #8b5cf612;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: #8b5cf60c;
   color: #a284d9;
   flex: none;
@@ -1423,29 +1403,29 @@ h1 {
   place-content: center;
 }
 .policy-empty strong {
-  font-size: 9px;
-  font-weight: 500;
+  font-size: var(--fs-emphasis);
+  font-weight: 600;
   color: #afa5c6;
 }
 .policy-empty p {
-  font-size: 8px;
-  line-height: 1.7;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
   color: #647592;
   margin-top: 4px;
 }
 .policy-foot {
-  padding: 10px 14px;
+  padding: 8px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-top: 1px solid var(--line);
-  font-size: 7px;
+  font-size: var(--fs-small);
   color: #72829e;
 }
 .policy-foot > span:first-child {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 .policy-foot .status-dot {
   width: 4px;
@@ -1457,81 +1437,81 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 21px 1px 12px;
+  margin: 24px 4px 12px;
   color: #52677f;
   gap: 12px;
-  font-size: 8px;
+  font-size: var(--fs-caption);
 }
 .section-label > span:first-child {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   letter-spacing: 1px;
   color: #7d91a8;
 }
 .section-label > span:last-child {
-  font-size: 8px;
+  font-size: var(--fs-caption);
 }
 .label-dot {
-  padding: 0 5px;
+  padding: 0 4px;
 }
 .analytics-grid {
   display: grid;
   grid-template-columns: 1.15fr 1.06fr 0.85fr 0.95fr;
-  gap: 15px;
+  gap: 16px;
   scroll-margin-top: 20px;
 }
 .analytics-card {
   min-width: 0;
-  border-radius: 11px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   min-height: 238px;
 }
 .analytics-card .panel-heading {
-  padding: 16px 16px 10px;
+  padding: 16px 16px 8px;
 }
 .analytics-card h2 {
-  font-size: 11px;
+  font-size: var(--fs-panel-title);
 }
 .analytics-card .panel-heading .small-muted {
-  font-size: 7px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.7px;
 }
 .chart-summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1px 16px 0;
+  padding: 0 16px;
 }
 .chart-summary > div:first-child {
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 4px;
 }
 .chart-summary > div:first-child > span:first-child {
-  font-size: 22px;
+  font-size: var(--fs-metric-sm);
   letter-spacing: -0.7px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .chart-summary > div:first-child > span:last-child {
-  font-size: 9px;
+  font-size: var(--fs-small);
   color: #657e99;
 }
 .segmented {
   display: flex;
-  padding: 2px;
+  padding: 4px;
   border: 1px solid var(--line);
   background: #0b121e;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 .segmented button {
   border: 0;
   background: transparent;
   color: #667d99;
   padding: 4px 8px;
-  border-radius: 3px;
-  font-size: 7px;
+  border-radius: var(--radius-xs);
+  font-size: var(--fs-body);
 }
 .segmented button.selected {
   color: #9ee0ed;
@@ -1540,20 +1520,20 @@ h1 {
 .timeframe-tabs {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px;
+  gap: 4px;
+  padding: 4px;
   background: #091321;
   border: 1px solid #ffffff0d;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 .timeframe-tabs button {
-  padding: 5px 7px;
+  padding: 8px 8px;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: transparent;
   color: #70839b;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 7px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-body);
   line-height: 1;
 }
 .timeframe-tabs button:hover {
@@ -1565,21 +1545,21 @@ h1 {
   box-shadow: inset 0 -2px 0 #06b6d4;
 }
 .chart-provenance {
-  padding: 0 16px 11px;
+  padding: 0 16px 8px;
   color: #52677e;
-  font-family: "Manrope", system-ui, sans-serif;
-  font-size: 12px;
-  line-height: 1.5;
+  font-family: var(--font-ui);
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
 }
 .cell-table-head {
   display: grid;
   grid-template-columns: 1fr 50px 24px;
-  gap: 14px;
+  gap: 12px;
   color: #546b89;
-  font-size: 6px;
+  font-size: var(--fs-small);
   letter-spacing: 0.6px;
-  margin: 6px 16px 1px;
-  padding-bottom: 9px;
+  margin: 8px 16px 4px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--line);
 }
 .cell-table-head span:nth-child(n + 2) {
@@ -1589,9 +1569,9 @@ h1 {
   display: grid;
   grid-template-columns: 1fr 50px 24px;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
-  padding: 10px 16px;
+  padding: 8px 16px;
   border: 0;
   border-bottom: 1px solid #ffffff04;
   background: none;
@@ -1601,11 +1581,11 @@ h1 {
   background: #ffffff03;
 }
 .cell-row strong {
-  font-size: 8px;
+  font-size: var(--fs-body);
   font-weight: 400;
   color: #a4b9d1;
   display: flex;
-  gap: 5px;
+  gap: 4px;
   align-items: center;
 }
 .cell-row strong svg {
@@ -1617,16 +1597,16 @@ h1 {
   opacity: 1;
 }
 .cell-row small {
-  font-size: 7px;
+  font-size: var(--fs-caption);
   color: #637996;
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 .cell-load > span:first-child {
   display: block;
   text-align: right;
   color: #aabed6;
-  font-size: 8px;
+  font-size: var(--fs-caption);
   margin-bottom: 4px;
 }
 .load-bar {
@@ -1634,7 +1614,7 @@ h1 {
   width: 50px;
   height: 2px;
   background: #ffffff08;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   overflow: hidden;
 }
 .load-bar i {
@@ -1646,16 +1626,16 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3px;
-  border-radius: 4px;
+  padding: 4px;
+  border-radius: var(--radius-xs);
   background: #10b9810b;
   color: #77a999;
-  font-size: 8px;
+  font-size: var(--fs-caption);
 }
 .analytics-foot {
-  font-size: 7px;
+  font-size: var(--fs-small);
   color: #4f6781;
-  padding: 9px 16px;
+  padding: 8px 16px;
 }
 .radial-wrap {
   height: 138px;
@@ -1673,24 +1653,25 @@ h1 {
   right: 0;
   top: 53px;
   text-align: center;
-  font-size: 29px;
-  font-weight: 550;
-  letter-spacing: -1px;
+  font-size: var(--fs-metric);
+  font-weight: 600;
+  letter-spacing: var(--ls-metric);
   color: #d4c1fb;
+  line-height: var(--lh-metric);
   font-variant-numeric: tabular-nums;
 }
 .radial-value small {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: #8e79ba;
-  margin-left: 2px;
+  margin-left: 4px;
 }
 .oracle-risk-label {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   color: #7b6a9f;
-  font-size: 8px;
+  font-size: var(--fs-small);
   font-weight: 500;
   letter-spacing: 0.9px;
-  line-height: 1.25;
+  line-height: var(--lh-body);
   text-align: center;
 }
 .oracle-target {
@@ -1698,27 +1679,27 @@ h1 {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  gap: 5px;
-  margin-top: 2px;
+  gap: 4px;
+  margin-top: 4px;
 }
 .oracle-target > span:first-child {
   color: #a4a0bc;
-  font-size: 8px;
+  font-size: var(--fs-caption);
 }
 .oracle-target > span:last-child {
   color: #5c718f;
-  font-size: 7px;
+  font-size: var(--fs-caption);
 }
 .oracle-threshold {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  margin-top: 13px;
+  gap: 4px;
+  margin-top: 12px;
   border-top: 1px solid var(--line);
-  padding: 10px 8px;
+  padding: 8px 8px;
   color: #6b7b94;
-  font-size: 7px;
+  font-size: var(--fs-small);
   white-space: nowrap;
 }
 .oracle-threshold .status-dot {
@@ -1727,10 +1708,10 @@ h1 {
 }
 .oracle-threshold .mono {
   color: #a5936e;
-  font-size: 7px;
+  font-size: var(--fs-small);
 }
 .power-chart-row {
-  padding: 7px 16px;
+  padding: 8px 16px;
 }
 .donut-wrap {
   flex: none;
@@ -1743,8 +1724,9 @@ h1 {
   gap: 4px;
 }
 .donut-wrap strong {
-  font-weight: 550;
-  letter-spacing: -0.8px;
+  font-weight: 600;
+  letter-spacing: var(--ls-metric);
+  font-variant-numeric: tabular-nums;
 }
 .donut-wrap small {
   color: #607893;
@@ -1753,14 +1735,14 @@ h1 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  gap: 8px;
 }
 .power-legend > span {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   color: #7b91ad;
-  font-size: 8px;
+  font-size: var(--fs-caption);
 }
 .power-legend .status-dot {
   width: 4px;
@@ -1768,7 +1750,7 @@ h1 {
 }
 .power-legend b {
   margin-left: auto;
-  font-size: 8px;
+  font-size: var(--fs-caption);
   font-weight: 400;
   color: #a4bbd2;
 }
@@ -1778,11 +1760,11 @@ h1 {
   align-items: center;
   margin: 8px 16px 12px;
   color: #657e9c;
-  font-size: 8px;
+  font-size: var(--fs-caption);
 }
 .power-ats strong {
-  font-size: 9px;
-  font-family: "JetBrains Mono", monospace;
+  font-size: var(--fs-caption);
+  font-family: var(--font-mono);
   font-weight: 400;
 }
 .fleet-summary {
@@ -1794,13 +1776,13 @@ h1 {
   background: #ffffff01;
   border: 0;
   border-top: 1px solid var(--line);
-  font-size: 7px;
+  font-size: var(--fs-caption);
   color: #7d91ac;
 }
 .fleet-summary > span {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 .fleet-summary b {
   color: #aec5d6;
@@ -1809,23 +1791,6 @@ h1 {
 .fleet-summary:hover {
   background: #ffffff04;
   color: #a3ccdb;
-}
-.app-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  padding: 18px 1px;
-  font-size: 7px;
-}
-.app-footer > span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.app-footer .status-dot {
-  width: 4px;
-  height: 4px;
 }
 
 /* Inspector: an independent, dismissible instrumentation surface. */
@@ -1840,9 +1805,9 @@ h1 {
   border-color: #263b53;
   box-shadow: -12px 12px 65px #0009;
   backdrop-filter: blur(30px);
-  padding: 17px 20px;
+  padding: var(--space-4) var(--panel-pad);
   overflow: auto;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 .inspector-header {
   display: flex;
@@ -1851,81 +1816,83 @@ h1 {
 }
 .inspector-header .eyebrow {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
 }
 .inspector h2 {
-  font-size: 20px;
+  font-size: var(--fs-panel-title);
+  line-height: var(--lh-title);
+  font-weight: 500;
   margin-top: 12px;
   color: #dce8f7;
 }
 .inspector-place {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   color: #6f87a4;
-  font-size: 9px;
+  font-size: var(--fs-caption);
   margin-top: 8px;
 }
 .site-status {
-  font-size: 8px;
-  margin-top: 15px;
-  padding: 5px 8px;
+  font-size: var(--fs-caption);
+  margin-top: 16px;
+  padding: 4px 8px;
 }
 .inspector-tags {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 .inspector-tags span {
   display: flex;
   gap: 4px;
   align-items: center;
   border: 1px solid var(--line);
-  border-radius: 4px;
-  font-size: 8px;
+  border-radius: var(--radius-xs);
+  font-size: var(--fs-small);
   color: #889ebb;
-  padding: 4px 6px;
+  padding: 4px 8px;
 }
 .inspector h3 {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 8px;
+  gap: 4px;
+  font-size: var(--fs-small);
   letter-spacing: 1.1px;
   color: #6883a1;
   border-top: 1px solid var(--line);
-  padding-top: 20px;
-  margin-top: 23px;
+  padding-top: 24px;
+  margin-top: 24px;
   margin-bottom: 12px;
 }
 .inline-warning {
   color: var(--tone);
-  font-size: 9px;
-  line-height: 1.7;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
   border: 1px solid color-mix(in srgb, var(--tone) 20%, transparent);
-  border-radius: 6px;
-  padding: 9px;
+  border-radius: var(--radius-sm);
+  padding: 8px;
   margin-top: 12px;
   background: color-mix(in srgb, var(--tone) 6%, transparent);
 }
 .inspector-action {
   width: 100%;
-  margin-top: 22px;
+  margin-top: 24px;
 }
 .inspector-coords {
-  font-size: 8px;
+  font-size: var(--fs-caption);
   color: #4f6a87;
   text-align: center;
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 /* Dialogs, command palette, feedback. Native dialog supplies focus trapping. */
 .dialog {
   padding: 0;
   border: 1px solid #2b3c52;
-  border-radius: 15px;
+  border-radius: var(--radius-lg);
   width: 460px;
   max-width: calc(100vw - 32px);
   max-height: 85vh;
@@ -1938,46 +1905,46 @@ h1 {
   backdrop-filter: blur(5px);
 }
 .dialog-content {
-  padding: 25px;
+  padding: var(--space-5);
 }
 .dialog-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 .dialog-heading h2 {
-  font-size: 19px;
+  font-size: var(--fs-section-title);
   color: #dfebf8;
-  font-weight: 550;
+  font-weight: 600;
   letter-spacing: -0.5px;
-  margin-top: 7px;
+  margin-top: 8px;
 }
 .dialog-heading .eyebrow {
-  font-size: 7px;
+  font-size: var(--fs-small);
   color: #5f84a3;
 }
 .dialog-intro {
-  font-size: 11px;
-  line-height: 1.8;
+  font-size: var(--fs-lead);
+  line-height: var(--lh-prose);
   color: #8ba1bd;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 .field {
   display: block;
-  font-size: 10px;
+  font-size: var(--fs-caption);
   color: #9bb1cc;
-  margin: 18px 0;
+  margin: 16px 0;
 }
 .field select {
   display: block;
   width: 100%;
   margin-top: 8px;
-  padding: 11px;
-  font-size: 11px;
+  padding: 12px;
+  font-size: var(--fs-caption);
   border-color: #2a3b51;
   background: #121e30;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
 }
 .scenario-disclaimer {
   display: flex;
@@ -1985,12 +1952,12 @@ h1 {
   gap: 8px;
   background: #38bdf80b;
   border: 1px solid #38bdf819;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   color: #7da9bb;
-  font-size: 9px;
-  line-height: 1.7;
-  padding: 10px;
-  margin: 20px 0;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
+  padding: 8px;
+  margin: 24px 0;
 }
 .scenario-disclaimer svg {
   flex: none;
@@ -1998,7 +1965,7 @@ h1 {
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 9px;
+  gap: 8px;
   margin-top: 24px;
 }
 .dialog.impact-dialog {
@@ -2017,48 +1984,48 @@ h1 {
 }
 .impact-heading {
   align-items: flex-start;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 .impact-heading h2 {
   max-width: 760px;
-  line-height: 1.35;
+  line-height: var(--lh-title);
 }
 .impact-subtitle {
   margin-top: 8px;
   color: #7188a3;
-  font-size: 9px;
-  line-height: 1.6;
+  font-size: var(--fs-lead);
+  line-height: var(--lh-prose);
 }
 .impact-live {
-  margin: 4px 0 17px;
-  padding: 12px 14px;
+  margin: 4px 0 16px;
+  padding: 12px 12px;
   border: 1px solid #8b5cf631;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: linear-gradient(115deg, #10b9810c, #8b5cf610 62%, #0d1928);
 }
 .impact-live-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 8px;
   color: #91a6be;
-  font-size: 7px;
+  font-size: var(--fs-small);
   letter-spacing: 0.1em;
 }
 .impact-live-heading > span:first-child {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 .impact-live-heading svg {
   color: #a78bfa;
 }
 .impact-live-heading .live-on,
 .impact-live-heading .live-off {
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-weight: 650;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  font-weight: 600;
 }
 .impact-live-heading .live-on {
   color: #6ee7b7;
@@ -2075,64 +2042,64 @@ h1 {
 }
 .impact-live-values > div {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 .impact-live-values > div > span {
   color: #72849e;
-  font-size: 7px;
-  line-height: 1.5;
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
 }
 .impact-live-values strong {
   color: #c8f5df;
-  font-size: 18px;
+  font-size: var(--fs-metric-sm);
   font-weight: 600;
 }
 .impact-live-values > div:nth-child(2) strong {
   color: #c9bcff;
 }
 .impact-live-values small {
-  font-size: 10px;
+  font-size: var(--fs-small);
   color: #8290a6;
 }
 .impact-live-inactive {
   color: #93a1b4;
-  font-size: 9px;
-  line-height: 1.6;
+  font-size: var(--fs-body);
+  line-height: var(--lh-prose);
 }
 .impact-table-wrap {
   width: 100%;
   overflow-x: auto;
   border: 1px solid #ffffff0e;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 .impact-table {
   width: 100%;
   min-width: 700px;
   border-collapse: collapse;
-  font-size: 9px;
+  font-size: var(--fs-body);
 }
 .impact-table th,
 .impact-table td {
-  padding: 11px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid #ffffff0a;
   text-align: left;
   vertical-align: top;
-  line-height: 1.55;
+  line-height: var(--lh-prose);
 }
 .impact-table thead th {
   position: sticky;
   top: 0;
   color: #8da3bc;
   background: #111d2c;
-  font-size: 7px;
+  font-size: var(--fs-small);
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
 .impact-table tbody th {
   width: 22%;
   color: #b2c1d4;
-  font-weight: 550;
+  font-weight: 600;
 }
 .impact-table td {
   color: #a3b3c8;
@@ -2149,14 +2116,14 @@ h1 {
   color: #f4bd72;
 }
 .impact-callout {
-  margin: 15px 0 12px;
-  padding: 13px 15px;
+  margin: 16px 0 12px;
+  padding: 12px 16px;
   border-left: 2px solid #8b5cf6;
-  border-radius: 0 7px 7px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: linear-gradient(90deg, #8b5cf615, #8b5cf604);
   color: #c2b5e9;
-  font-size: 10px;
-  line-height: 1.8;
+  font-size: var(--fs-body);
+  line-height: var(--lh-prose);
 }
 .impact-notes {
   display: grid;
@@ -2167,12 +2134,12 @@ h1 {
   align-items: flex-start;
   gap: 8px;
   color: #7789a1;
-  font-size: 8px;
-  line-height: 1.7;
+  font-size: var(--fs-body);
+  line-height: var(--lh-prose);
 }
 .impact-notes svg {
   flex: none;
-  margin-top: 2px;
+  margin-top: 4px;
   color: #6ea5b4;
 }
 .impact-notes strong {
@@ -2187,45 +2154,41 @@ h1 {
   grid-template-columns: 85px 65px 1fr;
   align-items: baseline;
   gap: 12px;
-  padding: 14px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--line);
 }
 .history-row > span:first-child {
-  font-size: 9px;
+  font-size: var(--fs-small);
   color: #687e9b;
 }
 .history-row .severity {
   justify-self: start;
-  font-size: 7px;
+  font-size: var(--fs-small);
 }
 .history-row p {
-  font-size: 10px;
+  font-size: var(--fs-body);
   color: #a1b5cd;
-  line-height: 1.8;
+  line-height: var(--lh-prose);
   overflow-wrap: anywhere;
 }
 .history-tabs {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   padding: 4px;
   margin: -4px 0 18px;
   width: fit-content;
   background: #091321;
   border: 1px solid #ffffff0d;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 .history-tabs button {
   border: 0;
-  border-radius: 5px;
-  padding: 8px 11px;
+  border-radius: var(--radius-xs);
+  padding: 8px 12px;
   color: #8094ad;
   background: transparent;
-  font-size: 9px;
+  font-size: var(--fs-body);
   cursor: pointer;
-}
-.history-tabs button.selected {
-  color: #d4e5f8;
-  background: #1b2b41;
 }
 .run-history {
   max-height: 58vh;
@@ -2234,10 +2197,10 @@ h1 {
 }
 .run-summary-card {
   padding: 16px;
-  margin-bottom: 11px;
+  margin-bottom: 8px;
   background: linear-gradient(135deg, #152338b8, #0d1828e0);
   border: 1px solid #8eaac21c;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
 }
 .run-summary-heading {
   display: flex;
@@ -2247,81 +2210,80 @@ h1 {
 }
 .run-summary-heading > div {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 .run-summary-eyebrow {
   color: #6885a4;
-  font-size: 7px;
-  font-weight: 750;
+  font-size: var(--fs-small);
+  font-weight: 700;
   letter-spacing: 0.14em;
 }
 .run-summary-heading time {
   color: #d4e2f2;
-  font-size: 11px;
+  font-size: var(--fs-caption);
   font-variant-numeric: tabular-nums;
 }
 .run-summary-duration {
   white-space: nowrap;
   color: #82a5bd;
-  font-size: 9px;
-  padding: 5px 7px;
+  font-size: var(--fs-small);
+  padding: 4px 8px;
   background: #38bdf80d;
   border: 1px solid #38bdf81c;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 .run-summary-day {
   color: #738ba7;
-  font:
-    9px "JetBrains Mono",
-    monospace;
-  margin: 9px 0 13px;
+  font-size: var(--fs-small);
+  font-family: var(--font-mono);
+  margin: 8px 0 12px;
 }
 .run-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 9px;
+  gap: 8px;
 }
 .run-summary-grid > div {
   display: grid;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
-  padding: 9px;
+  padding: 8px;
   background: #08132175;
   border: 1px solid #ffffff08;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 .run-summary-grid span {
   color: #778ba4;
-  font-size: 8px;
+  font-size: var(--fs-small);
 }
 .run-summary-grid strong {
   color: #d6e3f1;
-  font:
-    600 13px "JetBrains Mono",
-    monospace;
+  font-weight: 500;
+  font-size: var(--fs-body);
+  font-family: var(--font-mono);
   overflow-wrap: anywhere;
 }
 .run-summary-foot {
   color: #8196ae;
-  font-size: 8px;
+  font-size: var(--fs-small);
   margin-top: 12px;
 }
 .history-error {
   color: #fecaca;
   background: #f43f5e12;
   border: 1px solid #f43f5e35;
-  padding: 10px 12px;
-  border-radius: 7px;
-  font-size: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-body);
 }
 .history-loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 8px;
   color: #8ba1bd;
-  padding: 28px 0;
-  font-size: 10px;
+  padding: 32px 0;
+  font-size: var(--fs-body);
 }
 .fleet-grid {
   display: grid;
@@ -2329,8 +2291,8 @@ h1 {
   gap: 12px;
 }
 .fleet-card {
-  border-radius: 9px;
-  padding: 15px;
+  border-radius: var(--radius-sm);
+  padding: 16px;
 }
 .fleet-card > div:first-child {
   display: flex;
@@ -2339,55 +2301,58 @@ h1 {
   color: #70a3b6;
 }
 .fleet-card strong {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--fs-emphasis);
+  font-weight: 600;
   color: #afc5dd;
 }
 .fleet-card > div > span {
-  font-size: 8px;
+  font-size: var(--fs-caption);
   margin-left: auto;
   color: #677e9b;
 }
 .fleet-state {
   display: inline-block;
-  font-size: 8px;
+  font-size: var(--fs-caption);
   letter-spacing: 1px;
-  margin: 14px 0 7px;
+  margin: 12px 0 8px;
 }
 .fleet-card p {
-  font-size: 9px;
-  line-height: 1.8;
+  font-size: var(--fs-body);
+  line-height: var(--lh-prose);
   color: #859cb9;
 }
 .fleet-card-foot {
   display: flex;
   justify-content: space-between;
   border-top: 1px solid var(--line);
-  padding-top: 9px;
-  margin-top: 10px;
+  padding-top: 8px;
+  margin-top: 8px;
 }
 .fleet-card .fleet-card-foot span {
   margin: 0;
-  font-size: 8px;
+  font-size: var(--fs-small);
   color: #526e8e;
 }
 .search-field {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   background: #121f32;
   border: 1px solid #2c4864;
-  border-radius: 8px;
-  padding: 11px;
+  border-radius: var(--radius-sm);
+  padding: 12px;
   color: #7190ae;
 }
 .search-field input {
-  border: 0;
+  /* Same as the towers search: the label carries the chrome, so the input
+     must stay bare even against the blanket ".app-shell input" !important. */
+  border: 0 !important;
   outline: 0;
-  background: none;
+  background: none !important;
+  padding: 0 !important;
   width: 100%;
   color: #c3d9ee;
-  font-size: 12px;
+  font-size: var(--fs-body);
 }
 .search-results {
   max-height: 45vh;
@@ -2412,13 +2377,13 @@ h1 {
   flex: 1;
 }
 .search-results strong {
-  font-size: 10px;
+  font-size: var(--fs-body);
   font-weight: 400;
   display: block;
   color: #b6cce2;
 }
 .search-results span:not(.status-dot) {
-  font-size: 8px;
+  font-size: var(--fs-small);
   display: block;
   color: #6d88a5;
   margin-top: 4px;
@@ -2429,27 +2394,27 @@ h1 {
 .setting-row {
   display: flex;
   align-items: center;
-  gap: 25px;
-  margin-bottom: 20px;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 .setting-row strong {
-  font-size: 12px;
+  font-size: var(--fs-emphasis);
   color: #c9d8e9;
 }
 .setting-row p {
   color: #839bb8;
-  font-size: 10px;
-  line-height: 1.8;
-  margin-top: 6px;
+  font-size: var(--fs-body);
+  line-height: var(--lh-prose);
+  margin-top: 8px;
 }
 .switch {
   width: 34px;
   height: 20px;
   border: 1px solid #41506c;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   background: #29354a;
   flex: none;
-  padding: 3px;
+  padding: 4px;
 }
 .switch i {
   height: 12px;
@@ -2470,35 +2435,35 @@ h1 {
 .settings-info {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  font-size: 10px;
-  padding: 20px 0;
+  gap: 16px;
+  font-size: var(--fs-caption);
+  padding: 24px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  margin-bottom: 15px;
+  margin-bottom: 16px;
   color: #6b86a6;
 }
 .settings-info strong {
   justify-self: end;
   color: #abbfd9;
-  font-weight: 400;
+  font-weight: 600;
 }
 .about-icon {
   color: #8bafcc;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 .about-roles {
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  margin-bottom: 20px;
-  padding: 10px 0;
+  margin-bottom: 24px;
+  padding: 8px 0;
 }
 .about-roles p {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 10px;
-  line-height: 1.7;
+  font-size: var(--fs-body);
+  line-height: var(--lh-prose);
   color: #9a8bb7;
   padding: 8px 0;
 }
@@ -2506,7 +2471,7 @@ h1 {
   flex: none;
 }
 .dialog .about-roles ~ a {
-  margin-top: 20px;
+  margin-top: 24px;
 }
 .toast {
   position: fixed;
@@ -2518,15 +2483,15 @@ h1 {
   align-items: center;
   gap: 12px;
   border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
-  border-radius: 9px;
-  padding: 12px 14px;
-  font-size: 11px;
+  border-radius: var(--radius-sm);
+  padding: 12px 12px;
+  font-size: var(--fs-body);
   max-width: calc(100vw - 35px);
   width: max-content;
 }
 .toast > span:not(.status-dot) {
   max-width: 500px;
-  line-height: 1.6;
+  line-height: var(--lh-body);
 }
 .boot-screen {
   min-height: 100vh;
@@ -2534,33 +2499,34 @@ h1 {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
   background: radial-gradient(ellipse at center, #14263a77, transparent 60%);
-  padding: 30px;
+  padding: 32px;
   text-align: center;
 }
 .boot-screen h1 {
-  font-size: 24px;
+  font-size: var(--fs-display-s);
+  line-height: var(--lh-tight);
 }
 .boot-screen h1 span {
-  font-size: 8px;
+  font-size: var(--fs-caption);
   color: #607897;
   letter-spacing: 2px;
 }
 .boot-screen p {
-  font-size: 12px;
+  font-size: var(--fs-body);
   color: #8da6c2;
   max-width: 600px;
-  line-height: 1.8;
+  line-height: var(--lh-prose);
 }
 .boot-screen svg {
   color: #4bafd0;
 }
 .boot-screen small {
-  font-size: 7px;
+  font-size: var(--fs-caption);
   letter-spacing: 1.5px;
   color: #455d7a;
-  margin-top: 20px;
+  margin-top: 24px;
 }
 
 @keyframes breathe {
@@ -2596,29 +2562,38 @@ h1 {
 .is-paused .pulse {
   animation-play-state: paused;
 }
+/* Decorative map motion also pauses while the tab is hidden (class toggled in
+   App.tsx) or while the user is panning/zooming (class toggled in NetworkMap):
+   no repaints for animations nobody can see. The look is unchanged otherwise. */
+.tab-hidden .fiber-flow,
+.tab-hidden .cut-pulse,
+.tab-hidden .predictive-pulse,
+.tab-hidden .pulse,
+.map-interacting .fiber-flow,
+.map-interacting .cut-pulse,
+.map-interacting .predictive-pulse {
+  animation-play-state: paused;
+}
 @media (min-width: 1700px) {
   main {
-    padding: 28px 35px 0;
+    padding: 32px 32px 0;
   }
   .kpi-card {
-    padding: 20px;
+    padding: 24px;
     min-height: 145px;
   }
   .kpi-title {
-    font-size: 12px;
-  }
-  .kpi-value > span:first-child {
-    font-size: 32px;
+    font-size: var(--fs-small);
   }
   .kpi-note {
-    font-size: 9px;
+    font-size: var(--fs-small);
   }
   .sparkline {
     width: 85px;
   }
   .primary-grid {
     grid-template-columns: minmax(0, 1fr) 385px;
-    gap: 20px;
+    gap: 24px;
   }
   .map-stage {
     min-height: 440px;
@@ -2630,29 +2605,29 @@ h1 {
     min-height: 265px;
   }
   .analytics-card h2 {
-    font-size: 13px;
+    font-size: var(--fs-panel-title);
   }
   .incident-title strong {
-    font-size: 11px;
+    font-size: var(--fs-body);
   }
   .incident-target {
-    font-size: 10px;
+    font-size: var(--fs-caption);
   }
   .incident-meta {
-    font-size: 9px;
+    font-size: var(--fs-caption);
   }
   .incident {
-    padding: 13px;
+    padding: 12px;
   }
   .policy-empty strong {
-    font-size: 10px;
+    font-size: var(--fs-emphasis);
   }
   .cell-row {
-    padding: 13px 18px;
+    padding: 12px 16px;
   }
   .power-chart-row {
-    padding-top: 17px;
-    padding-bottom: 13px;
+    padding-top: 16px;
+    padding-bottom: 12px;
   }
   .radial-wrap {
     height: 160px;
@@ -2664,11 +2639,11 @@ h1 {
 @media (max-width: 1280px) {
   .roi-pill {
     gap: 4px;
-    padding: 6px 7px;
-    font-size: 8px;
+    padding: 8px 8px;
+    font-size: var(--fs-caption);
   }
   .roi-hours {
-    font-size: 7px;
+    font-size: var(--fs-caption);
   }
   .command-context-sub,
   .soft-separator {
@@ -2678,23 +2653,20 @@ h1 {
     gap: 8px;
   }
   .kpi-card {
-    padding: 13px 11px;
+    padding: 12px 8px;
   }
   .kpi-title {
-    font-size: 9px;
-  }
-  .kpi-value > span:first-child {
-    font-size: 23px;
+    font-size: var(--fs-small);
   }
   .sparkline {
     width: 47px;
     opacity: 0.5;
   }
   .kpi-unit {
-    font-size: 9px;
+    font-size: var(--fs-caption);
   }
   .kpi-note {
-    font-size: 7px;
+    font-size: var(--fs-small);
   }
   .primary-grid {
     grid-template-columns: minmax(0, 1fr) 305px;
@@ -2704,29 +2676,29 @@ h1 {
     display: none;
   }
   .map-legend {
-    gap: 9px;
+    gap: 8px;
   }
   .analytics-grid {
     grid-template-columns: 1.1fr 1fr 0.85fr 0.95fr;
-    gap: 10px;
+    gap: 8px;
   }
   .donut-wrap {
     width: 82px;
     height: 95px;
   }
   .power-chart-row {
-    gap: 7px;
-    padding: 10px;
+    gap: 8px;
+    padding: 8px;
   }
   .power-legend {
-    gap: 10px;
+    gap: 8px;
   }
   .power-legend > span {
-    font-size: 7px;
+    font-size: var(--fs-caption);
   }
   .fleet-summary {
-    font-size: 6px;
-    padding: 12px 10px;
+    font-size: var(--fs-caption);
+    padding: 12px 8px;
   }
   .cell-row,
   .cell-table-head {
@@ -2737,7 +2709,7 @@ h1 {
     width: 38px;
   }
   .cell-row strong {
-    font-size: 7px;
+    font-size: var(--fs-body);
   }
   .header-system {
     display: none;
@@ -2746,18 +2718,18 @@ h1 {
     display: none;
   }
   .map-heading-right {
-    font-size: 6px;
+    font-size: var(--fs-caption);
   }
   .oracle-threshold {
-    font-size: 6px;
+    font-size: var(--fs-small);
     gap: 4px;
   }
   main {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-left: 24px;
+    padding-right: 24px;
   }
   .global-header {
-    padding: 0 20px;
+    padding: 0 24px;
   }
 }
 @media (max-width: 1050px) {
@@ -2771,7 +2743,7 @@ h1 {
     left: -10px;
   }
   .global-header {
-    gap: 17px;
+    gap: 16px;
   }
   .command-context {
     display: none;
@@ -2781,20 +2753,20 @@ h1 {
   }
   .kpi-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
   }
   .kpi-card {
     min-height: 111px;
-    padding: 13px 16px;
+    padding: 12px 16px;
   }
   .kpi-title {
-    font-size: 10px;
+    font-size: var(--fs-small);
   }
   .kpi-value {
     margin-top: 12px;
   }
   .kpi-note {
-    font-size: 8px;
+    font-size: var(--fs-small);
   }
   .sparkline {
     width: 85px;
@@ -2807,55 +2779,52 @@ h1 {
     min-height: 238px;
   }
   .analytics-card h2 {
-    font-size: 12px;
+    font-size: var(--fs-panel-title);
   }
   .donut-wrap {
     width: 110px;
     height: 110px;
   }
   .power-chart-row {
-    padding: 8px 20px;
-    gap: 30px;
+    padding: 8px 24px;
+    gap: 32px;
   }
   .power-legend > span {
-    font-size: 9px;
+    font-size: var(--fs-caption);
   }
   .fleet-summary {
-    font-size: 9px;
+    font-size: var(--fs-caption);
     padding: 12px 16px;
   }
   .cell-row strong {
-    font-size: 9px;
+    font-size: var(--fs-body);
   }
   .cell-row small {
-    font-size: 8px;
+    font-size: var(--fs-caption);
   }
   .cell-table-head {
-    font-size: 7px;
+    font-size: var(--fs-small);
   }
   .overview-meta {
     flex-direction: column;
     align-items: flex-end;
-    gap: 11px;
+    gap: 8px;
   }
   .primary-grid {
     grid-template-columns: minmax(0, 1fr) 290px;
   }
   .map-legend {
-    gap: 7px;
+    gap: 8px;
   }
   .map-legend > span {
-    font-size: 6px;
+    font-size: var(--fs-small);
   }
   .weather-chip {
     right: 54px;
     bottom: 45px;
   }
   .map-location {
-    font-size: 6px;
-  }
-  .search-trigger {
-    width: 155px;
+    font-size: var(--fs-caption);
   }
   .network-switch {
     gap: 8px;
@@ -2884,13 +2853,13 @@ h1 {
     display: initial;
   }
   .map-legend > span {
-    font-size: 8px;
+    font-size: var(--fs-small);
   }
   .map-footer {
     padding: 12px;
   }
   .map-location {
-    font-size: 8px;
+    font-size: var(--fs-caption);
   }
   .command-bar {
     justify-content: center;
@@ -2900,53 +2869,44 @@ h1 {
     justify-content: center;
   }
   .scenario-button {
-    font-size: 9px;
+    font-size: var(--fs-body);
   }
   .header-system,
   .network-switch > svg {
-    display: none;
-  }
-  .search-trigger {
-    width: auto;
-  }
-  .search-trigger > span {
     display: none;
   }
   .header-bell {
     display: none;
   }
   .network-switch strong {
-    font-size: 10px;
+    font-size: var(--fs-caption);
   }
   .network-switch div > span {
-    font-size: 8px;
+    font-size: var(--fs-caption);
   }
   .global-header {
     height: 67px;
-    gap: 14px;
+    gap: 12px;
   }
   .wordmark {
-    font-size: 17px;
+    font-size: var(--fs-panel-title);
   }
   .wordmark > span {
-    font-size: 6px;
+    font-size: var(--fs-caption);
   }
   .section-label > span:last-child {
     display: none;
   }
   .kpi-title {
-    font-size: 9px;
+    font-size: var(--fs-small);
   }
   .sparkline {
     width: 65px;
   }
-  .app-footer > span:last-child {
-    font-size: 6px;
-  }
 }
 @media (max-width: 600px) {
   .navigation-rail {
-    padding-top: 15px;
+    padding-top: 16px;
   }
   .nav-item {
     width: 34px;
@@ -2962,28 +2922,24 @@ h1 {
   }
   .nav-items {
     gap: 12px;
-    margin-top: 38px;
+    margin-top: 32px;
   }
   .nav-bottom {
     gap: 12px;
   }
   .network-switch .network-symbol,
   .network-switch div > span,
-  .header-divider,
-  .search-trigger kbd {
+  .header-divider {
     display: none;
   }
   .network-switch {
     margin-left: auto;
   }
-  .search-trigger {
-    padding: 7px;
-  }
   .header-spacer {
     display: none;
   }
   .wordmark {
-    font-size: 16px;
+    font-size: var(--fs-panel-title);
   }
   .wordmark > span {
     letter-spacing: 1.4px;
@@ -2992,33 +2948,33 @@ h1 {
     color: #8098b5;
   }
   main {
-    padding: 20px 13px 0;
+    padding: 24px 12px 0;
   }
   .overview-heading {
     align-items: flex-start;
-    margin-bottom: 17px;
-    gap: 9px;
+    margin-bottom: 16px;
+    gap: 8px;
     flex-wrap: wrap;
   }
   h1 {
-    font-size: 24px;
+    font-size: var(--fs-page-title);
   }
   .overview-meta {
     width: 100%;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    margin-top: 5px;
+    margin-top: 4px;
   }
   .sim-clock {
-    padding: 6px 8px;
+    padding: 8px 8px;
   }
   .command-bar {
-    padding: 9px 0;
-    margin-bottom: 14px;
+    padding: 8px 0;
+    margin-bottom: 12px;
   }
   .sim-controls {
-    gap: 6px;
+    gap: 8px;
     justify-content: flex-start;
     width: 100%;
     flex-wrap: wrap;
@@ -3026,54 +2982,47 @@ h1 {
   .control-separator {
     display: none;
   }
-  .play-controls .icon-button {
-    width: 25px;
-    height: 25px;
-  }
   .speed-button {
-    padding: 7px;
+    padding: 8px;
   }
   .scenario-button {
-    padding: 7px 8px;
-    gap: 5px;
+    padding: 8px 8px;
+    gap: 4px;
   }
   .scenario-button svg {
-    width: 12px;
+    width: 14px;
   }
   .roi-pill {
-    padding: 6px 7px;
+    padding: 8px 8px;
   }
   .ai-toggle {
-    padding: 7px 8px;
+    padding: 8px 8px;
     margin-left: auto;
-    gap: 5px;
+    gap: 4px;
   }
   .ai-toggle .toggle-track {
     margin-left: 0;
   }
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
-    margin-bottom: 14px;
+    gap: 8px;
+    margin-bottom: 12px;
   }
   .kpi-card {
     min-height: 110px;
-    padding: 13px 12px;
+    padding: 12px 12px;
   }
   .kpi-title {
     white-space: normal;
-    line-height: 1.3;
+    line-height: var(--lh-title);
   }
   .kpi-title svg {
-    width: 12px;
+    width: 14px;
     flex: none;
-  }
-  .kpi-value > span:first-child {
-    font-size: 25px;
   }
   .kpi-note {
     white-space: normal;
-    line-height: 1.5;
+    line-height: var(--lh-body);
   }
   .sparkline {
     width: 50px;
@@ -3091,7 +3040,7 @@ h1 {
     display: none;
   }
   .map-panel .panel-heading {
-    padding: 13px;
+    padding: 12px;
   }
   .map-location {
     left: 10px;
@@ -3100,7 +3049,7 @@ h1 {
   .weather-chip {
     right: 49px;
     bottom: 35px;
-    padding: 6px 8px;
+    padding: 8px 8px;
   }
   .map-top-overlay {
     left: 10px;
@@ -3109,14 +3058,7 @@ h1 {
   }
   .map-top-overlay select {
     max-width: 145px;
-    padding: 7px;
-  }
-  .map-button {
-    height: 27px;
-    width: 27px;
-  }
-  .map-button svg {
-    width: 13px;
+    padding: 8px;
   }
   .alerts-rail {
     grid-template-columns: 1fr;
@@ -3129,10 +3071,10 @@ h1 {
     max-height: 92vh;
   }
   .impact-content {
-    padding: 17px;
+    padding: var(--space-4);
   }
   .impact-heading h2 {
-    font-size: 15px;
+    font-size: var(--fs-section-title);
   }
   .impact-live-values {
     grid-template-columns: 1fr 1fr;
@@ -3144,7 +3086,7 @@ h1 {
     min-width: 680px;
   }
   .timeframe-tabs button {
-    padding: 5px 6px;
+    padding: 8px 8px;
   }
   .analytics-grid {
     grid-template-columns: 1fr;
@@ -3153,7 +3095,7 @@ h1 {
     min-height: 245px;
   }
   .chart-summary {
-    padding-top: 5px;
+    padding-top: 4px;
   }
   .radial-wrap {
     height: 153px;
@@ -3163,31 +3105,24 @@ h1 {
     top: 61px;
   }
   .oracle-target {
-    margin-top: 2px;
+    margin-top: 4px;
   }
   .power-chart-row {
-    padding: 12px 20px;
-    gap: 22px;
+    padding: 12px 24px;
+    gap: 24px;
   }
   .donut-wrap {
     height: 115px;
     width: 115px;
   }
-  .app-footer {
-    flex-wrap: wrap;
-    padding: 15px 0;
-  }
-  .app-footer > span:last-child {
-    display: none;
-  }
   .inspector {
     max-width: 350px;
   }
   .dialog-content {
-    padding: 20px;
+    padding: 24px;
   }
   .dialog-heading h2 {
-    font-size: 17px;
+    font-size: var(--fs-section-title);
   }
   .fleet-grid {
     grid-template-columns: 1fr;
@@ -3206,7 +3141,7 @@ h1 {
     grid-column: 1/-1;
   }
   .section-label {
-    margin-top: 18px;
+    margin-top: 16px;
   }
   .connection-banner {
     flex-wrap: wrap;
@@ -3239,22 +3174,22 @@ h1 {
     height: 65px;
   }
   main {
-    padding-top: 19px;
+    padding-top: 16px;
   }
   .overview-heading {
-    margin-bottom: 15px;
+    margin-bottom: 16px;
   }
   .command-bar {
     padding: 8px 0;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
   .kpi-card {
     min-height: 112px;
-    padding-top: 13px;
+    padding-top: 12px;
     padding-bottom: 12px;
   }
   .kpi-grid {
-    margin-bottom: 15px;
+    margin-bottom: 16px;
   }
   .map-stage {
     min-height: 290px;
@@ -3265,17 +3200,14 @@ h1 {
     grid-template-rows: minmax(205px, 1.1fr) minmax(170px, 1fr);
   }
   .section-label {
-    margin-top: 17px;
-    margin-bottom: 10px;
+    margin-top: 16px;
+    margin-bottom: 8px;
   }
   .analytics-card {
     min-height: 230px;
   }
   .analytics-card .panel-heading {
-    padding-top: 13px;
-  }
-  .app-footer {
-    padding: 14px 1px;
+    padding-top: 12px;
   }
 }
 
@@ -3288,51 +3220,9 @@ h1 {
   color: var(--sn-link-strong);
 }
 
-/* Tower markers: component-specific `.tw` rules, maintained here
- * rather than importing theme.css, whose global body/heading rules would restyle
- * the whole app. Solid colour, 12 px on screen at every zoom, white 2 px ring.
- * Halo only for selected (.sel), faulty (.warn/.crit) and flagged (.ai) towers. */
-.tw-wrapper {
-  background: none;
-  border: 0;
-}
-.tw {
-  display: block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #0c9c83;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px #10265c33;
-  opacity: 1;
-  box-sizing: border-box;
-}
-.tw.warn {
-  background: #c27400;
-}
-.tw.crit {
-  background: #d42f52;
-}
-.tw.ai {
-  background: #6a4bd8;
-}
-.tw.sel,
-.tw.crit,
-.tw.ai {
-  box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 22%, transparent);
-}
-.tw.sel {
-  color: #1479c4;
-}
-.tw.warn {
-  color: #c27400;
-}
-.tw.crit {
-  color: #d42f52;
-}
-.tw.ai {
-  color: #6a4bd8;
-}
+/* Site dots are drawn on one canvas by the sites layer in NetworkMap.tsx
+ * (SITE_FILL / SITE_OUTLINE constants there). The previous per-site `.tw`
+ * DOM-marker rules were removed with the DOM markers themselves. */
 
 /* Analytics chart axes use Manrope 12 px text, never mono. */
 .ch-wrap {
@@ -3344,10 +3234,9 @@ h1 {
   height: auto;
 }
 .ch-wrap text {
-  font:
-    500 12px "Manrope",
-    system-ui,
-    sans-serif;
+  font-weight: 500;
+  font-size: var(--fs-caption);
+  font-family: var(--font-ui);
 }
 .ch-wrap .gl {
   stroke-opacity: 0.35;
@@ -3363,35 +3252,32 @@ h1 {
   top: 6px;
   background: #0b1624;
   border: 1px solid #2a3b52;
-  padding: 5px 9px;
-  font:
-    500 12px "Manrope",
-    system-ui,
-    sans-serif;
+  padding: 4px 8px;
+  font-weight: 500;
+  font-size: var(--fs-caption);
+  font-family: var(--font-ui);
   color: #e6eef9;
   pointer-events: none;
 }
 .chart-title {
-  font:
-    600 13px "Manrope",
-    system-ui,
-    sans-serif;
-  margin: 10px 0 0;
+  font-weight: 600;
+  font-size: var(--fs-emphasis);
+  line-height: var(--lh-title);
+  font-family: var(--font-ui);
+  margin: 8px 0 0;
   color: inherit;
 }
 .chart-subtitle {
-  font:
-    500 12px "Manrope",
-    system-ui,
-    sans-serif;
+  font-weight: 500;
+  font-size: var(--fs-caption);
+  font-family: var(--font-ui);
   margin: 0;
   opacity: 0.75;
 }
 .chart-note {
-  font:
-    500 12px "Manrope",
-    system-ui,
-    sans-serif;
+  font-weight: 500;
+  font-size: var(--fs-caption);
+  font-family: var(--font-ui);
   min-height: 0;
   color: #d42f52;
 }
@@ -3401,12 +3287,12 @@ h1 {
 
 /* Towers list and fibre rings (organisation pass). */
 .towers-panel {
-  margin-top: 16px;
-  padding: 16px;
+  margin-top: var(--gap);
+  padding: 0 0 var(--panel-pad);
 }
 .towers-panel input[type="search"] {
   width: 100%;
-  margin: 10px 0;
+  margin: 8px 0;
 }
 .tower-table {
   max-height: 420px;
@@ -3418,14 +3304,14 @@ h1 {
   grid-template-columns: 1.2fr 1.4fr 0.8fr 0.6fr 0.6fr;
   gap: 8px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 8px 8px;
   background: none;
   border: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   color: inherit;
   text-align: left;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-body);
 }
 button.tower-row:hover {
   background: rgba(255, 255, 255, 0.04);
@@ -3435,15 +3321,17 @@ button.tower-row:hover {
   top: 0;
   z-index: 2;
   background: #0b1624;
-  font-size: 12px;
+  font-size: var(--fs-small);
 }
 .ring-list {
   margin-top: 12px;
-  padding-top: 10px;
+  padding-top: 8px;
 }
 .ring-list-title {
-  font: 600 13px var(--sans, "Manrope", system-ui, sans-serif);
-  margin: 0 0 6px;
+  font-weight: 600;
+  font-size: var(--fs-body);
+  font-family: var(--font-ui);
+  margin: 0 0 8px;
 }
 .ring-list ul {
   list-style: none;
@@ -3455,16 +3343,19 @@ button.tower-row:hover {
   flex-wrap: wrap;
 }
 .build-stamp {
-  margin-top: 10px;
+  margin-top: 8px;
   opacity: 0.7;
-  font-size: 11px;
+  font-size: var(--fs-caption);
 }
 /* One .note line under a page title (organisation pass). */
 .note {
-  font: italic 500 12px var(--serif, Georgia, serif);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--fs-caption);
   color: #9fb3cc;
-  margin: 2px 0 10px;
-  line-height: 1.4;
+  margin: 4px 0 8px;
+  line-height: var(--lh-body);
 }
 
 /* ==================================================================
@@ -3476,27 +3367,10 @@ button.tower-row:hover {
  * IBM Plex Mono (IDs, coordinates, times only). */
 :root {
   color-scheme: light;
-  --bg: #d6e7fb;
-  --s1: #eaf3fe;
-  --s2: #f6faff;
-  --ln: #a9c2e6;
-  --tx: #10265c;
-  --t2: #4b6192;
-  --live: #0c9c83;
-  --link: #1479c4;
-  --warn: #c27400;
-  --crit: #d42f52;
-  --ai: #6a4bd8;
-  --serif: "Newsreader", Georgia, serif;
-  --sans: "Manrope", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, monospace;
-  font-family: var(--sans);
+  font-family: var(--font-ui);
   color: var(--tx);
   /* Keep the document canvas dark until the welcome overlay is ready. */
-  background: #081426;
-  --muted-text: #4b6192;
-  --line: rgba(16, 38, 92, 0.12);
-  --cyan-ui: #1479c4;
+  background: var(--canvas);
 }
 .app-shell {
   background: var(--bg);
@@ -3520,7 +3394,7 @@ main h2,
 .glass h2,
 .glass h3,
 .kpi-value {
-  font-family: var(--serif);
+  font-family: var(--font-display);
   font-weight: 500;
   letter-spacing: -0.02em;
   color: var(--tx);
@@ -3530,12 +3404,12 @@ main,
 .app-shell span,
 .app-shell small,
 .app-shell label {
-  font-family: var(--sans);
+  font-family: var(--font-ui);
 }
 .mono,
 code,
 .inspector-coords {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
 /* Panels: light surfaces with the kit's border and soft shadow. */
 .glass,
@@ -3559,13 +3433,9 @@ code,
   color: var(--t2) !important;
 }
 .note {
-  font-family: var(--serif);
+  font-family: var(--font-display);
   font-style: italic;
-  font-size: 13px;
-}
-.app-footer {
-  color: var(--t2);
-  border-top: 1px solid var(--ln);
+  font-size: var(--fs-caption);
 }
 /* Tower and chart text stay readable on the light surface. */
 .network-tooltip {
@@ -3767,9 +3637,6 @@ input[type="text"] {
   .app-shell main {
     padding-bottom: 84px;
   }
-  .hero h1 {
-    font-size: 34px;
-  }
 }
 
 /* ==================================================================
@@ -3798,7 +3665,7 @@ input[type="text"] {
 }
 .leaflet-tooltip.district-label {
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--fs-caption);
 }
 .leaflet-tooltip.district-label::before {
   border-top-color: rgba(255, 255, 255, 0.94);
@@ -3865,9 +3732,8 @@ span.mono {
 
 /* Header captions and the breadcrumb were 7–9px on desktop; 10px keeps the layout. */
 .wordmark > span,
-.network-switch span,
-.search-trigger kbd {
-  font-size: 10px;
+.network-switch span {
+  font-size: var(--fs-caption);
 }
 
 /* Dialogs (search, settings, about, event history, fault and scenario forms) were
@@ -3933,36 +3799,33 @@ button.wordmark {
 
 /* Traffic charts: axis text at 12 px, as the kit specifies. */
 .traffic-card svg text {
-  font-family: var(--sans);
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-caption);
 }
 
 /* Desktop type and target floor (above the phone breakpoint; phone.css covers phones).
    Labels under 11 px and buttons under 36 px were too small to read or hit. */
 @media (min-width: 601px) {
   .connection,
-  .search-trigger kbd,
-  .search-trigger span,
   .connection-banner {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .network-switch div > span,
   .sim-clock,
   .sim-clock span,
   .command-context span,
   .command-context-sub {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .leaflet-control-scale-line,
   .map-north span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .icon-button,
   .speed-button,
   .scenario-button,
   .roi-pill,
-  .ai-toggle,
-  .search-trigger {
+  .ai-toggle {
     min-height: 36px;
   }
   .icon-button {
@@ -3992,7 +3855,7 @@ button.wordmark {
   background: #ffffff !important;
   border: 2px solid currentColor !important;
   box-shadow: 0 2px 8px rgba(16, 38, 92, 0.28) !important;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
 }
 .crew-marker.crew-moving {
   will-change: transform;
@@ -4004,7 +3867,7 @@ button.wordmark {
 /* One note line under a panel heading lines up with the heading's text. */
 .glass > .note {
   margin: 0;
-  padding: 0 18px 12px;
+  padding: 0 16px 12px;
 }
 
 /* The wordmark button is bare text: no border, no fill. */
@@ -4029,10 +3892,10 @@ button.wordmark,
 
 /* Rail: no empty band above Overview; light hover and light tooltip (no navy). */
 .nav-items {
-  margin-top: 6px !important;
+  margin-top: 8px !important;
 }
 .navigation-rail {
-  padding-top: 14px !important;
+  padding-top: 12px !important;
 }
 .nav-item:hover {
   background: #e3eefb !important;
@@ -4051,9 +3914,11 @@ button.wordmark,
   background: #ffffff;
   color: var(--tx);
   border: 1px solid var(--ln);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font: 600 12px var(--sans);
+  border-radius: var(--radius-sm);
+  padding: 8px 8px;
+  font-weight: 600;
+  font-size: var(--fs-caption);
+  font-family: var(--font-ui);
   white-space: nowrap;
   box-shadow: 0 4px 14px rgba(16, 38, 92, 0.14);
   opacity: 0;
@@ -4066,16 +3931,6 @@ button.wordmark,
 }
 
 /* Header search: light chip instead of grey. */
-.search-trigger {
-  background: #ffffff !important;
-  border-color: var(--ln) !important;
-  color: var(--muted-text) !important;
-}
-.search-trigger kbd {
-  background: #eef4fc !important;
-  color: var(--muted-text) !important;
-  border: 1px solid var(--ln) !important;
-}
 
 /* AI toggle: light track; teal when on. */
 .toggle-track {
@@ -4097,9 +3952,9 @@ button.wordmark,
   grid-template-columns: 76px 84px 84px 1fr;
   gap: 8px;
   align-items: center;
-  padding: 7px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--tx);
 }
 .ring-list li:last-child {
@@ -4130,8 +3985,11 @@ button.wordmark,
 .overview-hi {
   position: relative;
   display: inline-block;
-  margin: 6px 0 0;
-  font: 500 clamp(30px, 3.4vw, 42px)/1.1 var(--serif);
+  margin: 8px 0 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-page-title);
+  font-weight: 500;
+  line-height: var(--lh-tight);
   color: var(--tx);
   letter-spacing: -0.01em;
 }
@@ -4171,10 +4029,10 @@ button.wordmark,
 
 /* One heading style for every panel. */
 .panel-heading h2 {
-  font-family: var(--serif);
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1.2;
+  font-family: var(--font-display);
+  font-size: var(--fs-panel-title);
+  font-weight: 600;
+  line-height: var(--lh-title);
   color: var(--tx);
 }
 
@@ -4195,8 +4053,8 @@ button.wordmark,
   position: relative;
 }
 .donut-wrap strong {
-  font-size: 22px;
-  line-height: 1;
+  font-size: var(--fs-metric-sm);
+  line-height: var(--lh-metric);
 }
 .power-legend span {
   white-space: normal;
@@ -4207,10 +4065,10 @@ button.wordmark,
   margin-top: 16px;
 }
 .chart-subtitle {
-  margin-top: 2px;
+  margin-top: 4px;
 }
 .chart-note {
-  margin: 4px 0 6px;
+  margin: 4px 0 8px;
 }
 
 /* Donut label sits inside the ring; the fleet bar sits at the card's foot. */
@@ -4226,8 +4084,8 @@ button.wordmark,
 .donut-wrap small {
   width: 72px;
   white-space: normal;
-  font-size: 12px;
-  line-height: 1.15;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-tight);
   letter-spacing: 0.02em;
 }
 .power-card {
@@ -4244,419 +4102,409 @@ button.wordmark,
 @media (min-width: 601px) {
   /* components/range-gauge.css */
   .range-value small {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .range-scale {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   /* index.css */
   .small-muted {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .eyebrow {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .text-link {
-    font-size: 12px;
-  }
-  .search-trigger {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .header-system div {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .header-system span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .command-context {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .speed-popover label {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .speed-range {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .roi-money small {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .run-error-banner {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .map-heading-right > .mono {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .leaflet-control-attribution {
-    font-size: 12px !important;
+    font-size: var(--fs-caption) !important;
   }
   .network-tooltip {
-    font-size: 12px !important;
+    font-size: var(--fs-caption) !important;
   }
   .district-label {
-    font-size: 12px !important;
+    font-size: var(--fs-caption) !important;
   }
   .layer-menu label {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .map-mode {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .map-footer-hint {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .count-badge {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .alerts-rail .panel-heading h2 {
-    font-size: 12px;
+    font-size: var(--fs-panel-title);
   }
   .rail-subhead select {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .rail-footer {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .empty-state strong {
-    font-size: 12px;
+    font-size: var(--fs-emphasis);
   }
   .empty-state span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .ai-chip {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .probability {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .intent-window {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .section-label {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .section-label > span:last-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .analytics-card h2 {
-    font-size: 12px;
+    font-size: var(--fs-panel-title);
   }
   .analytics-card .panel-heading .small-muted {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .chart-summary > div:first-child > span:last-child {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .segmented button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .cell-load > span:first-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .cqi {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .analytics-foot {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .oracle-risk-label {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .oracle-target > span:first-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .oracle-target > span:last-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .donut-wrap small {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .power-legend b {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .power-ats {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .power-ats strong {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .inspector-place {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .site-status {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .inspector-tags span {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .inspector h3 {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .inline-warning {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .inspector-coords {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .dialog-heading .eyebrow {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .dialog-intro {
-    font-size: 12px;
+    font-size: var(--fs-lead);
   }
   .field {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .field select {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .scenario-disclaimer {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .impact-subtitle {
-    font-size: 12px;
+    font-size: var(--fs-lead);
   }
   .impact-live-heading {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .impact-live-values > div > span {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .impact-live-values small {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .impact-live-inactive {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .impact-table {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .impact-table thead th {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .impact-notes p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .history-row > span:first-child {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .history-row .severity {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .history-row p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .history-tabs button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .run-summary-eyebrow {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .run-summary-heading time {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .run-summary-duration {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .run-summary-grid span {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .run-summary-foot {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .history-error {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .history-loading {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .fleet-card strong {
-    font-size: 12px;
+    font-size: var(--fs-emphasis);
   }
   .fleet-card > div > span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .fleet-state {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .fleet-card p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .fleet-card .fleet-card-foot span {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .search-results strong {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .search-results span:not(.status-dot) {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .setting-row p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .settings-info {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .about-roles p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .boot-screen h1 span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .boot-screen small {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .kpi-unit {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .power-legend > span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .fleet-summary {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .cell-row strong {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .cell-row small {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .cell-table-head {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .network-switch div > span {
-    font-size: 12px;
-  }
-  .app-footer > span:last-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .wordmark > span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .network-switch strong {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .overview-heading p {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .connection {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .sim-clock {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .sim-clock .seed {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .speed-button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .scenario-button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .roi-pill {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .roi-hours {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .ai-toggle {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .kpi-title {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .kpi-note {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .map-heading-right {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .map-panel .panel-heading h2 {
-    font-size: 12px;
+    font-size: var(--fs-panel-title);
   }
   .map-legend > span {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .map-location {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .weather-chip strong {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .weather-chip span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .map-top-overlay select {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .incident-title strong {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .incident-target {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .incident-meta {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .severity {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .rail-subhead > span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .policy-description {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .policy-empty strong {
-    font-size: 12px;
+    font-size: var(--fs-emphasis);
   }
   .policy-empty p {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .intent-top {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .intent-card > p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .intent-actions button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .policy-foot {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .impact-callout {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .timeframe-tabs button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .oracle-threshold {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .oracle-threshold .mono {
-    font-size: 12px;
-  }
-  .app-footer {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .toast {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .connection-banner {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .build-stamp {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   /* readable.css */
   .wordmark > span,
-  .network-switch span,
-  .search-trigger kbd {
-    font-size: 12px;
+  .network-switch span {
+    font-size: var(--fs-caption);
   }
 }
 
@@ -4671,19 +4519,19 @@ button.wordmark,
 /* Site inspector: categorised readings with range sliders (see RangeGauge.tsx).
  * Light panels, navy text. Bad readings are red, warnings amber, good teal. */
 .inspector .spec-group {
-  margin-top: 18px;
+  margin-top: 16px;
 }
 .inspector .spec-group > h3 {
   margin: 0 0 8px;
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  font-size: var(--fs-small);
+  letter-spacing: var(--ls-label);
   text-transform: uppercase;
   color: #4b6192;
 }
 .inspector .range-source {
-  font-size: 13px;
+  font-size: var(--fs-small);
   color: #4b6192;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .range-gauge {
   margin: 12px 0 4px;
@@ -4696,7 +4544,7 @@ button.wordmark,
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: #10265c;
 }
 .range-head > span {
@@ -4710,7 +4558,7 @@ button.wordmark,
 .range-value small {
   display: inline-block;
   margin-left: 8px;
-  font-size: 11px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -4718,8 +4566,8 @@ button.wordmark,
 .range-track {
   position: relative;
   height: 10px;
-  margin: 9px 0 4px;
-  border-radius: 999px;
+  margin: 8px 0 4px;
+  border-radius: var(--radius-pill);
   background: #e4edf9;
   overflow: visible;
 }
@@ -4729,17 +4577,17 @@ button.wordmark,
   bottom: 0;
 }
 .range-band:first-child {
-  border-radius: 999px 0 0 999px;
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
 }
 .range-band:last-of-type {
-  border-radius: 0 999px 999px 0;
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
 }
 .range-fill {
   position: absolute;
   left: 0;
   top: 2px;
   bottom: 2px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   opacity: 0.85;
 }
 .range-mark {
@@ -4762,7 +4610,7 @@ button.wordmark,
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11px;
+  font-size: var(--fs-small);
   color: #4b6192;
   font-variant-numeric: tabular-nums;
 }
@@ -4788,419 +4636,409 @@ button.wordmark,
 @media (max-width: 600px) {
   /* components/range-gauge.css */
   .range-value small {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .range-scale {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   /* index.css */
   .small-muted {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .eyebrow {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .text-link {
-    font-size: 12px;
-  }
-  .search-trigger {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .header-system div {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .header-system span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .command-context {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .speed-popover label {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .speed-range {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .roi-money small {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .run-error-banner {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .map-heading-right > .mono {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .leaflet-control-attribution {
-    font-size: 12px !important;
+    font-size: var(--fs-caption) !important;
   }
   .network-tooltip {
-    font-size: 12px !important;
+    font-size: var(--fs-caption) !important;
   }
   .district-label {
-    font-size: 12px !important;
+    font-size: var(--fs-caption) !important;
   }
   .layer-menu label {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .map-mode {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .map-footer-hint {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .count-badge {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .alerts-rail .panel-heading h2 {
-    font-size: 12px;
+    font-size: var(--fs-panel-title);
   }
   .rail-subhead select {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .rail-footer {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .empty-state strong {
-    font-size: 12px;
+    font-size: var(--fs-emphasis);
   }
   .empty-state span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .ai-chip {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .probability {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .intent-window {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .section-label {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .section-label > span:last-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .analytics-card h2 {
-    font-size: 12px;
+    font-size: var(--fs-panel-title);
   }
   .analytics-card .panel-heading .small-muted {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .chart-summary > div:first-child > span:last-child {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .segmented button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .cell-load > span:first-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .cqi {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .analytics-foot {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .oracle-risk-label {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .oracle-target > span:first-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .oracle-target > span:last-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .donut-wrap small {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .power-legend b {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .power-ats {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .power-ats strong {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .inspector-place {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .site-status {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .inspector-tags span {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .inspector h3 {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .inline-warning {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .inspector-coords {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .dialog-heading .eyebrow {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .dialog-intro {
-    font-size: 12px;
+    font-size: var(--fs-lead);
   }
   .field {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .field select {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .scenario-disclaimer {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .impact-subtitle {
-    font-size: 12px;
+    font-size: var(--fs-lead);
   }
   .impact-live-heading {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .impact-live-values > div > span {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .impact-live-values small {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .impact-live-inactive {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .impact-table {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .impact-table thead th {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .impact-notes p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .history-row > span:first-child {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .history-row .severity {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .history-row p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .history-tabs button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .run-summary-eyebrow {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .run-summary-heading time {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .run-summary-duration {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .run-summary-grid span {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .run-summary-foot {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .history-error {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .history-loading {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .fleet-card strong {
-    font-size: 12px;
+    font-size: var(--fs-emphasis);
   }
   .fleet-card > div > span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .fleet-state {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .fleet-card p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .fleet-card .fleet-card-foot span {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .search-results strong {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .search-results span:not(.status-dot) {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .setting-row p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .settings-info {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .about-roles p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .boot-screen h1 span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .boot-screen small {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .kpi-unit {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .power-legend > span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .fleet-summary {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .cell-row strong {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .cell-row small {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .cell-table-head {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .network-switch div > span {
-    font-size: 12px;
-  }
-  .app-footer > span:last-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .wordmark > span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .network-switch strong {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .overview-heading p {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .connection {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .sim-clock {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .sim-clock .seed {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .speed-button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .scenario-button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .roi-pill {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .roi-hours {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .ai-toggle {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .kpi-title {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .kpi-note {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .map-heading-right {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .map-panel .panel-heading h2 {
-    font-size: 12px;
+    font-size: var(--fs-panel-title);
   }
   .map-legend > span {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .map-location {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .weather-chip strong {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .weather-chip span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .map-top-overlay select {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .incident-title strong {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .incident-target {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .incident-meta {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .severity {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .rail-subhead > span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .policy-description {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .policy-empty strong {
-    font-size: 12px;
+    font-size: var(--fs-emphasis);
   }
   .policy-empty p {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .intent-top {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .intent-card > p {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .intent-actions button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .policy-foot {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .impact-callout {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .timeframe-tabs button {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .oracle-threshold {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .oracle-threshold .mono {
-    font-size: 12px;
-  }
-  .app-footer {
-    font-size: 12px;
+    font-size: var(--fs-small);
   }
   .toast {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .connection-banner {
-    font-size: 12px;
+    font-size: var(--fs-body);
   }
   .build-stamp {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   /* readable.css */
   .wordmark > span,
-  .network-switch span,
-  .search-trigger kbd {
-    font-size: 12px;
+  .network-switch span {
+    font-size: var(--fs-caption);
   }
 }
 
@@ -5219,7 +5057,7 @@ button.wordmark,
 @media (max-width: 600px) {
   .phone-tools {
     display: flex;
-    gap: 2px;
+    gap: 4px;
     align-items: center;
   }
   .build-stamp,
@@ -5235,18 +5073,14 @@ button.wordmark,
     height: auto;
     min-height: 62px;
     flex-wrap: wrap;
-    gap: 8px 10px;
-    padding: 10px 12px;
+    gap: 8px 8px;
+    padding: 8px 12px;
   }
   .global-header .wordmark {
-    font-size: 17px;
+    font-size: var(--fs-panel-title);
   }
   .header-spacer {
     flex: 1;
-  }
-  .search-trigger {
-    min-width: 44px;
-    min-height: 44px;
   }
 
   /* Bottom tab bar: seven sections across the full width, each a 44 px target. */
@@ -5284,8 +5118,17 @@ button.wordmark,
     bottom: 0 !important;
     width: 100% !important;
     max-height: 82vh;
-    border-radius: 18px 18px 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* The inspector sheet and the toast clear the fixed bottom bar instead of
+     sliding under it (the bar sits at z 1100, the sheet at z 550). */
+  .app-shell .inspector {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .app-shell .toast {
+    bottom: calc(64px + var(--space-4) + env(safe-area-inset-bottom, 0px));
   }
 
   /* Content never runs past the screen edge. */
@@ -5305,7 +5148,7 @@ button.wordmark,
 @media (max-width: 600px) {
   .leaflet-container .leaflet-control-scale-line,
   .map-north span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
 }
 
@@ -5325,98 +5168,18 @@ button.wordmark,
    One source of truth for type, spacing, colour, motion and breakpoints.
    Loaded last, so it settles every earlier override. No logic is touched.
    ===================================================================== */
-:root {
-  /* type: serif for display, sans for UI, mono for identifiers & data */
-  --sn-ui: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --sn-display: "Newsreader", Georgia, "Times New Roman", serif;
-  --sn-mono:
-    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --sans: var(--sn-ui);
-  --serif: var(--sn-display);
-  --mono: var(--sn-mono);
-  /* type scale (px): 11 label · 12 caption · 13 body · 14 emphasis · 16 lead · 20 title · 28 display-s · 40 display */
-  --fs-label: 11px;
-  --fs-caption: 12px;
-  --fs-body: 13px;
-  --fs-strong: 14px;
-  --fs-lead: 16px;
-  --fs-title: 18px;
-  --fs-display-s: 28px;
-  --fs-display: clamp(30px, 2.4vw + 14px, 42px);
-  /* space (4px grid) */
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 20px;
-  --sp-6: 24px;
-  --sp-8: 32px;
-  --pad-x: clamp(16px, 2.2vw, 32px);
-  --card-pad: 20px;
-  --gap: 20px;
-  /* shape */
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  /* colour: the existing light-blue palette, completed with the missing steps */
-  --sn-bg: #d6e7fb;
-  --sn-s1: #eaf3fe;
-  --sn-s2: #f6faff;
-  --sn-s3: #e1edfb;
-  --sn-ln: #a9c2e6;
-  --sn-ln-soft: #c4d7ef;
-  --sn-line: rgba(16, 38, 92, 0.1);
-  --sn-tx: #10265c;
-  --sn-t2: #4b6192;
-  --sn-t3: #5f739f;
-  --sn-link: #1479c4;
-  --sn-link-strong: #0c6e8f;
-  --sn-link-wash: #d5f1f7;
-  --sn-live: #0c9c83;
-  --sn-warn: #b86e00;
-  --sn-crit: #d42f52;
-  --sn-ai: #6a4bd8;
-  --sn-focus: 0 0 0 3px rgba(20, 121, 196, 0.28);
-  /* elevation */
-  --sh-1:
-    0 1px 2px rgba(16, 38, 92, 0.06), 0 6px 18px -10px rgba(16, 38, 92, 0.16);
-  --sh-2:
-    0 2px 4px rgba(16, 38, 92, 0.06), 0 14px 32px -12px rgba(16, 38, 92, 0.22);
-  --sh-pop: 0 18px 50px -12px rgba(16, 38, 92, 0.35);
-  /* motion */
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
-  --t-fast: 140ms;
-  --t-base: 220ms;
-  --t-slow: 420ms;
-  /* map the older tokens to the new scale so every earlier rule agrees */
-  --bg: var(--sn-bg);
-  --s1: var(--sn-s1);
-  --s2: var(--sn-s2);
-  --ln: var(--sn-ln);
-  --tx: var(--sn-tx);
-  --t2: var(--sn-t2);
-  --live: var(--sn-live);
-  --link: var(--sn-link);
-  --warn: var(--sn-warn);
-  --crit: var(--sn-crit);
-  --ai: var(--sn-ai);
-  --line: var(--sn-line);
-  --muted-text: var(--sn-t2);
-  --cyan-ui: var(--sn-link);
-  --nav-w: 72px;
-  --header-h: 64px;
-}
+/* All design tokens are declared in tokens.css, imported at the top. */
 /* ---------- foundations ---------- */
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 16px;
+  /* Anchor navigation must clear the sticky header (64 px, 56 px on phones). */
+  scroll-padding-top: calc(var(--header-h) + var(--space-3));
   -webkit-text-size-adjust: 100%;
 }
 body {
-  font-family: var(--sn-ui);
+  font-family: var(--font-ui);
   font-size: var(--fs-body);
-  line-height: 1.5;
+  line-height: var(--lh-body);
   background: var(--sn-bg);
   color: var(--sn-tx);
   font-feature-settings:
@@ -5425,7 +5188,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 .app-shell {
-  font-family: var(--sn-ui);
+  font-family: var(--font-ui);
   font-size: var(--fs-body);
   background:
     radial-gradient(
@@ -5458,12 +5221,12 @@ body {
     .chart-provenance .mono,
     .ring-list .mono
   ) {
-  font-family: var(--sn-mono) !important;
+  font-family: var(--font-mono) !important;
   font-feature-settings: "zero" 0;
   letter-spacing: 0;
 }
 .app-shell svg text {
-  font-family: var(--sn-ui) !important;
+  font-family: var(--font-ui) !important;
 }
 .app-shell ::selection {
   background: #bfe0f7;
@@ -5473,8 +5236,7 @@ body {
 .app-shell
   :where(
     .eyebrow,
-    .section-label span,
-    .small-muted,
+    .kpi-title,
     .kpi-note,
     .analytics-foot,
     .chart-provenance,
@@ -5483,28 +5245,45 @@ body {
     .cell-table-head,
     .range-scale
   ) {
-  font-size: var(--fs-label) !important;
-  line-height: 1.4;
+  font-size: var(--fs-small) !important;
+  line-height: var(--lh-body);
+}
+/* On a phone the label floor steps up one size: 11 px is fine at arm's length on
+   a laptop, not on a 390 px screen held in one hand. */
+@media (max-width: 767px) {
+  .app-shell
+    :where(
+      .eyebrow,
+      .kpi-title,
+      .kpi-note,
+      .analytics-foot,
+      .chart-provenance,
+      .map-footer-hint,
+      .map-legend,
+      .cell-table-head,
+      .range-scale
+    ),
+  .app-shell .tower-head,
+  .app-shell .tower-head * {
+    font-size: var(--fs-caption) !important;
+  }
 }
 .app-shell :where(.eyebrow, .section-label > span, .cell-table-head > *) {
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--ls-label);
   font-weight: 600;
 }
-.app-shell
-  :where(
-    .kpi-title,
-    .map-location,
-    .note,
-    .policy-description,
-    .inspector-coords
-  ) {
+.app-shell :where(.map-location, .note, .inspector-coords) {
   font-size: var(--fs-caption) !important;
+}
+/* the policy card's explanation is prose, not a caption */
+.app-shell .policy-description {
+  font-size: var(--fs-body);
 }
 /* ---------- shell & layout ---------- */
 .app-shell .navigation-rail {
   width: var(--nav-w);
-  padding: 16px 0;
+  padding: var(--space-4) 0;
   background: var(--sn-s1);
   border-right: 1px solid var(--sn-ln-soft);
   box-shadow: 1px 0 0 rgba(255, 255, 255, 0.7) inset;
@@ -5513,14 +5292,21 @@ body {
   margin-left: var(--nav-w) !important;
 }
 .app-shell .main-shell main#overview {
-  padding: var(--sp-6) var(--pad-x) 56px !important;
-  max-width: 1760px;
+  padding: var(--page-top) var(--pad-x) var(--page-bottom) !important;
+  max-width: var(--shell-max);
   margin-inline: auto;
 }
 .app-shell .global-header {
   height: var(--header-h);
-  padding: 0 var(--pad-x);
-  gap: var(--sp-4);
+  /* the bar is full-bleed, its content shares the page gutter: when the
+     content column hits --shell-max and centres, the header content must
+     start on the same x, otherwise it drifts left by (100% - max) / 2. */
+  padding-block: 0;
+  padding-inline: max(
+    var(--pad-x),
+    calc((100% - var(--shell-max)) / 2 + var(--pad-x))
+  );
+  gap: var(--space-4);
   background: rgba(234, 243, 254, 0.82) !important;
   -webkit-backdrop-filter: blur(14px) saturate(1.3);
   backdrop-filter: blur(14px) saturate(1.3);
@@ -5534,28 +5320,28 @@ body {
   height: 24px;
 }
 .app-shell .overview-heading {
-  margin-bottom: var(--sp-4);
-  gap: var(--sp-4);
+  margin-bottom: var(--gap);
+  gap: var(--space-4);
   align-items: flex-end;
 }
 .app-shell .overview-heading h1 {
-  font-family: var(--sn-display) !important;
+  font-family: var(--font-display) !important;
   font-weight: 500;
-  font-size: var(--fs-display) !important;
-  line-height: 1.08;
-  letter-spacing: -0.015em;
+  font-size: var(--fs-page-title) !important;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-title);
   color: var(--sn-tx);
 }
 .app-shell .overview-heading p {
   font-size: var(--fs-caption) !important;
   letter-spacing: 0;
   color: var(--sn-t2);
-  margin-top: var(--sp-2);
+  margin-top: var(--space-2);
 }
 .app-shell .command-bar {
-  margin-bottom: var(--sp-5);
-  padding: var(--sp-2) 0;
-  gap: var(--sp-3);
+  margin-bottom: var(--gap);
+  padding: var(--space-2) 0;
+  gap: var(--space-3);
   border-top: 0;
   border-bottom: 1px solid var(--sn-line);
 }
@@ -5566,7 +5352,7 @@ body {
   color: var(--sn-t2);
 }
 .app-shell .sim-controls {
-  gap: var(--sp-2);
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 .app-shell .kpi-grid {
@@ -5576,14 +5362,15 @@ body {
 .app-shell .primary-grid {
   gap: var(--gap);
   margin-bottom: var(--gap);
+  grid-template-columns: minmax(0, 1fr) var(--rail-w);
 }
 .app-shell .analytics-grid {
   gap: var(--gap);
   align-items: stretch;
 }
 .app-shell .section-label {
-  margin: var(--sp-6) 0 var(--sp-3);
-  padding: 0 var(--sp-1);
+  margin: 0 0 var(--space-3);
+  padding: 0;
   align-items: center;
 }
 .app-shell .section-label > span {
@@ -5593,44 +5380,47 @@ body {
 .app-shell .glass {
   background: var(--sn-s2) !important;
   border: 1px solid var(--sn-ln) !important;
-  border-radius: var(--r-lg);
-  box-shadow: var(--sh-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 .app-shell .panel-heading {
-  padding: var(--sp-4) var(--card-pad) var(--sp-3);
-  gap: var(--sp-3);
+  padding: var(--panel-pad) var(--panel-pad) var(--space-3);
+  gap: var(--space-3);
   min-height: 56px;
 }
 .app-shell .panel-heading h2,
 .app-shell .analytics-card h2,
 .app-shell .alerts-rail .panel-heading h2,
 .app-shell .map-panel .panel-heading h2 {
-  font-family: var(--sn-display) !important;
-  font-weight: 500;
-  font-size: var(--fs-title) !important;
-  line-height: 1.2;
+  font-family: var(--font-display) !important;
+  font-weight: 600;
+  font-size: var(--fs-panel-title) !important;
+  line-height: var(--lh-title);
   letter-spacing: -0.005em;
   color: var(--sn-tx);
 }
 .app-shell .panel-heading .eyebrow {
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 .app-shell .map-panel {
-  border-radius: var(--r-lg);
+  border-radius: var(--radius-lg);
 }
 .app-shell .note,
 .app-shell .map-panel .note {
-  padding: 0 var(--card-pad);
-  margin: 0 0 var(--sp-3);
+  padding: 0 var(--panel-pad);
+  margin: 0 0 var(--space-3);
   color: var(--sn-t2);
 }
-/* KPI cards */
+/* KPI cards: a fixed internal rhythm so values and notes line up across the
+   whole ribbon, whatever the label length. */
 .app-shell .kpi-card {
-  padding: var(--sp-4) var(--card-pad);
-  min-height: 124px;
-  border-radius: var(--r-lg);
+  display: flex;
+  flex-direction: column;
+  padding: var(--panel-pad) var(--panel-pad) var(--space-3);
+  min-height: 116px;
+  border-radius: var(--radius-lg);
   transition:
     transform var(--t-base) var(--ease),
     box-shadow var(--t-base) var(--ease),
@@ -5638,7 +5428,7 @@ body {
 }
 .app-shell .kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--sh-2);
+  box-shadow: var(--shadow-2);
   border-color: color-mix(
     in srgb,
     var(--tone, var(--sn-link)) 45%,
@@ -5649,11 +5439,18 @@ body {
   font-weight: 600;
   color: var(--sn-t2);
 }
+/* Long labels truncate instead of pushing the icon out of the card. */
+.app-shell .kpi-title-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .app-shell .kpi-value {
+  margin-top: var(--space-3);
   font-weight: 600;
   letter-spacing: -0.02em;
-  font-size: 30px !important;
-  line-height: 1.1;
+  font-size: var(--fs-metric) !important;
+  line-height: var(--lh-metric);
   font-variant-numeric: tabular-nums;
   color: var(--sn-tx);
 }
@@ -5661,53 +5458,141 @@ body {
   font-size: var(--fs-caption) !important;
   color: var(--sn-t3);
   font-weight: 500;
-  margin-left: 2px;
+  margin-left: 4px;
 }
 .app-shell .kpi-note {
+  margin-top: auto;
+  padding-top: var(--space-2);
   color: var(--sn-t2);
+}
+/* The sparkline sits behind the value as a watermark, not as a second axis. */
+.app-shell .sparkline {
+  width: 64px;
+  height: 26px;
+  right: 0;
+  bottom: var(--space-2);
+  opacity: 0.62;
 }
 /* lists, tables, rows */
 .app-shell .ring-list {
-  padding: var(--sp-4) var(--card-pad) var(--sp-3);
+  padding: var(--space-4) var(--panel-pad) var(--space-3);
   margin-top: 0;
   border-top: 1px solid var(--sn-line) !important;
 }
 .app-shell .ring-list-title {
-  font: 600 var(--fs-label)/1.4 var(--sn-ui) !important;
-  letter-spacing: 0.08em;
+  font-weight: 600 !important;
+  font-size: var(--fs-small) !important;
+  line-height: var(--lh-body) !important;
+  font-family: var(--font-ui) !important;
+  letter-spacing: var(--ls-label);
   text-transform: uppercase;
   color: var(--sn-t2);
-  margin: 0 0 var(--sp-2);
+  margin: 0 0 var(--space-2);
 }
 .app-shell .ring-list li {
   grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) auto !important;
-  column-gap: var(--sp-3);
-  padding: var(--sp-2) 0 !important;
-  font-size: var(--fs-body) !important;
+  column-gap: var(--space-3);
+  padding: var(--space-2) 0 !important;
+  font-size: var(--fs-caption) !important;
 }
 .app-shell .map-footer {
-  padding: var(--sp-3) var(--card-pad);
-  gap: var(--sp-3) var(--sp-4);
+  min-height: var(--tap-min);
+  padding: var(--space-3) var(--panel-pad);
+  gap: var(--space-3) var(--space-4);
   border-top: 1px solid var(--sn-line);
 }
 .app-shell .map-legend {
-  gap: var(--sp-2) var(--sp-4);
+  gap: var(--space-2) var(--space-4);
   color: var(--sn-t2);
 }
 .app-shell .towers-panel {
-  padding-bottom: var(--sp-5);
+  margin-top: var(--gap);
+  padding-bottom: var(--panel-pad);
 }
-.app-shell .towers-panel > input {
-  margin: 0 var(--card-pad) var(--sp-3);
-  width: calc(100% - var(--card-pad) * 2);
+/* Toolbar: the filter and the "faulty first" hint share one row with the
+ * heading, so the table starts higher and the panel reads as a data table. */
+.app-shell .towers-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--panel-pad) var(--space-3);
+}
+.app-shell .towers-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: min(340px, 100%);
+  height: var(--control-h);
+  padding: 0 var(--space-3);
+  /* The field must read as an input: its chrome is asserted so no heavier
+     button/panel rule can flatten it back into plain text. */
+  border: 1px solid var(--sn-ln) !important;
+  border-radius: var(--radius-sm) !important;
+  background: #ffffff !important;
+  color: var(--sn-t2);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
+}
+.app-shell .towers-search:focus-within {
+  border-color: var(--sn-link);
+  box-shadow: var(--focus-ring);
+}
+.app-shell .towers-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  /* The label is the field; the input must not draw a second box inside it.
+     The blanket ".app-shell input" rule carries !important, so these need it
+     too, and the generic .app-shell input:not() rule would re-add padding. */
+  padding: 0 !important;
+  border: 0 !important;
+  outline: 0;
+  background: transparent !important;
+  color: var(--sn-tx);
+  font-size: var(--fs-body);
+}
+.app-shell .towers-search input::placeholder {
+  color: var(--sn-t3);
+}
+.app-shell .towers-hint {
+  margin-left: auto;
+  min-width: 0;
+  font-size: var(--fs-small);
+  color: var(--sn-t2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .app-shell .tower-table {
-  margin: 0 var(--card-pad);
-  width: calc(100% - var(--card-pad) * 2);
+  margin: 0 var(--panel-pad);
+  width: calc(100% - var(--panel-pad) * 2);
+  max-height: clamp(320px, 44vh, 560px);
   border: 1px solid var(--sn-ln) !important;
-  border-radius: var(--r-md);
+  border-radius: var(--radius-md);
   background: #fff;
   overflow: auto;
+}
+.app-shell .tower-row.tower-head {
+  background: var(--sn-s1) !important;
+  border-bottom: 1px solid var(--sn-ln);
+}
+.app-shell .tower-row > span:nth-child(3),
+.app-shell .tower-row > span:nth-child(4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.app-shell .towers-empty {
+  margin: 0;
+  padding: var(--space-4) var(--panel-pad) 0;
+  color: var(--sn-t2);
+  font-size: var(--fs-body);
+}
+.app-shell .towers-count {
+  font-size: var(--fs-small) !important;
+  letter-spacing: 0.06em;
+  color: var(--sn-t2);
+  white-space: nowrap;
 }
 .app-shell .tower-row,
 .app-shell .cell-row {
@@ -5723,62 +5608,133 @@ body {
   flex-direction: column;
 }
 .app-shell .analytics-card > *:not(.panel-heading) {
-  padding-inline: var(--card-pad);
+  padding-inline: var(--panel-pad);
 }
 .app-shell .analytics-card > .cell-row,
 .app-shell .analytics-card > .cell-table-head,
 .app-shell .analytics-card .cell-table-head,
 .app-shell .analytics-card .cell-row {
-  padding-inline: var(--card-pad);
+  padding: var(--space-2) var(--panel-pad);
+}
+.app-shell .analytics-card .power-chart-row {
+  padding-block: var(--space-2);
+}
+/* the head is inset by padding, not by margin: margin + panel inset would put
+   the column titles 16 px right of the values under them */
+.app-shell .analytics-card .cell-table-head {
+  margin: 0;
+  padding-block: var(--space-2);
+}
+/* the PRB track is exactly the 50 px bar it holds (38 px on phones), and the
+   CQI pill - 24-29 px wide - gets a 32 px track so it cannot spill into the
+   gutter; its column label is centred over it */
+.app-shell .analytics-card .cell-table-head,
+.app-shell .analytics-card .cell-row {
+  grid-template-columns: minmax(0, 1fr) 50px 32px;
+}
+.app-shell .analytics-card .cell-table-head > span:nth-child(3) {
+  text-align: center;
+}
+.app-shell .analytics-card .cqi,
+.app-shell .analytics-card .cell-load > span:first-child {
+  font-variant-numeric: tabular-nums;
+}
+/* phones keep the compact load bar: a 38 px track holds the 38 px bar, and the
+   CQI pill still gets its 32 px so it cannot spill */
+@media (max-width: 767px) {
+  .app-shell .analytics-card .cell-table-head,
+  .app-shell .analytics-card .cell-row {
+    grid-template-columns: minmax(0, 1fr) 38px 32px;
+  }
+}
+/* The p > threshold rule spans the card's inner width on its own (the border
+ * is on the border box), so the text keeps the panel inset like every other
+ * line in the oracle card. */
+.app-shell .analytics-card > .oracle-threshold {
+  padding-inline: var(--panel-pad);
 }
 .app-shell .analytics-card .panel-heading {
-  padding-inline: var(--card-pad);
+  padding: var(--panel-pad) var(--panel-pad) var(--space-3);
 }
 .app-shell .analytics-foot {
-  padding: var(--sp-3) var(--card-pad) !important;
+  padding: var(--space-3) var(--panel-pad) !important;
   border-top: 1px solid var(--sn-line);
   margin-top: auto;
   color: var(--sn-t2);
 }
 .app-shell .chart-title {
-  font: 600 var(--fs-strong)/1.3 var(--sn-ui) !important;
+  font-weight: 600 !important;
+  font-size: var(--fs-emphasis) !important;
+  line-height: var(--lh-title) !important;
+  font-family: var(--font-ui) !important;
   color: var(--sn-tx);
-  margin-top: var(--sp-3);
+  margin-top: var(--space-3);
 }
 .app-shell .chart-subtitle,
 .app-shell .chart-note {
-  font-size: var(--fs-label) !important;
+  font-size: var(--fs-small) !important;
   color: var(--sn-t2);
 }
 .app-shell .incident {
-  padding: var(--sp-3) var(--card-pad) !important;
-  gap: var(--sp-3);
+  padding: var(--space-3) var(--panel-pad) !important;
+  gap: var(--space-3);
 }
 .app-shell .rail-footer {
-  padding: var(--sp-3) var(--card-pad) !important;
-  min-height: 44px;
+  padding: var(--space-3) var(--panel-pad) !important;
+  min-height: var(--tap-min);
 }
 .app-shell .alerts-rail {
   gap: var(--gap);
 }
 .app-shell .policy-panel .policy-description,
 .app-shell .policy-list {
-  padding-inline: var(--card-pad);
+  padding-inline: var(--panel-pad);
+}
+/* ---------- icon → label: one gap ---------- */
+.app-shell .kpi-title,
+.app-shell .kpi-note,
+.app-shell .layer-control,
+.app-shell .policy-description,
+.app-shell .inspector-place,
+.app-shell .intent-actions {
+  gap: var(--space-2);
+}
+/* chips keep the tighter step inside their own background (severity is set
+   further down, next to its type) */
+.app-shell .district-label {
+  padding: var(--space-1) var(--space-2);
+}
+/* a chip keeps its intrinsic width when it shares a row with a wrapping title */
+.app-shell .severity,
+.app-shell .count-badge {
+  flex: none;
 }
 .app-shell .count-badge {
-  font-size: var(--fs-label) !important;
+  font-size: var(--fs-small) !important;
   font-weight: 600;
   min-width: 24px;
   text-align: center;
 }
 /* ---------- controls: one button language ---------- */
-.app-shell button:not(.wave-launcher):not([class*="leaflet"]) {
-  min-height: 36px;
-  min-width: 36px;
+/* Tabs keep their own rule (below), so they are excluded here: the blanket used
+   to force them to 36 px with a 12 px radius inside a 4 px-padded track.
+   The exclusions sit inside :where() so this rule keeps the same specificity
+   as the plain `.app-shell button:not(...)` blanket it replaced — the
+   higher-specificity size rules for .panel-info-button (30/26 px),
+   .dialog-close-button (24 px) and .wave-send-button (30 px) must be able to
+   override the 36 px floor, and e2e (map-status.spec.ts) pins those sizes. */
+.app-shell
+  button:not(.wave-launcher):not([class*="leaflet"]):where(
+    :not(.segmented button):not(.timeframe-tabs button):not(
+        .history-tabs button
+      )
+  ) {
+  min-height: var(--control-h);
+  min-width: var(--control-h);
   font-size: var(--fs-body);
   font-weight: 600;
-  line-height: 1.2;
-  border-radius: var(--r-md);
+  line-height: var(--lh-title);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition:
     background-color var(--t-fast) var(--ease),
@@ -5788,16 +5744,9 @@ body {
     transform var(--t-fast) var(--ease);
 }
 .app-shell
-  :where(
-    .icon-button,
-    .speed-button,
-    .scenario-button,
-    .roi-pill,
-    .ai-toggle,
-    .search-trigger
-  ) {
-  min-height: 36px;
-  border-radius: var(--r-md);
+  :where(.icon-button, .speed-button, .scenario-button, .roi-pill, .ai-toggle) {
+  min-height: var(--control-h);
+  border-radius: var(--radius-md);
 }
 .app-shell
   button:not(.wave-launcher):not(.nav-item):not(.selected):not(.active):not(
@@ -5815,13 +5764,13 @@ body {
 .app-shell :is(button, a, select, input, [tabindex]):focus-visible {
   outline: 2px solid var(--sn-link);
   outline-offset: 2px;
-  box-shadow: var(--sn-focus);
+  box-shadow: var(--focus-ring);
 }
 .app-shell select,
 .app-shell input:not([type="checkbox"]):not([type="radio"]) {
   min-height: 36px;
-  border-radius: var(--r-md);
-  padding: 0 var(--sp-3);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
   font-size: var(--fs-body);
   transition:
     border-color var(--t-fast) var(--ease),
@@ -5830,25 +5779,31 @@ body {
 .app-shell select:focus,
 .app-shell input:focus {
   border-color: var(--sn-link) !important;
-  box-shadow: var(--sn-focus);
+  box-shadow: var(--focus-ring);
   outline: 0;
 }
 .app-shell .segmented,
 .app-shell .timeframe-tabs {
-  border-radius: var(--r-md);
-  padding: 2px;
+  border-radius: var(--radius-md);
+  padding: 4px;
   background: var(--sn-s3);
   border: 1px solid var(--sn-ln-soft);
-  gap: 2px;
+  gap: 4px;
 }
 .app-shell .segmented button,
-.app-shell .timeframe-tabs button {
-  min-height: 30px;
-  padding: 0 var(--sp-3);
+.app-shell .timeframe-tabs button,
+.app-shell .history-tabs button {
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
   border: 0 !important;
-  border-radius: calc(var(--r-md) - 3px);
+  /* 12 px track minus its 4 px padding = 8 px, so the inner shape follows the
+     outer corner instead of fighting it */
+  border-radius: var(--radius-sm);
   background: transparent !important;
   color: var(--sn-t2);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  /* on phones the touch blanket raises every button, tabs included, to 44 px */
 }
 .app-shell .segmented button.selected,
 .app-shell .timeframe-tabs button.selected {
@@ -5863,15 +5818,15 @@ body {
 }
 /* navigation rail */
 .app-shell .nav-items {
-  gap: var(--sp-2);
-  margin-top: var(--sp-2) !important;
+  gap: var(--space-2);
+  margin-top: var(--space-2) !important;
 }
 .app-shell .nav-item {
   width: 44px;
   height: 44px;
   min-width: 44px;
   min-height: 44px;
-  border-radius: var(--r-md);
+  border-radius: var(--radius-md);
   color: var(--sn-t2);
   transition:
     background-color var(--t-fast) var(--ease),
@@ -5879,8 +5834,8 @@ body {
     transform var(--t-base) var(--ease);
 }
 .app-shell .nav-item svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   transition: transform var(--t-base) var(--ease);
 }
 .app-shell .nav-item:hover {
@@ -5901,10 +5856,12 @@ body {
   width: 3px;
   background: var(--sn-link);
   box-shadow: none;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 .app-shell .nav-item:after {
-  font: 600 var(--fs-caption) var(--sn-ui) !important;
+  font-weight: 600 !important;
+  font-size: var(--fs-caption) !important;
+  font-family: var(--font-ui) !important;
   transition:
     opacity var(--t-fast) var(--ease),
     transform var(--t-base) var(--ease);
@@ -5923,12 +5880,12 @@ body {
   border-radius: 50%;
 }
 .app-shell .severity {
-  font-size: var(--fs-label) !important;
+  font-size: var(--fs-small) !important;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  border-radius: var(--sp-2);
-  padding: 3px var(--sp-2);
+  border-radius: var(--space-2);
+  padding: var(--space-1) var(--space-2);
 }
 /* maps */
 .app-shell .map-stage {
@@ -5940,18 +5897,18 @@ body {
   min-height: 36px;
 }
 .app-shell .map-zoom {
-  box-shadow: var(--sh-1);
-  border-radius: var(--r-md);
+  box-shadow: var(--shadow-1);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .app-shell .map-location,
 .app-shell .map-mode,
 .app-shell .weather-chip {
   font-size: var(--fs-caption) !important;
-  border-radius: var(--r-md);
+  border-radius: var(--radius-md);
   background: rgba(246, 250, 255, 0.92) !important;
   border: 1px solid var(--sn-ln);
-  box-shadow: var(--sh-1);
+  box-shadow: var(--shadow-1);
   color: var(--sn-tx);
 }
 .app-shell .network-tooltip,
@@ -5961,12 +5918,12 @@ body {
   background: var(--sn-s2) !important;
   color: var(--sn-tx) !important;
   border: 1px solid var(--sn-ln) !important;
-  border-radius: var(--r-md);
-  box-shadow: var(--sh-2);
-  font-size: var(--fs-caption) !important;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  font-size: var(--fs-body) !important;
 }
 .app-shell .district-label {
-  font-size: var(--fs-label) !important;
+  font-size: var(--fs-small) !important;
   font-weight: 600;
 }
 /* dialogs: native <dialog> loses its auto margin under the CSS reset, so it sat in the top-left corner */
@@ -5979,8 +5936,8 @@ dialog.dialog {
   position: fixed;
   inset: 0;
   height: fit-content;
-  border-radius: var(--r-lg) !important;
-  box-shadow: var(--sh-pop) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-pop) !important;
   max-width: calc(100vw - 32px);
   max-height: min(86vh, 860px);
   animation: sn-pop var(--t-slow) var(--ease) both;
@@ -5994,25 +5951,25 @@ dialog.dialog::backdrop,
 }
 .app-shell .dialog-content,
 .app-shell .impact-content {
-  padding: var(--sp-6);
+  padding: var(--space-5);
 }
 .app-shell .dialog-heading,
 .app-shell .impact-heading {
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-4);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 .app-shell .dialog-heading h3,
 .app-shell .impact-heading h3 {
-  font-family: var(--sn-display);
-  font-weight: 500;
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-section-title);
   letter-spacing: -0.01em;
 }
 .app-shell .fleet-grid {
-  gap: var(--sp-3);
+  gap: var(--space-3);
 }
 .app-shell .fleet-card {
-  border-radius: var(--r-md);
+  border-radius: var(--radius-md);
   transition:
     border-color var(--t-fast) var(--ease),
     transform var(--t-base) var(--ease);
@@ -6025,11 +5982,11 @@ dialog.dialog::backdrop,
   background: var(--sn-s2) !important;
   color: var(--sn-tx) !important;
   border: 1px solid var(--sn-ln) !important;
-  border-radius: var(--r-md);
+  border-radius: var(--radius-md);
   font-size: var(--fs-body) !important;
-  box-shadow: var(--sh-pop);
+  box-shadow: var(--shadow-pop);
   animation: sn-toast var(--t-slow) var(--ease) both;
-  bottom: calc(var(--sp-6) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
 }
 /* ---------- data motion ---------- */
 .app-shell .load-bar,
@@ -6160,24 +6117,17 @@ dialog.dialog::backdrop,
 }
 /* ---------- breakpoints ---------- */
 @media (max-width: 1280px) {
-  :root {
-    --gap: 16px;
-    --card-pad: 18px;
-  }
   .app-shell .kpi-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .app-shell .primary-grid {
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) var(--rail-w, 320px);
   }
   .app-shell .analytics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 1024px) {
-  :root {
-    --nav-w: 64px;
-  }
   .app-shell .primary-grid {
     grid-template-columns: 1fr;
   }
@@ -6189,20 +6139,12 @@ dialog.dialog::backdrop,
 }
 /* phones & small tablets: bottom bar, single column, thumb-size targets */
 @media (max-width: 767px) {
-  :root {
-    --nav-w: 0px;
-    --header-h: 56px;
-    --gap: 12px;
-    --card-pad: 16px;
-    --pad-x: 14px;
-    --fs-display: 30px;
-  }
   .app-shell .navigation-rail {
     inset: auto 0 0 0;
     width: 100%;
     z-index: 1100;
     height: calc(64px + env(safe-area-inset-bottom, 0px));
-    padding: 0 var(--sp-2) env(safe-area-inset-bottom, 0px) !important;
+    padding: 0 var(--space-2) env(safe-area-inset-bottom, 0px) !important;
     flex-direction: row;
     border-right: 0;
     border-top: 1px solid var(--sn-ln-soft);
@@ -6223,12 +6165,8 @@ dialog.dialog::backdrop,
     min-width: 0;
     margin-top: 0 !important;
   }
-  .app-shell .navigation-rail .nav-items .nav-item[data-nav-item="towers"] {
-    order: 5;
-  }
-  .app-shell .navigation-rail .nav-items .nav-item[data-nav-item="fleet"] {
-    order: 6;
-  }
+  /* Towers before Maintenance comes from the item order in App.tsx; the old
+     phone-only flex "order" overrides are no longer needed. */
   .app-shell .navigation-rail .nav-bottom {
     flex: 0 0 auto;
     margin: 0;
@@ -6247,21 +6185,21 @@ dialog.dialog::backdrop,
     width: 20px;
     height: 3px;
     transform: translateX(-50%);
-    border-radius: 0 0 3px 3px;
+    border-radius: 0 0 var(--radius-xs) var(--radius-xs);
   }
   .app-shell .main-shell {
     margin-left: 0 !important;
     padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
   .app-shell .main-shell main#overview {
-    padding: var(--sp-4) var(--pad-x) var(--sp-8) !important;
+    padding: var(--space-4) var(--pad-x) var(--space-6) !important;
   }
   .app-shell .global-header {
     flex-wrap: nowrap;
     height: var(--header-h);
     min-height: var(--header-h);
     padding: 0 var(--pad-x);
-    gap: var(--sp-2);
+    gap: var(--space-2);
   }
   .app-shell .global-header .network-switch {
     min-width: 0;
@@ -6284,29 +6222,19 @@ dialog.dialog::backdrop,
   .app-shell .global-header .header-bell {
     display: none;
   }
-  .app-shell .global-header .search-trigger {
-    min-width: 40px;
-    width: 40px;
-    padding: 0;
-    justify-content: center;
-  }
-  .app-shell .global-header .search-trigger > span,
-  .app-shell .global-header .search-trigger kbd {
-    display: none;
-  }
   .app-shell .phone-tools {
     display: none;
-    gap: var(--sp-1);
+    gap: var(--space-1);
   }
   .app-shell .phone-tools .icon-button {
-    width: 40px;
-    height: 40px;
+    width: var(--tap-min);
+    height: var(--tap-min);
   }
   .app-shell .overview-heading {
     align-items: flex-start;
     flex-direction: column;
-    gap: var(--sp-2);
-    margin-bottom: var(--sp-3);
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
   }
   .app-shell .overview-meta {
     align-self: stretch;
@@ -6315,8 +6243,8 @@ dialog.dialog::backdrop,
   .app-shell .command-bar {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--sp-3);
-    padding: var(--sp-2) 0;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
   }
   .app-shell .command-context {
     display: none;
@@ -6346,30 +6274,23 @@ dialog.dialog::backdrop,
   }
   .app-shell .kpi-card {
     min-height: 112px;
-    padding: var(--sp-3) var(--sp-4);
-  }
-  .app-shell .kpi-value {
-    font-size: 26px !important;
   }
   .app-shell .primary-grid,
   .app-shell .analytics-grid,
   .app-shell .alerts-rail {
     grid-template-columns: 1fr;
   }
-  .app-shell .alerts-rail {
-    grid-template-rows: auto;
-  }
   .app-shell .map-stage {
-    min-height: 420px;
+    min-height: clamp(300px, 62vw, 380px);
   }
   .app-shell .map-top-overlay {
     flex-wrap: wrap;
-    gap: var(--sp-2);
-    right: var(--sp-2);
-    left: var(--sp-2);
-    top: var(--sp-2);
+    gap: var(--space-2);
+    right: var(--space-2);
+    left: var(--space-2);
+    top: var(--space-2);
     width: auto;
-    max-width: calc(100% - var(--sp-4));
+    max-width: calc(100% - var(--space-4));
   }
   .app-shell .map-top-overlay select {
     flex: 1 1 140px;
@@ -6387,7 +6308,7 @@ dialog.dialog::backdrop,
     display: none;
   }
   .app-shell .map-mode {
-    left: var(--sp-2);
+    left: var(--space-2);
     right: auto;
     max-width: calc(100% - 72px);
   }
@@ -6399,7 +6320,7 @@ dialog.dialog::backdrop,
     align-items: flex-start;
   }
   .app-shell .towers-panel {
-    padding-bottom: var(--sp-4);
+    padding-bottom: var(--panel-pad);
   }
   .app-shell .tower-table {
     max-height: 380px;
@@ -6408,11 +6329,11 @@ dialog.dialog::backdrop,
   dialog.dialog {
     width: calc(100vw - 24px);
     max-height: 88dvh;
-    border-radius: var(--r-lg);
+    border-radius: var(--radius-lg);
   }
   .app-shell .dialog-content,
   .app-shell .impact-content {
-    padding: var(--sp-5);
+    padding: var(--space-4);
   }
   .app-shell .fleet-grid {
     grid-template-columns: 1fr;
@@ -6421,10 +6342,6 @@ dialog.dialog::backdrop,
   .app-shell select,
   .app-shell input:not([type="checkbox"]):not([type="radio"]) {
     min-height: 44px;
-  }
-  .app-shell .segmented button,
-  .app-shell .timeframe-tabs button {
-    min-height: 36px;
   }
 }
 @media (max-width: 480px) {
@@ -6436,38 +6353,25 @@ dialog.dialog::backdrop,
     flex: 0 0 auto;
   }
 }
-@media (max-width: 420px) {
-  .app-shell .kpi-card {
-    padding: var(--sp-3);
-  }
-  .app-shell .kpi-value {
-    font-size: 24px !important;
-  }
-}
 @media (pointer: coarse) {
+  /* every button, tabs included, becomes a 44 px target */
   .app-shell button:not(.wave-launcher):not([class*="leaflet"]) {
     min-height: 44px;
     min-width: 44px;
-  }
-  .app-shell .segmented button,
-  .app-shell .timeframe-tabs button {
-    min-height: 36px;
-    min-width: 0;
-  }
-}
-@media (min-width: 1700px) {
-  :root {
-    --pad-x: 40px;
-    --gap: 24px;
   }
 }
 /* ---------- composition fixes ---------- */
 /* incidents rail fills the height of the map and scrolls inside, instead of clipping rows */
 .app-shell .alerts-rail {
-  grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr);
+  /* The rail is one band with the map: it stretches to the map's height and
+     never caps itself. The row template itself is set per width — one full
+     row on desktop (≥1025 block), auto rows under it (one-card block). */
   max-height: none;
   min-height: 0;
   align-self: stretch;
+}
+.app-shell .alerts-rail .policy-panel {
+  min-height: 0;
 }
 .app-shell .alerts-rail > * {
   display: flex;
@@ -6482,21 +6386,28 @@ dialog.dialog::backdrop,
   overscroll-behavior: contain;
 }
 .app-shell .alerts-rail .rail-subhead {
-  padding: 0 var(--card-pad) var(--sp-2);
-  font-size: var(--fs-label) !important;
+  padding: 0 var(--panel-pad) var(--space-2);
+  font-size: var(--fs-small) !important;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--sn-t2);
 }
+/* The history footer is a quiet strip on the panel's bottom edge, not a
+   boxed button: the shared button chrome is explicitly switched off because
+   that selector carries more weight than this one. */
 .app-shell .alerts-rail .rail-footer {
   margin-top: auto;
+  border: 0 !important;
   border-top: 1px solid var(--sn-line) !important;
-  border-radius: 0;
-  background: transparent;
-  border-left: 0;
-  border-right: 0;
-  border-bottom: 0;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   width: 100%;
+}
+.app-shell .alerts-rail .rail-footer:hover {
+  background: var(--sn-s1) !important;
+  border-color: var(--sn-line) !important;
+  box-shadow: none !important;
 }
 .app-shell .alerts-rail .policy-panel .policy-list,
 .app-shell .alerts-rail .policy-panel .policy-empty {
@@ -6507,36 +6418,64 @@ dialog.dialog::backdrop,
 .app-shell .incident-target {
   min-height: 28px;
   min-width: 0;
-  padding: 2px var(--sp-2);
-  border-radius: var(--sp-2);
+  padding: 2px var(--space-2);
+  border-radius: var(--space-2);
   font-size: var(--fs-caption);
+}
+
+/* ---------- panel balance ---------- */
+/* Every band inside the policy card keeps the same left and right edge as its
+ * heading: the foot used 14 px and the description 15 px against a 20 px
+ * heading. */
+.app-shell .policy-panel .policy-description {
+  padding: 0 var(--panel-pad) var(--space-2);
+}
+.app-shell .policy-panel .policy-foot {
+  padding: var(--space-3) var(--panel-pad);
+}
+.app-shell .policy-panel .intent-card {
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+/* The commander fills whatever height the Oracle panel gets from its row
+ * instead of demanding a fixed 300 px, which used to make that panel the
+ * tallest card on the analytics row and left Radio load with dead space. */
+.app-shell .oracle-combo .commander-slot {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* The slot sits inside the Oracle card, whose children already carry the
+     panel's inline padding; without this reset the Commander's own headings
+     and bands start one step further in than the Oracle's. */
+  padding-inline: 0;
+}
+.app-shell .oracle-combo .commander-slot .policy-panel {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 @media (min-width: 1025px) {
   /* the rail takes its height from the map, not from its own content */
   .app-shell .alerts-rail {
     contain: size;
+    /* One card in the rail now: it fills the whole band the map sets,
+       instead of keeping a second (empty) row for the removed power card. */
+    grid-template-rows: minmax(0, 1fr);
   }
   .app-shell .map-stage {
-    min-height: clamp(380px, 50vh, 540px);
-  }
-  .app-shell .ring-list ul {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    column-gap: var(--sp-8);
-  }
-  .app-shell .ring-list li:nth-last-child(2) {
-    border-bottom: 0;
+    min-height: clamp(340px, 40vh, 500px);
   }
 }
 .app-shell .alerts-rail .rail-subhead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-2);
+  gap: var(--space-2);
 }
 .app-shell .alerts-rail .rail-subhead > span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -6546,78 +6485,89 @@ dialog.dialog::backdrop,
   flex: 0 0 auto;
   min-width: 0;
   width: 116px;
-  padding-right: var(--sp-6);
+  padding-right: var(--space-5);
   font-size: var(--fs-caption);
 }
 .app-shell button.incident-target:not([class*="leaflet"]) {
-  min-height: 28px;
+  min-height: var(--control-h-sm);
   min-width: 0;
-  padding: 2px var(--sp-2);
-  font-size: var(--fs-caption);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--fs-body);
 }
 .app-shell .incident {
-  padding: var(--sp-3) var(--card-pad) !important;
+  padding: var(--space-3) var(--panel-pad) !important;
   border-bottom: 1px solid var(--sn-line);
 }
 .app-shell .incident:last-child {
   border-bottom: 0;
 }
-/* analytics: one tall card beside a 2x2 of compact ones, so no card is half empty */
-@media (min-width: 1025px) {
+/* analytics: four cards, no empty cell. The chart card owns the tall left
+ * column; Radio load and Oracle share the top right; Site power & fleet runs
+ * wide underneath them. (The chart card used to span two rows with nothing
+ * placed in the second one, which left a bare band on wide screens.) */
+@media (min-width: 1281px) {
   .app-shell .analytics-grid {
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns:
+      minmax(0, 1.35fr) minmax(0, 1fr)
+      minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: stretch;
   }
   .app-shell .analytics-grid .traffic-card {
-    grid-row: span 2;
+    grid-column: 1;
+    grid-row: 1 / span 2;
   }
   .app-shell .analytics-grid .cells-card {
     grid-column: 2;
+    grid-row: 1;
   }
   .app-shell .analytics-grid .oracle-card {
     grid-column: 3;
+    grid-row: 1;
   }
   .app-shell .analytics-grid .power-card {
     grid-column: 2 / span 2;
+    grid-row: 2;
+  }
+  .app-shell .analytics-grid .power-card .fleet-summary {
+    margin-top: auto;
   }
 }
-@media (min-width: 768px) and (max-width: 1024px) {
+/* Narrow laptops and tablets (768–1280 px): two columns, chart full width on
+ * top, Radio load and Oracle side by side, power full width at the end. */
+@media (min-width: 768px) and (max-width: 1280px) {
   .app-shell .analytics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .app-shell .analytics-grid .traffic-card {
-    grid-column: 1 / -1;
-  }
+  .app-shell .analytics-grid .traffic-card,
   .app-shell .analytics-grid .power-card {
     grid-column: 1 / -1;
   }
 }
 .app-shell .analytics-card > button,
 .app-shell .analytics-card > .analytics-foot > button {
-  margin: var(--sp-3) var(--card-pad) var(--card-pad);
-  width: calc(100% - var(--card-pad) * 2);
+  margin: var(--space-3) var(--panel-pad) var(--panel-pad);
+  width: calc(100% - var(--panel-pad) * 2);
 }
 .app-shell .analytics-card > button {
   justify-content: space-between;
 }
 .app-shell .tower-head,
 .app-shell .tower-head * {
-  font-size: var(--fs-label) !important;
-  letter-spacing: 0.08em;
+  font-size: var(--fs-small) !important;
+  letter-spacing: var(--ls-label);
   text-transform: uppercase;
   font-weight: 600;
   color: var(--sn-t2) !important;
 }
-.app-shell .tower-row {
-  font-size: var(--fs-body);
-}
 .app-shell .map-mode button {
-  min-height: 28px;
-  padding: 0 var(--sp-3);
-  font-size: var(--fs-caption);
-  border-radius: var(--sp-2);
+  min-height: var(--control-h-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--fs-body);
+  border-radius: var(--radius-sm);
 }
 .app-shell .map-top-overlay {
-  gap: var(--sp-2);
+  gap: var(--space-2);
 }
 /* people who ask for less motion get none */
 @media (prefers-reduced-motion: reduce) {
@@ -6637,8 +6587,8 @@ dialog.dialog::backdrop,
 /* Phone: compact empty-state and footer details for the Commander panel. */
 @media (max-width: 767px) {
   .app-shell .policy-empty {
-    padding: var(--sp-2) 0 !important;
-    gap: var(--sp-3);
+    padding: var(--space-2) 0 !important;
+    gap: var(--space-3);
     align-items: center;
   }
   .app-shell .oracle-orb {
@@ -6646,7 +6596,7 @@ dialog.dialog::backdrop,
     height: 36px !important;
   }
   .app-shell .policy-foot {
-    padding-top: var(--sp-2);
+    padding-top: var(--space-2);
   }
 }
 
@@ -6658,15 +6608,12 @@ dialog.dialog::backdrop,
   .app-shell button:where([class=""], .selected) {
     min-width: 44px !important;
   }
-  .app-shell .search-trigger {
-    min-width: 44px !important;
-  }
   .app-shell .incident-target {
     min-height: 44px !important;
   }
   .app-shell .leaflet-control-attribution a {
     display: inline-block;
-    padding: 14px 6px;
+    padding: 12px 8px;
     margin: -14px -6px;
   }
 }
@@ -6697,11 +6644,11 @@ dialog.dialog::backdrop,
   border: 0;
   box-shadow: none;
   background: transparent;
-  border-radius: var(--r-md);
+  border-radius: var(--radius-md);
 }
 .app-shell .leaflet-control-scale {
   margin-right: 58px !important;
-  margin-bottom: 16px !important;
+  margin-bottom: var(--space-4) !important;
 }
 .app-shell .weather-chip {
   top: 112px;
@@ -6726,9 +6673,9 @@ dialog.dialog::backdrop,
 
 /* Keep the site-risk caption in normal flow below the gauge. */
 .app-shell .oracle-risk-label {
-  font-size: 11px !important;
-  line-height: 1.25;
-  margin: 2px 0 0;
+  font-size: var(--fs-small) !important;
+  line-height: var(--lh-body);
+  margin: 4px 0 0;
   white-space: normal;
 }
 
@@ -6736,7 +6683,7 @@ dialog.dialog::backdrop,
 .app-shell .oracle-combo .combo-divider {
   height: 1px;
   background: var(--sn-ln, #d6e0ef);
-  margin: var(--sp-4) 0;
+  margin: var(--space-4) 0;
 }
 .app-shell .commander-slot {
   min-width: 0;
@@ -6748,7 +6695,9 @@ dialog.dialog::backdrop,
   padding: 0 !important;
 }
 .app-shell .oracle-combo .commander-slot .policy-panel .policy-list {
-  max-height: none;
+  max-height: min(44vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 /* Sticky header stays above the map's floating chips when the page scrolls */
 .app-shell .global-header {
@@ -6771,7 +6720,7 @@ dialog.dialog::backdrop,
 }
 .app-shell .impact-live-heading {
   color: var(--sn-t2) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-small) !important;
 }
 .app-shell .impact-live-heading .live-on,
 .app-shell .impact-live-heading .live-off {
@@ -6779,29 +6728,29 @@ dialog.dialog::backdrop,
 }
 .app-shell .impact-live-values > div > span {
   color: var(--sn-t2) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-small) !important;
 }
 .app-shell .impact-live-values strong {
   color: var(--sn-tx) !important;
-  font-size: 20px !important;
+  font-size: var(--fs-metric-sm) !important;
 }
 .app-shell .impact-live-values > div:nth-child(2) strong {
   color: #5b3fc4 !important;
 }
 .app-shell .impact-live-values small {
   color: var(--sn-t2) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-small) !important;
 }
 .app-shell .impact-live-inactive {
   color: var(--sn-t2) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-body) !important;
 }
 .app-shell .impact-table-wrap {
   border: 1px solid #c9d8ee !important;
   background: #ffffff;
 }
 .app-shell .impact-table {
-  font-size: 12px !important;
+  font-size: var(--fs-body) !important;
 }
 .app-shell .impact-table th,
 .app-shell .impact-table td {
@@ -6810,8 +6759,8 @@ dialog.dialog::backdrop,
 .app-shell .impact-table thead th {
   background: #eef4fc !important;
   color: var(--sn-tx) !important;
-  font-size: 12px !important;
-  font-weight: 650;
+  font-size: var(--fs-small) !important;
+  font-weight: 600;
 }
 .app-shell .impact-table tbody th {
   color: var(--sn-tx) !important;
@@ -6832,15 +6781,15 @@ dialog.dialog::backdrop,
   background: #f3efff !important;
   border-left: 3px solid #5b3fc4 !important;
   color: #2e2470 !important;
-  font-size: 14px !important;
-  line-height: 1.7 !important;
+  font-size: var(--fs-body) !important;
+  line-height: var(--lh-prose) !important;
   opacity: 1 !important;
   filter: none !important;
   text-shadow: none !important;
 }
 .app-shell .impact-notes p {
   color: var(--sn-t2) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-body) !important;
 }
 .app-shell .impact-notes strong {
   color: var(--sn-tx) !important;
@@ -6849,21 +6798,33 @@ dialog.dialog::backdrop,
 /* Fibre rings: two tidy columns with a clear gap; the status sits on the right of each cell */
 .app-shell .ring-list ul {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  column-gap: 32px !important;
+  column-gap: var(--space-6) !important;
   row-gap: 0;
 }
 .app-shell .ring-list li {
   display: grid !important;
   grid-template-columns: 70px 78px 64px minmax(56px, 1fr) !important;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: center;
-  padding: 9px 0 !important;
+  padding: 8px 0 !important;
   border-bottom: 1px solid #d6e2f2 !important;
-  font-size: 12px !important;
+  font-size: var(--fs-caption) !important;
 }
 .app-shell .ring-list li > span:last-child {
   text-align: right;
   white-space: nowrap;
+}
+/* The final row keeps no rule beneath it. From 768 px up the list has two
+   columns, so the second-to-last item only loses its rule when it really sits
+   on the last row (an odd position); on phones the list is one column and only
+   the true last item is freed. */
+.app-shell .ring-list li:last-child {
+  border-bottom: 0 !important;
+}
+@media (min-width: 768px) {
+  .app-shell .ring-list li:nth-last-child(2):nth-child(odd) {
+    border-bottom: 0 !important;
+  }
 }
 @media (max-width: 767px) {
   .app-shell .ring-list ul {
@@ -6872,69 +6833,77 @@ dialog.dialog::backdrop,
 }
 
 /* Coverage line: how much of the chosen window has been recorded so far */
-.app-shell .chart-coverage {
-  margin: 6px 0 10px;
-  font-size: 12px;
-  color: var(--sn-t2);
-}
-.app-shell .chart-coverage i {
-  display: block;
-  height: 4px;
-  border-radius: 2px;
-  background: #5b3fc4;
-  margin-top: 6px;
-  max-width: 100%;
-}
-.app-shell .chart-coverage span {
-  font-weight: 600;
-  color: var(--sn-tx);
-}
 
 /* Larger crew markers on the map (teams) */
 .app-shell .crew-marker {
-  width: 38px !important;
-  height: 38px !important;
-  padding: 7px !important;
-  border-radius: 12px;
+  width: 30px !important;
+  height: 30px !important;
+  padding: 4px !important;
+  border-radius: var(--radius-md);
 }
 .app-shell .crew-marker svg {
   width: 100% !important;
   height: 100% !important;
 }
+/* Segmented repair-progress ring: floats just outside the tile, shown only
+   while the crew is REPAIRING. The faint notched track is always drawn; JS
+   lights the solid notches one by one as the mission's ETA counts down. */
+.app-shell .crew-marker .crew-repair-ring {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  /* The blanket svg sizing above must not shrink the ring to the tile. */
+  width: 40px !important;
+  height: 40px !important;
+  transform: rotate(-90deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease);
+}
+.app-shell .crew-marker.crew-repairing .crew-repair-ring {
+  opacity: 1;
+}
+.crew-repair-ring .crew-repair-track {
+  opacity: 0.28;
+}
 
-/* Larger towers list: rows and headings */
+/* Towers table: readable rows without the inflated 15 px / 12 px step, so ~2
+ * more rows fit in the same panel height. */
 .app-shell .tower-row {
-  font-size: 15px !important;
-  padding: 12px 14px !important;
-  gap: 12px;
+  font-size: var(--fs-body) !important;
+  padding: var(--space-2) var(--space-4) !important;
+  gap: var(--space-3);
+  min-height: 40px;
+  align-items: center;
 }
 .app-shell .tower-row .mono {
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .app-shell .tower-head,
 .app-shell .tower-head * {
-  font-size: 13px !important;
+  font-size: var(--fs-small) !important;
 }
-.app-shell .towers-panel input[type="search"] {
-  font-size: 15px;
+/* Zebra rows make a 300-row table scannable; hover still wins. */
+.app-shell button.tower-row:nth-child(odd) {
+  background: color-mix(in srgb, var(--sn-s3) 45%, #fff);
 }
 
 /* Simulation settings: two clear choices instead of a bare switch */
 .app-shell .approval-choice {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
   flex: none;
 }
 .app-shell .approval-choice button {
-  min-height: 44px;
+  min-height: var(--tap-min);
   min-width: 104px;
-  padding: 0 16px;
-  border-radius: 10px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
   border: 1px solid #9fb6d6;
   background: #ffffff;
   color: var(--sn-tx);
-  font-size: 16px;
+  font-size: var(--fs-body);
   font-weight: 600;
 }
 .app-shell .approval-choice button.selected {
@@ -6947,22 +6916,24 @@ dialog.dialog::backdrop,
   cursor: default;
 }
 .app-shell .setting-row strong {
-  font-size: 18px;
+  font-size: var(--fs-emphasis);
 }
 .app-shell .setting-row p,
-.app-shell .settings-info,
-.app-shell .settings-info span,
 .app-shell .settings-info strong {
-  font-size: 16px !important;
+  font-size: var(--fs-body) !important;
+}
+.app-shell .settings-info {
+  font-size: var(--fs-caption) !important;
 }
 
 /* Dialogs: bigger, readable text */
 .app-shell .dialog p {
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: var(--fs-body);
+  line-height: var(--lh-prose);
 }
 .app-shell .dialog .eyebrow {
-  font-size: 13px;
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
 }
 
 /* Explore the API: readable button */
@@ -6970,9 +6941,9 @@ dialog.dialog::backdrop,
 .app-shell .dialog a.button {
   background: #10265c !important;
   color: #ffffff !important;
-  font-size: 16px !important;
+  font-size: var(--fs-body) !important;
   font-weight: 600;
-  padding: 12px 20px !important;
+  padding: var(--space-3) 20px !important;
   border: 0 !important;
 }
 .app-shell .dialog .button.secondary svg,
@@ -6988,13 +6959,13 @@ dialog.dialog::backdrop,
   border-color: #10265c !important;
 }
 .app-shell .layer-menu {
-  font-size: 16px !important;
-  padding: 12px 14px;
+  font-size: var(--fs-body) !important;
+  padding: var(--space-3) 14px;
 }
 .app-shell .layer-menu label {
-  font-size: 16px;
-  padding: 8px 6px;
-  gap: 10px;
+  font-size: var(--fs-body);
+  padding: var(--space-2) 6px;
+  gap: 8px;
   color: var(--sn-tx);
 }
 .app-shell .layer-menu input[type="checkbox"] {
@@ -7005,81 +6976,8 @@ dialog.dialog::backdrop,
 
 /* About dialog disclaimer: readable size */
 .app-shell .dialog p.small-muted {
-  font-size: 16px !important;
-  line-height: 1.6;
-}
-
-/* Narrow and tablet widths: the incident list keeps a fixed height and scrolls inside it */
-@media (max-width: 1024px) {
-  .app-shell .alerts-rail .incident-list {
-    flex: none;
-    max-height: min(62vh, 460px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior: contain;
-  }
-}
-
-/* Tablet and narrow widths: the rail is only as tall as its cards, so no empty space is left under them */
-@media (max-width: 1024px) {
-  .app-shell .alerts-rail {
-    align-self: start;
-    grid-template-rows: auto;
-    grid-auto-rows: auto;
-    min-height: 0;
-  }
-  .app-shell .alerts-rail > * {
-    min-height: auto;
-    overflow: visible;
-  }
-  .app-shell .alerts-rail .incident-list {
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-}
-
-/* Tablet (768-1024 px, two columns): Active incidents and Site power & fleet share one fixed height; each scrolls inside */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .app-shell .alerts-rail {
-    grid-template-rows: minmax(0, 560px) !important;
-    align-items: stretch;
-  }
-  .app-shell .alerts-rail > * {
-    height: 100%;
-    min-height: 0;
-    overflow: hidden;
-  }
-  .app-shell .alerts-rail .incident-list {
-    flex: 1 1 auto;
-    min-height: 0;
-    max-height: none;
-  }
-  .app-shell .alerts-rail .power-card {
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-}
-
-/* Tablet: both rail cards are only as tall as the power card's content (no empty space); incidents scroll inside */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .app-shell .alerts-rail {
-    grid-template-rows: auto !important;
-    align-items: start;
-  }
-  .app-shell .alerts-rail > * {
-    height: auto;
-    min-height: 0;
-    overflow: hidden;
-  }
-  .app-shell .alerts-rail .incident-list {
-    flex: none;
-    max-height: 240px;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-  .app-shell .alerts-rail .power-card {
-    overflow: visible;
-  }
+  font-size: var(--fs-body) !important;
+  line-height: var(--lh-prose);
 }
 
 /* History: completed-demo cards lighter than the dialog, text still readable */
@@ -7111,7 +7009,7 @@ dialog.dialog::backdrop,
   border-radius: 0;
   box-shadow: none !important;
   padding: 0;
-  gap: 10px;
+  gap: 8px;
 }
 .history-tabs button {
   color: #33487a !important;
@@ -7120,7 +7018,7 @@ dialog.dialog::backdrop,
   color: #10265c !important;
   background: #ffffff !important;
   border: 1px solid #8eaac2 !important;
-  padding: 7px 10px;
+  padding: 0 var(--space-3);
 }
 
 /* Weather alert: top-left of the map, under the district picker; slides in when a storm appears */
@@ -7131,18 +7029,18 @@ dialog.dialog::backdrop,
   right: auto !important;
   bottom: auto !important;
   max-width: min(300px, calc(100% - 30px)) !important;
-  padding: 10px 13px !important;
-  animation: weather-slide-in 0.5s var(--e, ease-out) both;
+  padding: 8px 12px !important;
+  animation: weather-slide-in 0.5s var(--ease) both;
 }
 .app-shell .weather-chip strong,
 .weather-chip strong {
-  font-size: 12px !important;
-  font-weight: 650 !important;
+  font-size: var(--fs-caption) !important;
+  font-weight: 600 !important;
 }
 .app-shell .weather-chip span,
 .weather-chip span {
-  font-size: 11px !important;
-  margin-top: 3px !important;
+  font-size: var(--fs-small) !important;
+  margin-top: 4px !important;
 }
 @keyframes weather-slide-in {
   from {
@@ -7172,7 +7070,7 @@ dialog.dialog::backdrop,
   flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--sp-2);
+  gap: var(--space-2);
   min-width: 0;
 }
 .app-shell .panel-info-button {
@@ -7180,6 +7078,8 @@ dialog.dialog::backdrop,
   display: grid;
   flex: none;
   place-items: center;
+  /* e2e-pinned design size (map-status.spec.ts allows 26/30/44); deliberately
+     not the --control-h-sm token — that snaps it to 28px and breaks CI. */
   width: 30px;
   height: 30px;
   min-width: 30px;
@@ -7188,14 +7088,14 @@ dialog.dialog::backdrop,
   color: var(--sn-t2);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--r-md);
+  border-radius: var(--radius-sm);
   box-shadow: none;
 }
 .app-shell .panel-info-button::before {
   position: absolute;
   inset: 2px;
   border: 1px solid transparent;
-  border-radius: var(--r-md);
+  border-radius: var(--radius-xs);
   content: "";
   pointer-events: none;
 }
@@ -7225,6 +7125,7 @@ dialog.dialog::backdrop,
   box-shadow: 0 0 0 2px var(--sn-s1);
 }
 .app-shell .panel-info-button.compact {
+  /* e2e-pinned compact size; see the base rule above. */
   width: 26px;
   height: 26px;
   min-width: 26px;
@@ -7252,7 +7153,7 @@ dialog.dialog::backdrop,
   display: flex;
   flex: none;
   align-items: center;
-  gap: var(--sp-1);
+  gap: var(--space-1);
 }
 .app-shell .kpi-title-actions > svg {
   flex: none;
@@ -7264,8 +7165,8 @@ dialog.dialog::backdrop,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-2);
-  margin-bottom: var(--sp-2);
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 .app-shell .ring-list-heading .ring-list-title {
   margin: 0;
@@ -7274,6 +7175,8 @@ dialog.dialog::backdrop,
   position: relative;
   display: grid;
   place-items: center;
+  /* e2e-pinned design size (map-status.spec.ts allows 24/44); deliberately
+     not the --control-h-sm token — that snaps it to 28px and breaks CI. */
   width: 24px;
   height: 24px;
   min-width: 24px;
@@ -7282,14 +7185,14 @@ dialog.dialog::backdrop,
   color: var(--sn-t2);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   box-shadow: none;
 }
 .app-shell .dialog-close-button::before {
   position: absolute;
   inset: 1px;
   border: 1px solid transparent;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   content: "";
   pointer-events: none;
 }
@@ -7321,7 +7224,7 @@ dialog.dialog::backdrop,
 }
 @media (max-width: 767px), (pointer: coarse) {
   .app-shell .panel-heading-actions {
-    gap: var(--sp-1);
+    gap: var(--space-1);
   }
   .app-shell .panel-info-button,
   .app-shell .panel-info-button.compact,
@@ -7335,6 +7238,8 @@ dialog.dialog::backdrop,
     inset: 12px;
   }
   .app-shell .panel-info-button svg {
+    /* 12px keeps the visible ::before ≤18px inside the 44px touch target
+       (map-status.spec.ts pins this at 390px). */
     width: 12px;
     height: 12px;
   }
@@ -7348,8 +7253,8 @@ dialog.dialog::backdrop,
   background: #ffffff !important;
   color: #10265c !important;
   border: 1px solid var(--sn-ln) !important;
-  border-radius: var(--r-md);
-  box-shadow: var(--sh-1);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
 }
 .app-shell .map-top-overlay .map-button:hover,
 .app-shell .map-top-overlay .map-button:focus-visible {
@@ -7366,20 +7271,29 @@ dialog.dialog::backdrop,
 .app-shell .map-top-overlay .segmented {
   background: var(--sn-s3) !important;
   border-color: var(--sn-ln) !important;
-  box-shadow: var(--sh-1);
+  box-shadow: var(--shadow-1);
 }
 .app-shell .map-top-overlay .segmented button.selected {
   background: #ffffff !important;
   color: #10265c !important;
   box-shadow:
     inset 0 0 0 1px var(--sn-ln),
-    var(--sh-1);
+    var(--shadow-1);
 }
 
 /* Mobile utility actions live in the header; avoid duplicate rail controls. */
 @media (max-width: 767px) {
   .app-shell .phone-tools {
     display: flex;
+  }
+  /* History keeps its header slot on phones: the bell used to be hidden here,
+     which left the room with no way to reach the event history. It takes the
+     same 44 px square as the phone tools and closes their 4 px gap. */
+  .app-shell .global-header .header-bell {
+    display: inline-flex;
+    width: var(--tap-min);
+    height: var(--tap-min);
+    margin-right: calc(var(--space-1) * -1);
   }
   .app-shell .navigation-rail .nav-bottom {
     display: none !important;
@@ -7392,13 +7306,13 @@ dialog.dialog::backdrop,
 .wave-assistant {
   --wave-launcher-right: 22px;
   --wave-launcher-bottom: 22px;
-  --wave-launcher-size: 104px;
+  --wave-launcher-size: 88px;
   position: fixed;
   z-index: 1205;
   inset: 0;
   pointer-events: none;
   color: var(--sn-tx, #10265c);
-  font-family: var(--sn-ui, Manrope, system-ui, sans-serif);
+  font-family: var(--font-ui);
 }
 
 .wave-mascot {
@@ -7675,8 +7589,7 @@ dialog.dialog::backdrop,
 .wave-icon-button:focus-visible,
 .wave-send-button:focus-visible,
 .wave-error-actions button:focus-visible,
-.wave-suggestions button:focus-visible,
-.wave-greeting button:focus-visible {
+.wave-suggestions button:focus-visible {
   outline: 3px solid var(--sn-link, #1479c4);
   outline-offset: 3px;
 }
@@ -7699,21 +7612,23 @@ dialog.dialog::backdrop,
 .wave-greeting {
   position: absolute;
   right: calc(var(--wave-launcher-right) + var(--wave-launcher-size) + 14px);
-  bottom: calc(var(--wave-launcher-bottom) + 25px);
-  width: min(278px, calc(100vw - 180px));
+  bottom: calc(var(--wave-launcher-bottom) + 20px);
+  /* Hug the text: a fixed width left most of the bubble empty next to the
+     short greeting. It still wraps at the old width for long text. */
+  width: max-content;
+  max-width: min(278px, calc(100vw - 180px));
   min-height: 48px;
-  padding: 11px 34px 11px 14px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   border: 1px solid var(--sn-ln, #a9c2e6);
-  border-radius: 15px;
+  border-radius: var(--radius-lg);
   color: var(--sn-tx, #10265c);
   background: var(--sn-s2, #f6faff);
   box-shadow: 0 8px 24px rgba(16, 38, 92, 0.16);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.4;
-  pointer-events: auto;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  line-height: var(--lh-body);
   animation: wave-greeting-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .wave-greeting p {
@@ -7731,50 +7646,31 @@ dialog.dialog::backdrop,
   background: var(--sn-s2, #f6faff);
   transform: rotate(45deg);
 }
-.wave-greeting button {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  color: var(--sn-t3, #5f739f);
-  background: transparent;
-  cursor: pointer;
-}
-.wave-greeting button:hover {
-  color: var(--sn-tx, #10265c);
-  background: rgba(20, 121, 196, 0.09);
-}
 
 .wave-panel {
   position: absolute;
   right: 22px;
-  bottom: 142px;
-  width: min(390px, calc(100vw - 32px));
-  height: min(630px, calc(100dvh - 154px));
+  bottom: 126px;
+  width: min(350px, calc(100vw - 32px));
+  height: min(560px, calc(100dvh - 154px));
   min-height: min(360px, calc(100dvh - 154px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--sn-ln, #a9c2e6);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   background: var(--sn-s1, #eaf3fe);
-  box-shadow: var(--sh-pop, 0 18px 50px -12px rgba(16, 38, 92, 0.35));
+  box-shadow: var(--shadow-pop, 0 18px 50px -12px rgba(16, 38, 92, 0.35));
   pointer-events: auto;
   transform-origin: bottom right;
   animation: wave-panel-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .wave-panel-header {
   min-height: 72px;
-  padding: 10px 13px 9px 10px;
+  padding: var(--space-3) var(--panel-pad);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   border-bottom: 1px solid var(--sn-ln-soft, #c4d7ef);
   background:
     radial-gradient(circle at 7% 0%, rgba(0, 209, 255, 0.15), transparent 45%),
@@ -7791,24 +7687,24 @@ dialog.dialog::backdrop,
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 .wave-panel-identity h2 {
   color: var(--sn-tx, #10265c);
-  font-family: var(--sn-display, Georgia, serif);
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: var(--fs-panel-title);
   font-weight: 600;
   letter-spacing: -0.02em;
-  line-height: 1.05;
+  line-height: var(--lh-tight);
 }
 .wave-icon-button {
-  width: 32px;
-  height: 32px;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
   flex: none;
   display: grid;
   place-items: center;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   color: var(--sn-t2, #4b6192);
   background: transparent;
   cursor: pointer;
@@ -7822,10 +7718,10 @@ dialog.dialog::backdrop,
 .wave-messages {
   min-height: 0;
   flex: 1;
-  padding: 15px 14px;
+  padding: var(--panel-pad);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-color: #aec4e4 transparent;
@@ -7842,7 +7738,7 @@ dialog.dialog::backdrop,
   max-width: 94%;
   display: flex;
   align-items: flex-end;
-  gap: 7px;
+  gap: 8px;
   animation: wave-message-enter 180ms ease both;
 }
 .wave-message--user {
@@ -7864,30 +7760,47 @@ dialog.dialog::backdrop,
 }
 .wave-message-content {
   min-width: 0;
-  padding: 10px 12px;
+  padding: 10px var(--space-3);
   border: 1px solid var(--sn-ln-soft, #c4d7ef);
-  border-radius: 13px 13px 13px 4px;
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-md)
+    var(--radius-xs);
   color: var(--sn-tx, #10265c);
   background: var(--sn-s2, #f6faff);
   box-shadow: 0 3px 10px rgba(16, 38, 92, 0.045);
 }
 .wave-message--user .wave-message-content {
   border-color: #1479c4;
-  border-radius: 13px 13px 4px 13px;
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-xs)
+    var(--radius-md);
   color: #fff;
   background: linear-gradient(135deg, #1479c4, #0c6e8f);
   box-shadow: 0 5px 14px rgba(20, 121, 196, 0.18);
 }
 .wave-message-content p {
   color: inherit;
-  font-size: 11px;
+  font-size: var(--fs-body);
   font-weight: 500;
-  line-height: 1.65;
+  line-height: var(--lh-body);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .wave-message--user .wave-message-content p {
   color: #fff;
+}
+/* The newest assistant reply reveals line by line instead of popping in as
+   one block. Lines live in normal flow (they reserve their height), only the
+   opacity/offset animate. */
+.wave-line {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(4px);
+  animation: wave-line-in 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes wave-line-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 .wave-message.is-error .wave-message-content {
   border-color: rgba(212, 47, 82, 0.35);
@@ -7895,25 +7808,25 @@ dialog.dialog::backdrop,
   background: #fff1f3;
 }
 .wave-error-actions {
-  margin-top: 9px;
-  padding-top: 8px;
+  margin-top: 8px;
+  padding-top: var(--space-2);
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   border-top: 1px solid rgba(212, 47, 82, 0.16);
 }
 .wave-error-actions button,
 .wave-suggestions button {
-  padding: 6px 8px;
+  padding: 6px var(--space-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--space-1);
   border: 1px solid rgba(20, 121, 196, 0.2);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: #0c5d91;
   background: #fff;
-  font-size: 9px;
+  font-size: var(--fs-body);
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -7929,17 +7842,17 @@ dialog.dialog::backdrop,
   background: #ffe5e9;
 }
 .wave-suggestions {
-  padding: 0 13px 8px;
+  padding: 0 var(--panel-pad) var(--space-2);
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 .wave-suggestions button {
   max-width: 100%;
   justify-content: flex-start;
   color: var(--sn-t2, #4b6192);
   text-align: left;
-  line-height: 1.35;
+  line-height: var(--lh-body);
 }
 .wave-suggestions button:hover {
   transform: translateY(-1px);
@@ -7954,7 +7867,7 @@ dialog.dialog::backdrop,
   align-items: center;
   gap: 7px;
   color: var(--sn-t2, #4b6192);
-  font-size: 10px;
+  font-size: var(--fs-caption);
   font-weight: 600;
 }
 .wave-thinking-dots {
@@ -7979,13 +7892,13 @@ dialog.dialog::backdrop,
 .wave-composer {
   min-height: 44px;
   max-height: 88px;
-  margin: 0 13px;
-  padding: 5px 6px 5px 10px;
+  margin: 0 var(--panel-pad) var(--space-3);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   border: 1px solid var(--sn-ln, #a9c2e6);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--sn-s2, #f6faff);
   box-shadow: 0 3px 12px rgba(16, 38, 92, 0.07);
 }
@@ -8001,16 +7914,16 @@ dialog.dialog::backdrop,
   height: 28px;
   min-height: 28px;
   max-height: 72px;
-  padding: 4px 0;
+  padding: var(--space-1) 0;
   resize: none;
   overflow-y: auto;
   border: 0;
   outline: 0;
   color: var(--sn-tx, #10265c);
   background: transparent;
-  font-family: var(--sn-ui, Manrope, system-ui, sans-serif);
-  font-size: 11px;
-  line-height: 1.5;
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
 }
 .wave-composer textarea::placeholder {
   color: var(--sn-t3, #5f739f);
@@ -8026,7 +7939,7 @@ dialog.dialog::backdrop,
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   color: #fff;
   background: var(--sn-link, #1479c4);
   box-shadow: 0 3px 8px rgba(20, 121, 196, 0.2);
@@ -8036,6 +7949,8 @@ dialog.dialog::backdrop,
     background-color 140ms ease;
 }
 .app-shell .wave-panel .wave-composer .wave-send-button {
+  /* e2e-pinned design size (dashboard.spec.ts expects 30px); deliberately
+     not the --control-h-sm token — that snaps it to 28px. */
   width: 30px;
   min-width: 30px;
   height: 30px;
@@ -8248,7 +8163,7 @@ dialog.dialog::backdrop,
     bottom: calc(
       var(--wave-launcher-bottom) + var(--wave-launcher-size) + 14px
     );
-    width: min(280px, calc(100vw - 24px));
+    max-width: min(280px, calc(100vw - 24px));
   }
   .wave-launcher.is-open {
     visibility: hidden;
@@ -8256,14 +8171,16 @@ dialog.dialog::backdrop,
   }
   .wave-panel {
     right: 10px;
-    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    /* 12 px of air above the bottom bar, on top of the bar's 76 px offset. The
+       height takes the same 12 px back so the panel's top edge does not move. */
+    bottom: calc(76px + var(--space-3) + env(safe-area-inset-bottom, 0px));
     width: min(400px, calc(100vw - 20px));
-    height: min(660px, calc(100dvh - 92px - env(safe-area-inset-bottom, 0px)));
+    height: min(660px, calc(100dvh - 104px - env(safe-area-inset-bottom, 0px)));
     min-height: min(
       320px,
-      calc(100dvh - 92px - env(safe-area-inset-bottom, 0px))
+      calc(100dvh - 104px - env(safe-area-inset-bottom, 0px))
     );
-    border-radius: 18px;
+    border-radius: var(--radius-lg);
   }
   .wave-panel-header {
     min-height: 72px;
@@ -8271,6 +8188,8 @@ dialog.dialog::backdrop,
   .wave-composer textarea {
     height: 32px;
     min-height: 32px;
+    /* 16px at touch sizes prevents iOS focus zoom; pinned by map-status.spec.ts
+       at 390px — deliberately not the --fs-body token. */
     font-size: 16px;
     line-height: 1.35;
   }
@@ -8296,15 +8215,15 @@ dialog.dialog::backdrop,
 
 @media (max-width: 380px) {
   .wave-panel-header {
-    padding-inline: 9px;
-    gap: 7px;
+    padding-inline: var(--space-3);
+    gap: var(--space-2);
   }
   .wave-panel-avatar {
     width: 46px;
     height: 46px;
   }
   .wave-messages {
-    padding-inline: 10px;
+    padding-inline: var(--space-3);
   }
   .wave-message {
     max-width: 98%;
@@ -8316,6 +8235,7 @@ dialog.dialog::backdrop,
   .wave-thinking-dots i,
   .wave-panel,
   .wave-message,
+  .wave-line,
   .wave-launcher,
   .wave-greeting,
   .wave-error-actions button,
@@ -8324,6 +8244,12 @@ dialog.dialog::backdrop,
     animation: none !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  /* Reduced motion kills the reveal animation, so its starting opacity must
+     go too or the text would stay invisible. */
+  .wave-line {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -8365,5 +8291,237 @@ dialog.dialog::backdrop,
     overflow-x: hidden !important;
     overflow-y: auto !important;
     overscroll-behavior: contain;
+  }
+}
+
+/* ==================================================================
+ * Layout & density pass (2026-10)
+ * Goals: fit the greeting → controls → KPI ribbon → map on a 1366×768
+ * laptop; keep the 6-across ribbon readable at 1281–1440 px; give the
+ * towers table more rows; drop secondary header chrome before it crowds
+ * the clock. Geometry only — colour still comes from the --sn-* tokens.
+ * ================================================================== */
+
+/* ---------- header: secondary chrome leaves first ---------- */
+@media (max-width: 1360px) {
+  .app-shell .build-stamp {
+    display: none !important;
+  }
+}
+@media (max-width: 1100px) {
+  .app-shell .global-header .header-system {
+    display: none !important;
+  }
+}
+
+/* ---------- KPI ribbon ---------- */
+/* The three-dot explanation appears on hover / keyboard focus only: the
+ * label keeps the width it needs at six across, and the ribbon is calm at
+ * rest. Touch devices keep it visible (no hover). */
+@media (hover: hover) and (pointer: fine) {
+  .app-shell .kpi-card .panel-info-button {
+    opacity: 0;
+    transition: opacity var(--t-fast) var(--ease);
+  }
+  .app-shell .kpi-card:hover .panel-info-button,
+  .app-shell .kpi-card:focus-within .panel-info-button {
+    opacity: 1;
+  }
+}
+/* 1281–1440 px: six cards share ~1150 px. Step the number and the
+ * sparkline watermark down one notch so every label fits on one line. */
+@media (min-width: 1281px) and (max-width: 1440px) {
+  .app-shell .kpi-card {
+    min-height: 110px;
+  }
+  .app-shell .kpi-value {
+    margin-top: var(--space-2);
+  }
+  .app-shell .sparkline {
+    width: 52px;
+    height: 22px;
+  }
+}
+
+/* ---------- first screen ---------- */
+/* Short viewports (1366×768, 1280×800): tighten the masthead and the ribbon
+ * so the live map starts above the fold. */
+@media (min-width: 1025px) and (max-height: 860px) {
+  .app-shell .overview-heading h1 {
+    line-height: var(--lh-tight);
+  }
+  .app-shell .kpi-card {
+    min-height: 106px;
+  }
+  .app-shell .kpi-value {
+    margin-top: var(--space-2);
+  }
+  .app-shell .kpi-note {
+    padding-top: var(--space-1);
+  }
+  .app-shell .map-stage {
+    min-height: clamp(320px, 36vh, 420px);
+  }
+}
+
+/* ---------- section rhythm ---------- */
+/* Tablets stack the map above the rail, so the map is full width here and
+ * needs a wider aspect than the desktop column's fixed 345 px. */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .app-shell .map-stage {
+    min-height: clamp(320px, 42vw, 440px);
+  }
+}
+.app-shell .section-label {
+  margin: 0 0 var(--space-3);
+}
+
+/* ---------- towers toolbar on narrow screens ---------- */
+@media (max-width: 900px) {
+  .app-shell .towers-hint {
+    display: none;
+  }
+  .app-shell .towers-search {
+    width: 100%;
+  }
+}
+
+/* ---------- analytics card footers ---------- */
+/* Cards in the analytics row share one height. The provenance line stays on
+ * the bottom edge so the extra space reads as padding, not as a missing
+ * panel (the table footer is already pinned by .analytics-foot). */
+/* Spare height in the chart card goes between its two chart groups, so the
+ * card reads as two balanced halves instead of one empty band at the bottom. */
+.app-shell .traffic-card > .chart-title:last-of-type {
+  margin-top: auto;
+}
+.app-shell .traffic-card .chart-provenance {
+  padding-top: var(--space-3);
+}
+
+/* ---------- towers: touch sizing ---------- */
+@media (max-width: 600px) {
+  .app-shell .towers-search {
+    height: auto;
+    min-height: 46px;
+    padding-block: var(--space-1);
+  }
+  .app-shell .towers-search input {
+    height: 38px;
+  }
+  /* Five columns cannot share 330 px without every cell wrapping, so the
+   * table keeps its column proportions and scrolls sideways instead. */
+  .app-shell .tower-table {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  .app-shell .tower-row {
+    min-width: 440px;
+    gap: var(--space-2);
+  }
+}
+
+/* ---------- anchors ---------- */
+/* The page handles the header offset once (scroll-padding-top on <html>), so
+ * section targets do not add their own 20 px on top of it. */
+.app-shell .map-panel,
+.app-shell .alerts-rail,
+.app-shell .analytics-grid {
+  scroll-margin-top: 0;
+}
+
+/* ---------- power card in the analytics grid ---------- */
+/* The card was designed for the narrow map rail; in the grid it is wide, so
+ * the legend reads as one strip beside the donut instead of a tall list with
+ * its counts pushed to the far edge. */
+@media (min-width: 768px) {
+  .app-shell .power-card .power-chart-row {
+    align-items: center;
+    gap: var(--space-6);
+  }
+  .app-shell .power-card .power-legend {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-5);
+  }
+  .app-shell .power-card .power-legend > span {
+    white-space: nowrap;
+  }
+  .app-shell .power-card .power-legend b {
+    margin-left: var(--space-2);
+  }
+}
+.app-shell .power-card .power-ats {
+  margin-block: var(--space-2) var(--space-3);
+  margin-inline: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--sn-line);
+}
+
+/* ---------- one-card incidents rail on small screens ---------- */
+/* Site power & fleet used to be the rail's second card. On tablet and phone
+ * the rail is a single column, and the incidents panel keeps ONE fixed
+ * height whether there are zero alarms or a full list — the list scrolls
+ * inside, so nothing below the panel moves when alerts come and go. */
+@media (max-width: 1024px) {
+  .app-shell .alerts-rail {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto !important;
+    align-items: start;
+  }
+  .app-shell .alerts-rail > * {
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+  .app-shell .alerts-rail .alarms-panel {
+    height: clamp(340px, 62vh, 460px);
+    overflow: hidden;
+  }
+  .app-shell .alerts-rail .incident-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+}
+
+/* ==================================================================
+ * Task 8 — phone and tablet safety
+ * ================================================================== */
+/* The traffic card's two switch groups are 319 px wide together. On a phone the
+   card body is 294 px and at 768 px it is 296 px, so the row used to push past
+   the panel edge; it wraps instead. */
+.app-shell .chart-summary {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Long values truncate with an ellipsis rather than running under a panel edge. */
+.app-shell .incident-meta > span,
+.app-shell .rail-subhead > span,
+.app-shell .towers-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 767px) {
+  /* A single stray pixel of overflow is never worth a sideways scroll. */
+  body {
+    overflow-x: clip;
+  }
+  /* Rows that pair a label with a value stack instead of squeezing. */
+  .app-shell .panel-heading,
+  .app-shell .towers-tools,
+  .app-shell .rail-subhead,
+  .app-shell .overview-meta,
+  .app-shell .fleet-summary,
+  .app-shell .policy-foot,
+  .app-shell .dialog-actions {
+    flex-wrap: wrap;
   }
 }

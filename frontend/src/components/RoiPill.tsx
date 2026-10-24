@@ -34,7 +34,7 @@ export function RoiPill({
     >
       {enabled ? (
         <>
-          <Zap size={13} aria-hidden="true" />
+          <Zap size={14} aria-hidden="true" />
           <span className="roi-money mono">
             <span>{dollars < 0 ? "−" : "+"}$</span>
             <NumberTween
@@ -55,7 +55,7 @@ export function RoiPill({
         </>
       ) : (
         <>
-          <Activity size={13} aria-hidden="true" />
+          <Activity size={14} aria-hidden="true" />
           <span>AI Inactive · Baseline OPEX</span>
         </>
       )}

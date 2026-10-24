@@ -1,35 +1,54 @@
-// Smooth crew motion. No dependencies. Works in any plane: pass projected coordinates
-// (for Leaflet use L.CRS.EPSG3857.project(latlng) and .unproject() on the way out).
+// Smooth crew motion. Depends only on ./crew-motion.config.js. Works in any
+// plane: pass projected coordinates (for Leaflet use L.CRS.EPSG3857.project(latlng)
+// and .unproject() on the way out).
+import { CREW_MOTION } from "./crew-motion.config.js";
+
 const lerpAngle = (a, b, t) => a + (((b - a + 540) % 360) - 180) * t;
 const POSITION_EPSILON = 0.01;
 const FRAME_EPSILON = 0.0001;
 
-// Remaining projected route distance in EPSG:3857 metres -> visual speed factor.
-// Interpolating between points gives longer trips a noticeable lift without
-// abrupt speed jumps as a crew crosses a distance threshold. Backend ETAs and
-// team positions remain authoritative; this affects presentation only.
-const DISTANCE_SPEED_POINTS = [
-  [0, 1],
-  [1500, 1],
-  [4500, 1.2],
-  [9000, 1.45],
-  [15000, 1.6],
-];
+// Remaining projected route distance in EPSG:3857 metres -> visual speed
+// factor, interpolated between the configured band edges (crew-motion.config.js).
+// Backend ETAs and team positions remain authoritative; this affects
+// presentation only.
+const BANDS = CREW_MOTION.bands;
 
-function distanceSpeedMultiplier(remainingMeters) {
+export function distanceSpeedMultiplier(remainingMeters) {
   const distance = Number.isFinite(remainingMeters)
     ? Math.max(0, remainingMeters)
     : 0;
-  for (let i = 1; i < DISTANCE_SPEED_POINTS.length; i += 1) {
-    const [upperDistance, upperMultiplier] = DISTANCE_SPEED_POINTS[i];
-    if (distance <= upperDistance) {
-      const [lowerDistance, lowerMultiplier] = DISTANCE_SPEED_POINTS[i - 1];
+  if (distance <= BANDS[0].upToMeters) return BANDS[0].speed;
+  for (let i = 1; i < BANDS.length; i += 1) {
+    if (distance <= BANDS[i].upToMeters) {
+      const lower = BANDS[i - 1];
+      const upper = BANDS[i];
       const fraction =
-        (distance - lowerDistance) / (upperDistance - lowerDistance || 1);
-      return lowerMultiplier + (upperMultiplier - lowerMultiplier) * fraction;
+        (distance - lower.upToMeters) /
+        (upper.upToMeters - lower.upToMeters || 1);
+      return lower.speed + (upper.speed - lower.speed) * fraction;
     }
   }
-  return DISTANCE_SPEED_POINTS.at(-1)[1];
+  return BANDS[BANDS.length - 1].speed;
+}
+
+// Gentle ease-in at departure and ease-out at arrival. Raw trip progress
+// t (0..1) maps to eased progress: cosine speed ramps over the first and last
+// `ease.ramp` of the trip, linear in between, normalized to still cover the
+// whole route. Endpoints and the exact midpoint are preserved.
+export function easeRouteProgress(t) {
+  const ramp = Math.min(0.5, Math.max(0, CREW_MOTION.ease.ramp));
+  if (ramp <= 0 || t <= 0 || t >= 1) return t;
+  const total = 1 - ramp;
+  if (t < ramp) {
+    const v = t / 2 - (ramp / (2 * Math.PI)) * Math.sin((Math.PI * t) / ramp);
+    return v / total;
+  }
+  if (t > 1 - ramp) {
+    const u = 1 - t;
+    const v = u / 2 - (ramp / (2 * Math.PI)) * Math.sin((Math.PI * u) / ramp);
+    return 1 - v / total;
+  }
+  return (ramp / 2 + (t - ramp)) / total;
 }
 
 function sameRoute(a, b) {
@@ -180,7 +199,13 @@ export class CrewMotion {
   }
 
   _frame(crew, now, smoothing) {
-    const point = this.at(crew, crew.s);
+    // The drawn position follows the eased progress, so every trip starts
+    // gently, cruises, then decelerates into its arrival. Heading samples
+    // stay on the raw progress: they read the local route direction.
+    const point = this.at(
+      crew,
+      easeRouteProgress(crew.s / crew.length) * crew.length,
+    );
     const forward = this.at(
       crew,
       Math.min(crew.length, crew.s + crew.length * 0.01),

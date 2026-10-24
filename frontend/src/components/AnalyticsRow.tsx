@@ -10,11 +10,13 @@ export function AnalyticsRow({
   data,
   config,
   onSelect,
+  onFleet,
   commander,
 }: {
   data: Snapshot;
   config: Config;
   onSelect: (id: string) => void;
+  onFleet?: () => void;
   commander?: ReactNode;
 }) {
   const { top_cells: top, forecast } = data.dashboard;
@@ -45,7 +47,7 @@ export function AnalyticsRow({
             <span>
               <strong className="mono">
                 {cell.node_id}
-                <ArrowUpRight size={11} />
+                <ArrowUpRight size={14} />
               </strong>
               <small>{cell.district}</small>
             </span>
@@ -68,7 +70,7 @@ export function AnalyticsRow({
       <article className="glass analytics-card oracle-card oracle-combo">
         <PanelHeading
           title="Oracle outlook"
-          right={<Sparkles size={15} style={{ color: p.prediction }} />}
+          right={<Sparkles size={14} style={{ color: p.prediction }} />}
         />
         <div className="radial-wrap">
           <svg viewBox="0 0 180 154" aria-hidden="true">
@@ -137,6 +139,15 @@ export function AnalyticsRow({
         {commander && <div className="combo-divider" />}
         {commander}
       </article>
+      {/* Site power & fleet lives in the analytics grid: as the fourth card it
+          has room for its donut, legend and fleet bar at every height, whereas
+          the map rail clipped it on short laptops. The grid placement lives in
+          app.css ("analytics: four cards, no empty cell"). */}
+      <PowerCard
+        data={data}
+        config={config}
+        onFleet={onFleet ?? (() => undefined)}
+      />
     </section>
   );
 }
@@ -158,7 +169,7 @@ export function PowerCard({
       <article className="glass analytics-card power-card">
         <PanelHeading
           title="Site power & fleet"
-          right={<Zap size={15} style={{ color: p.warning }} />}
+          right={<Zap size={14} style={{ color: p.warning }} />}
         />
         <div className="power-chart-row">
           <div className="donut-wrap">
@@ -234,7 +245,7 @@ export function PowerCard({
           </span>
           <span>
             <b>{fleet.IDLE}</b> available / {config.num_teams}
-            <ArrowUpRight size={13} />
+            <ArrowUpRight size={14} />
           </span>
         </button>
       </article>
