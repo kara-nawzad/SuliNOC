@@ -5717,11 +5717,18 @@ body {
 }
 /* ---------- controls: one button language ---------- */
 /* Tabs keep their own rule (below), so they are excluded here: the blanket used
-   to force them to 36 px with a 12 px radius inside a 4 px-padded track. */
+   to force them to 36 px with a 12 px radius inside a 4 px-padded track.
+   The exclusions sit inside :where() so this rule keeps the same specificity
+   as the plain `.app-shell button:not(...)` blanket it replaced — the
+   higher-specificity size rules for .panel-info-button (30/26 px),
+   .dialog-close-button (24 px) and .wave-send-button (30 px) must be able to
+   override the 36 px floor, and e2e (map-status.spec.ts) pins those sizes. */
 .app-shell
-  button:not(.wave-launcher):not([class*="leaflet"]):not(.segmented button):not(
-    .timeframe-tabs button
-  ):not(.history-tabs button) {
+  button:not(.wave-launcher):not([class*="leaflet"]):where(
+    :not(.segmented button):not(.timeframe-tabs button):not(
+        .history-tabs button
+      )
+  ) {
   min-height: var(--control-h);
   min-width: var(--control-h);
   font-size: var(--fs-body);
