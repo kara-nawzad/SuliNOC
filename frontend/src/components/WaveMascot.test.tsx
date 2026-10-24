@@ -98,7 +98,7 @@ describe("Wave mascot states", () => {
   it("keeps the launcher transparent, circular, responsive and motion-safe", () => {
     expect(styles).toMatch(/\.wave-launcher\s*\{[^}]*border-radius:\s*50%/s);
     expect(styles).toMatch(
-      /\.wave-assistant\s*\{[^}]*--wave-launcher-size:\s*104px/s,
+      /\.wave-assistant\s*\{[^}]*--wave-launcher-size:\s*88px/s,
     );
     expect(styles).toMatch(
       /\.wave-launcher\s*\{[^}]*background:\s*transparent/s,

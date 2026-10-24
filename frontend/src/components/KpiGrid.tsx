@@ -93,9 +93,9 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
         ({ key, label, value, unit, decimals, icon: Icon, color, note }) => (
           <article className="glass kpi-card" key={key} style={tone(color)}>
             <div className="kpi-title">
-              <span>{label}</span>
+              <span className="kpi-title-label">{label}</span>
               <div className="kpi-title-actions">
-                <Icon size={15} aria-hidden="true" />
+                <Icon size={14} aria-hidden="true" />
                 <PanelInfoButton title={label} compact />
               </div>
             </div>
@@ -112,9 +112,9 @@ export function KpiGrid({ data, config }: { data: Snapshot; config: Config }) {
             <div className="kpi-note">
               {key === "throughput_gbps" && change !== null ? (
                 change >= 0 ? (
-                  <ArrowUpRight size={12} />
+                  <ArrowUpRight size={14} />
                 ) : (
-                  <ArrowDownRight size={12} />
+                  <ArrowDownRight size={14} />
                 )
               ) : (
                 <span

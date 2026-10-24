@@ -60,19 +60,19 @@ export function Inspector({
         >
           <div className="inspector-header">
             <span className="eyebrow">
-              <RadioTower size={13} /> SITE INSPECTOR
+              <RadioTower size={14} /> SITE INSPECTOR
             </span>
             <button
               className="icon-button"
               aria-label="Close site inspector"
               onClick={onClose}
             >
-              <X size={17} />
+              <X size={18} />
             </button>
           </div>
           <h2 className="mono">{node.id}</h2>
           <div className="inspector-place">
-            <MapPin size={12} />
+            <MapPin size={14} />
             {config.agg_sites.find((a) => a.id === node.agg)?.name}{" "}
             <span>·</span> Ring {node.ring}
           </div>
@@ -86,12 +86,12 @@ export function Inspector({
             <span>{config.presentation.generation_names[node.gen]}</span>
             {node.critical && (
               <span>
-                <ShieldCheck size={12} /> Priority site
+                <ShieldCheck size={14} /> Priority site
               </span>
             )}
             {node.repairing ? (
               <span>
-                <Wrench size={12} /> Repairing
+                <Wrench size={14} /> Repairing
               </span>
             ) : node.dispatched ? (
               <span>Crew dispatched</span>
@@ -105,7 +105,7 @@ export function Inspector({
           ))}
           <section className="spec-group">
             <h3>
-              <Zap size={12} /> Power · {node.pwr}
+              <Zap size={14} /> Power · {node.pwr}
               {config.power_configs[node.pwr]
                 ? ` · ${config.power_configs[node.pwr]}`
                 : ""}

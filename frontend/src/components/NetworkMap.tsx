@@ -6,12 +6,12 @@ import {
   useMemo,
   useRef,
   useState,
+  type RefObject,
 } from "react";
 import {
   MapContainer,
   Pane,
   CircleMarker,
-  Marker,
   Polyline,
   Tooltip,
   useMap,
@@ -29,6 +29,7 @@ import {
 import type {
   Config,
   Cut,
+  District,
   LatLng,
   NodeData,
   Ring,
@@ -48,7 +49,7 @@ const LocalBasemap = memo(function LocalBasemap({
   config: Config;
 }) {
   const renderer = useMemo(
-    () => L.svg({ pane: "local-basemap", padding: 0.4 }),
+    () => L.svg({ pane: "local-basemap", padding: 0.15 }),
     [],
   );
   return (
@@ -88,23 +89,34 @@ const LocalBasemap = memo(function LocalBasemap({
   );
 });
 
-/** Tower markers follow the kit's `.tw` rules (theme.css): solid fill, white
- * 2 px ring, 12 px on screen at every zoom. A halo is drawn only for the
- * selected tower, faulty towers (warn/crit) and flagged towers (prediction). */
-const towerIconCache = new Map<string, L.DivIcon>();
-function towerIcon(cls: string, halo: boolean): L.DivIcon {
-  const key = `${cls}|${halo}`;
-  let icon = towerIconCache.get(key);
-  if (!icon) {
-    icon = L.divIcon({
-      className: "tw-wrapper",
-      html: `<span class="tw ${cls}${halo ? " sel" : ""}"></span>`,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6],
-    });
-    towerIconCache.set(key, icon);
-  }
-  return icon;
+/** Site dots draw on one shared canvas renderer instead of 300 individual DOM
+ * markers. Geometry and palette mirror the previous `.tw` DOM rules exactly:
+ * a 12 px dot (path radius 5 + 2 px white ring), a 1 px navy 20 % outline
+ * around non-haloed sites, and a 6 px 22 % status halo around selected,
+ * faulty and AI-flagged sites (drawn on top via bringToFront). */
+const SITE_FILL: Record<string, string> = {
+  "": "#0c9c83",
+  warn: "#c27400",
+  crit: "#d42f52",
+  ai: "#6a4bd8",
+};
+const SITE_SELECTED_HALO = "#1479c4";
+const SITE_OUTLINE = "rgba(16, 38, 92, 0.2)";
+const SITE_HALO_ALPHA = 0.22;
+
+function siteClass(
+  node: NodeData,
+  config: Config,
+  selected: boolean,
+  aiOn: boolean,
+) {
+  const offline = config.presentation.offline_statuses.includes(node.status);
+  const faulty = node.status !== config.presentation.healthy_status;
+  const aiFlag = !!node.warn && aiOn;
+  return {
+    cls: aiFlag ? "ai" : offline ? "crit" : faulty ? "warn" : "",
+    halo: selected || faulty || aiFlag,
+  };
 }
 
 interface TowerMarkerProps {
@@ -113,6 +125,8 @@ interface TowerMarkerProps {
   selected: boolean;
   onSelect: (id: string) => void;
   aiOn: boolean;
+  renderer: L.Canvas;
+  haloLayers: RefObject<Map<string, L.CircleMarker>>;
 }
 
 function sameTowerMarker(previous: TowerMarkerProps, next: TowerMarkerProps) {
@@ -123,6 +137,8 @@ function sameTowerMarker(previous: TowerMarkerProps, next: TowerMarkerProps) {
     previous.selected === next.selected &&
     previous.onSelect === next.onSelect &&
     previous.aiOn === next.aiOn &&
+    previous.renderer === next.renderer &&
+    previous.haloLayers === next.haloLayers &&
     a.id === b.id &&
     a.lat === b.lat &&
     a.lon === b.lon &&
@@ -139,12 +155,10 @@ const TowerMarker = memo(function TowerMarker({
   selected,
   onSelect,
   aiOn,
+  renderer,
+  haloLayers,
 }: TowerMarkerProps) {
-  const offline = config.presentation.offline_statuses.includes(node.status);
-  const faulty = node.status !== config.presentation.healthy_status;
-  const aiFlag = !!node.warn && aiOn;
-  const cls = aiFlag ? "ai" : offline ? "crit" : faulty ? "warn" : "";
-  const halo = selected || faulty || aiFlag;
+  const { cls, halo } = siteClass(node, config, selected, aiOn);
   const position = useMemo<[number, number]>(
     () => [node.lat, node.lon],
     [node.lat, node.lon],
@@ -157,54 +171,157 @@ const TowerMarker = memo(function TowerMarker({
     () => ({ click: handleSelect }),
     [handleSelect],
   );
+  const dotOptions = useMemo(
+    () => ({
+      color: "#ffffff",
+      weight: 2,
+      fillColor: SITE_FILL[cls],
+      fillOpacity: 1,
+      opacity: 1,
+    }),
+    [cls],
+  );
+  const haloOptions = useMemo(
+    () => ({
+      stroke: true,
+      fill: false,
+      color: cls ? SITE_FILL[cls] : SITE_SELECTED_HALO,
+      weight: 6,
+      opacity: SITE_HALO_ALPHA,
+    }),
+    [cls],
+  );
+  // Register the interactive dot so the Towers pass can lift haloed sites to
+  // the top of the canvas draw order (the old zIndexOffset 300 behaviour).
+  const setDotLayer = useCallback(
+    (element: L.CircleMarker | null) => {
+      if (element && halo) haloLayers.current?.set(node.id, element);
+      else haloLayers.current?.delete(node.id);
+    },
+    [halo, haloLayers, node.id],
+  );
 
   return (
-    <Marker
-      position={position}
-      icon={towerIcon(cls, halo)}
-      zIndexOffset={halo ? 300 : 0}
-      eventHandlers={eventHandlers}
-    >
-      <Tooltip className="network-tooltip" direction="top" offset={[0, -7]}>
-        <strong>{node.id}</strong>
-        <br />
-        {config.status_names[node.status]}
-        <br />
-        {config.metric_labels.vswr} {node.vswr.toFixed(2)} ·{" "}
-        {config.metric_labels.prb} {node.prb.toFixed(1)}%
-      </Tooltip>
-    </Marker>
+    <>
+      {halo ? (
+        <CircleMarker
+          renderer={renderer}
+          center={position}
+          radius={9}
+          interactive={false}
+          pathOptions={haloOptions}
+        />
+      ) : (
+        <CircleMarker
+          renderer={renderer}
+          center={position}
+          radius={6.5}
+          interactive={false}
+          pathOptions={{
+            stroke: true,
+            fill: false,
+            color: SITE_OUTLINE,
+            weight: 1,
+            opacity: 1,
+          }}
+        />
+      )}
+      <CircleMarker
+        ref={setDotLayer}
+        renderer={renderer}
+        center={position}
+        radius={5}
+        eventHandlers={eventHandlers}
+        pathOptions={dotOptions}
+      >
+        <Tooltip className="network-tooltip" direction="top" offset={[0, -7]}>
+          <strong>{node.id}</strong>
+          <br />
+          {config.status_names[node.status]}
+          <br />
+          {config.metric_labels.vswr} {node.vswr.toFixed(2)} ·{" "}
+          {config.metric_labels.prb} {node.prb.toFixed(1)}%
+        </Tooltip>
+      </CircleMarker>
+    </>
   );
 }, sameTowerMarker);
 
-const Towers = memo(function Towers({
-  nodes,
-  config,
-  aiOn,
-  selectedId,
-  onSelect,
-}: {
-  nodes: NodeData[];
-  config: Config;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  aiOn: boolean;
-}) {
-  return (
-    <>
-      {nodes.map((node) => (
-        <TowerMarker
-          key={node.id}
-          node={node}
-          config={config}
-          aiOn={aiOn}
-          selected={node.id === selectedId}
-          onSelect={onSelect}
-        />
-      ))}
-    </>
-  );
-});
+/** The slice Towers renders: marker + tooltip fields only. Ticks that change
+ * nothing visible skip the whole 300-site pass. Exported for the slice
+ * tests. */
+export function sameSiteNodes(a: NodeData[], b: NodeData[]) {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.id !== y.id ||
+      x.lat !== y.lat ||
+      x.lon !== y.lon ||
+      x.status !== y.status ||
+      x.warn !== y.warn ||
+      x.vswr !== y.vswr ||
+      x.prb !== y.prb
+    )
+      return false;
+  }
+  return true;
+}
+
+const Towers = memo(
+  function Towers({
+    nodes,
+    config,
+    aiOn,
+    selectedId,
+    onSelect,
+  }: {
+    nodes: NodeData[];
+    config: Config;
+    selectedId: string | null;
+    onSelect: (id: string) => void;
+    aiOn: boolean;
+  }) {
+    // Own renderer + pane, so toggling the sites layer unmounts both together
+    // (same lifecycle LocalBasemap uses). The pane sits above the SVG overlays
+    // (z 400) and below the crew markers (marker pane z 600) — the stacking
+    // the DOM markers used to have.
+    const renderer = useMemo(
+      () => L.canvas({ pane: "sites-canvas", padding: 0.15 }),
+      [],
+    );
+    const haloLayers = useRef(new Map<string, L.CircleMarker>());
+    useEffect(() => {
+      // Selected/faulty/AI-flagged sites draw on top of the canvas draw list,
+      // matching the old zIndexOffset 300. Runs only when the slice changed.
+      for (const layer of haloLayers.current.values()) layer.bringToFront();
+    });
+    return (
+      <Pane name="sites-canvas" style={{ zIndex: 560 }}>
+        {nodes.map((node) => (
+          <TowerMarker
+            key={node.id}
+            node={node}
+            config={config}
+            aiOn={aiOn}
+            selected={node.id === selectedId}
+            onSelect={onSelect}
+            renderer={renderer}
+            haloLayers={haloLayers}
+          />
+        ))}
+      </Pane>
+    );
+  },
+  (previous, next) =>
+    previous.config === next.config &&
+    previous.onSelect === next.onSelect &&
+    previous.selectedId === next.selectedId &&
+    previous.aiOn === next.aiOn &&
+    sameSiteNodes(previous.nodes, next.nodes),
+);
 
 function sameCoordinates(previous: LatLng[], next: LatLng[]) {
   return (
@@ -277,22 +394,41 @@ const FiberOverlays = memo(
               }}
             />
             {ring.cuts.map((cut, index) => (
-              <Polyline
-                key={index}
-                renderer={renderer}
-                className="cut-segment"
-                positions={
-                  cut.path ?? [
-                    [cut.lat, cut.lon],
-                    [cut.lat, cut.lon],
-                  ]
-                }
-                pathOptions={{
-                  color: ring.isolated ? critical : warning,
-                  weight: 3,
-                  opacity: 0.95,
-                }}
-              />
+              <Fragment key={index}>
+                <Polyline
+                  renderer={renderer}
+                  className="cut-segment"
+                  positions={
+                    cut.path ?? [
+                      [cut.lat, cut.lon],
+                      [cut.lat, cut.lon],
+                    ]
+                  }
+                  pathOptions={{
+                    color: ring.isolated ? critical : warning,
+                    weight: 3,
+                    opacity: 0.95,
+                  }}
+                />
+                {/* Cut pulse markers live here (not as loose children of
+                    MapContainer) so the sameRingLayers memo covers them too. */}
+                <CircleMarker
+                  renderer={renderer}
+                  className="cut-pulse"
+                  center={[cut.lat, cut.lon]}
+                  radius={10}
+                  pathOptions={{
+                    color: ring.isolated ? critical : warning,
+                    weight: 2,
+                    fillOpacity: 0.22,
+                  }}
+                >
+                  <Tooltip className="network-tooltip">
+                    {cut.seg} · {cut.cause} ·{" "}
+                    {ring.isolated ? "Isolated" : "Unprotected"}
+                  </Tooltip>
+                </CircleMarker>
+              </Fragment>
             ))}
           </Fragment>
         ))}
@@ -306,6 +442,115 @@ const FiberOverlays = memo(
     previous.critical === next.critical &&
     sameRingLayers(previous.rings, next.rings),
 );
+
+/** AI-flagged sites keep their pulsing halo on the SVG overlay (only a
+ * handful at a time). Memoized on the warn/position slice. */
+const PredictionPulses = memo(
+  function PredictionPulses({
+    nodes,
+    color,
+    renderer,
+  }: {
+    nodes: NodeData[];
+    color: string;
+    renderer: L.Renderer;
+  }) {
+    return (
+      <>
+        {nodes
+          .filter((n) => n.warn)
+          .map((n) => (
+            <CircleMarker
+              key={`prediction-${n.id}`}
+              center={[n.lat, n.lon]}
+              radius={13}
+              renderer={renderer}
+              className="predictive-pulse"
+              interactive={false}
+              pathOptions={{
+                color,
+                fillOpacity: 0,
+                weight: 1.4,
+              }}
+            />
+          ))}
+      </>
+    );
+  },
+  (previous, next) =>
+    previous.color === next.color &&
+    previous.renderer === next.renderer &&
+    sameWarnNodes(previous.nodes, next.nodes),
+);
+
+function sameWarnNodes(a: NodeData[], b: NodeData[]) {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.id !== y.id ||
+      x.warn !== y.warn ||
+      x.lat !== y.lat ||
+      x.lon !== y.lon
+    )
+      return false;
+  }
+  return true;
+}
+
+/** District dots + permanent name labels; memoized on the district slice. */
+const DistrictLabels = memo(
+  function DistrictLabels({
+    districts,
+    color,
+  }: {
+    districts: District[];
+    color: string;
+  }) {
+    return (
+      <>
+        {districts.map((a) => (
+          <CircleMarker
+            key={a.id}
+            center={[a.lat, a.lon]}
+            radius={2}
+            pathOptions={{ opacity: 0.5, color, fillOpacity: 0.8 }}
+            interactive={false}
+          >
+            <Tooltip
+              permanent
+              direction="top"
+              offset={[0, -4]}
+              className="district-label"
+            >
+              {a.name}
+            </Tooltip>
+          </CircleMarker>
+        ))}
+      </>
+    );
+  },
+  (previous, next) =>
+    previous.color === next.color &&
+    sameDistricts(previous.districts, next.districts),
+);
+
+function sameDistricts(a: District[], b: District[]) {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (
+      a[i].id !== b[i].id ||
+      a[i].lat !== b[i].lat ||
+      a[i].lon !== b[i].lon ||
+      a[i].name !== b[i].name
+    )
+      return false;
+  }
+  return true;
+}
 
 function MapTools({
   config,
@@ -326,6 +571,29 @@ function MapTools({
       .addTo(map);
     return () => {
       scale.remove();
+    };
+  }, [map]);
+  // Pause the decorative fiber-flow/cut/predictive animations while the user
+  // pans or zooms (class rules live in app.css) — no repaints for motion that
+  // is blurred by the gesture anyway.
+  useEffect(() => {
+    const container = map.getContainer();
+    let interactions = 0;
+    const bump = (delta: number) => () => {
+      interactions = Math.max(0, interactions + delta);
+      container.classList.toggle("map-interacting", interactions > 0);
+    };
+    const start = bump(1);
+    const end = bump(-1);
+    map.on({ movestart: start, zoomstart: start, moveend: end, zoomend: end });
+    return () => {
+      map.off({
+        movestart: start,
+        zoomstart: start,
+        moveend: end,
+        zoomend: end,
+      });
+      container.classList.remove("map-interacting");
     };
   }, [map]);
   // Refs read by the resize observer, so it always sees the latest config and selection.
@@ -377,10 +645,10 @@ function MapTools({
   return (
     <div className="map-zoom" onMouseDown={(e) => e.stopPropagation()}>
       <button aria-label="Zoom in" onClick={() => map.zoomIn()}>
-        <Plus size={16} />
+        <Plus size={18} />
       </button>
       <button aria-label="Zoom out" onClick={() => map.zoomOut()}>
-        <Minus size={16} />
+        <Minus size={18} />
       </button>
     </div>
   );
@@ -397,7 +665,9 @@ export function NetworkMap({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const svgRenderer = useMemo(() => L.svg({ padding: 0.4 }), []);
+  // Padding trimmed from 0.4: the overlay canvas used to paint ~3.2x the
+  // viewport on every redraw; 0.15 keeps ~1.3x and no visible clipping.
+  const svgRenderer = useMemo(() => L.svg({ padding: 0.15 }), []);
   const [layers, setLayers] = useState({
     sites: true,
     fiber: true,
@@ -475,65 +745,16 @@ export function NetworkMap({
               onSelect={onSelect}
             />
           )}
-          {layers.sites &&
-            data.nodes
-              .filter((n) => n.warn && data.ai.ai_enabled)
-              .map((n) => (
-                <CircleMarker
-                  key={`prediction-${n.id}`}
-                  center={[n.lat, n.lon]}
-                  radius={13}
-                  renderer={svgRenderer}
-                  className="predictive-pulse"
-                  interactive={false}
-                  pathOptions={{
-                    color: p.prediction,
-                    fillOpacity: 0,
-                    weight: 1.4,
-                  }}
-                />
-              ))}
-          {layers.districts &&
-            data.agg.map((a) => (
-              <CircleMarker
-                key={a.id}
-                center={[a.lat, a.lon]}
-                radius={2}
-                pathOptions={{ opacity: 0.5, color: p.fiber, fillOpacity: 0.8 }}
-                interactive={false}
-              >
-                <Tooltip
-                  permanent
-                  direction="top"
-                  offset={[0, -4]}
-                  className="district-label"
-                >
-                  {a.name}
-                </Tooltip>
-              </CircleMarker>
-            ))}
-          {layers.fiber &&
-            data.rings.flatMap((r) =>
-              r.cuts.map((c, i) => (
-                <CircleMarker
-                  key={`cut-${r.id}-${i}`}
-                  renderer={svgRenderer}
-                  className="cut-pulse"
-                  center={[c.lat, c.lon]}
-                  radius={10}
-                  pathOptions={{
-                    color: r.isolated ? p.critical : p.warning,
-                    weight: 2,
-                    fillOpacity: 0.22,
-                  }}
-                >
-                  <Tooltip className="network-tooltip">
-                    {c.seg} · {c.cause} ·{" "}
-                    {r.isolated ? "Isolated" : "Unprotected"}
-                  </Tooltip>
-                </CircleMarker>
-              )),
-            )}
+          {layers.sites && data.ai.ai_enabled && (
+            <PredictionPulses
+              nodes={data.nodes}
+              color={p.prediction}
+              renderer={svgRenderer}
+            />
+          )}
+          {layers.districts && (
+            <DistrictLabels districts={data.agg} color={p.fiber} />
+          )}
           {selected && (
             <CircleMarker
               center={[selected.lat, selected.lon]}
@@ -593,7 +814,7 @@ export function NetworkMap({
               aria-label="Map layers"
               onClick={() => setLayerMenu((v) => !v)}
             >
-              <Layers3 size={15} />
+              <Layers3 size={14} />
             </button>
             {layerMenu && (
               <div className="layer-menu">
@@ -619,12 +840,12 @@ export function NetworkMap({
                 setResetKey((k) => k + 1);
               }}
             >
-              <LocateFixed size={15} />
+              <LocateFixed size={14} />
             </button>
           </div>
         </div>
         <div className="map-location">
-          <MapPin size={12} /> IRAQ <span> / </span> KURDISTAN <span> / </span>{" "}
+          <MapPin size={14} /> IRAQ <span> / </span> KURDISTAN <span> / </span>{" "}
           SULAYMANIYAH
         </div>
         {storm && (
@@ -635,7 +856,7 @@ export function NetworkMap({
             role="status"
             aria-live="polite"
           >
-            <CloudLightning size={15} />
+            <CloudLightning size={14} />
             <div>
               <strong>Storm over {storm.name}</strong>
               <span>

@@ -187,11 +187,6 @@ export function TrafficQualityCard({
 
   const current = data.dashboard.current;
   const metricValue = current[metric];
-  const coverageMinutes =
-    samples.length > 1
-      ? (samples.at(-1)!.tick - samples[0].tick) * config.tick_minutes
-      : 0;
-  const requestedMinutes = WINDOW_MINUTES[timeframe];
   const primaryLabel = metric === "prb" ? "PRB utilization" : "QCI 9 traffic";
   const primaryUnit = metric === "prb" ? "%" : "Gbps";
   const decimals = metric === "prb" ? 1 : 2;
@@ -271,14 +266,7 @@ export function TrafficQualityCard({
         role="img"
         aria-label={`${timeframe} E-RAB drop proxy history`}
       />
-      <p className="chart-provenance">
-        {historyError
-          ? historyError
-          : `${samples.length} samples · ${coverageMinutes} of ${requestedMinutes} sim min · ` +
-            (timeframe === "30m"
-              ? "actual server samples, 5-minute simulation ticks, last 30 sim min"
-              : "actual current-run samples; longer windows fill as simulation time advances")}
-      </p>
+      {historyError ? <p className="chart-provenance">{historyError}</p> : null}
     </article>
   );
 }

@@ -118,31 +118,20 @@ describe("Wave generative assistant", () => {
     vi.clearAllMocks();
   });
 
-  it("shows the greeting once and persists its dismissal without an incident counter", async () => {
+  it("keeps a friendly note beside the launcher while the chat is closed", async () => {
     vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
     const firstRender = renderWave(12);
 
-    expect(
-      screen.getByText("Hey, I’m Wave 👋 Your network, made clearer."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Hey, I’m Wave 👋")).toBeInTheDocument();
     expect(screen.queryByText("9+")).not.toBeInTheDocument();
     expect(firstRender.container.querySelector(".wave-alert-badge")).toBeNull();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Dismiss Wave greeting" }),
-    );
     expect(
-      screen.queryByText("Hey, I’m Wave 👋 Your network, made clearer."),
+      screen.queryByRole("button", { name: "Dismiss Wave greeting" }),
     ).not.toBeInTheDocument();
-    expect(localStorage.getItem("sulinoc-wave-greeting-dismissed:v1")).toBe(
-      "true",
-    );
 
     firstRender.unmount();
     renderWave();
-    expect(
-      screen.queryByText("Hey, I’m Wave 👋 Your network, made clearer."),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText("Hey, I’m Wave 👋")).toBeInTheDocument();
   });
 
   it("keeps only Wave in the header, uses the Wave avatar, and omits the disclosure footer", () => {
@@ -236,20 +225,45 @@ describe("Wave generative assistant", () => {
     });
   });
 
-  it("dismisses and persists the greeting when the launcher opens the chat", async () => {
+  it("hides the friendly note while the chat is open and brings it back on close", async () => {
     vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
     renderWave();
-    expect(
-      screen.getByText("Hey, I’m Wave 👋 Your network, made clearer."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Hey, I’m Wave 👋")).toBeInTheDocument();
 
     openWave();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByText("Hey, I’m Wave 👋")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close Wave panel" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText("Hey, I’m Wave 👋")).toBeInTheDocument();
+  });
+
+  it("renders answers without literal ** markers, line by line", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    vi.mocked(api.waveChat).mockResolvedValue(
+      reply(
+        "**All good.**\nCrews are **EN_ROUTE** to two sites.\nNothing else to report.",
+      ),
+    );
+    renderWave();
+    openWave();
+    askWave("Status?");
+
+    expect(await screen.findByText("All good.")).toBeInTheDocument();
     expect(
-      screen.queryByText("Hey, I’m Wave 👋 Your network, made clearer."),
-    ).not.toBeInTheDocument();
-    expect(localStorage.getItem("sulinoc-wave-greeting-dismissed:v1")).toBe(
-      "true",
+      screen.getByText("Crews are EN_ROUTE to two sites."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Nothing else to report.")).toBeInTheDocument();
+    expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument();
+    // Line breaks survive the markdown cleanup as real breaks.
+    const replyParagraph = screen
+      .getByText("Nothing else to report.")
+      .closest("p");
+    expect(replyParagraph?.querySelectorAll("br")).toHaveLength(2);
+    // The newest assistant message carries the staggered reveal class.
+    expect(screen.getByText("All good.").className.includes("wave-line")).toBe(
+      true,
     );
   });
 

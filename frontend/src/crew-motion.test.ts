@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CrewMotion, type CrewRender } from "./crew-motion.js";
+import { distanceSpeedMultiplier, easeRouteProgress } from "./crew-motion.js";
+import { CREW_MOTION } from "./crew-motion.config.js";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -181,5 +183,87 @@ describe("production crew motion", () => {
     expect(frames.at(-1)?.moving).toBe(false);
     motion.setPaused(false);
     expect(requestFrame).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("distance speed bands", () => {
+  it("maps band edges to their configured speeds", () => {
+    expect(distanceSpeedMultiplier(0)).toBe(1);
+    expect(distanceSpeedMultiplier(1500)).toBe(1);
+    expect(distanceSpeedMultiplier(3000)).toBeCloseTo(1.1, 5);
+    expect(distanceSpeedMultiplier(4500)).toBeCloseTo(1.2, 5);
+    expect(distanceSpeedMultiplier(9000)).toBeCloseTo(1.45, 5);
+    expect(distanceSpeedMultiplier(15000)).toBeCloseTo(1.6, 5);
+    expect(distanceSpeedMultiplier(25000)).toBeCloseTo(1.6, 5);
+  });
+
+  it("changes speed smoothly across band edges", () => {
+    for (const edge of [1500, 4500, 9000, 15000]) {
+      const below = distanceSpeedMultiplier(edge - 1);
+      const at = distanceSpeedMultiplier(edge);
+      const above = distanceSpeedMultiplier(edge + 1);
+      expect(Math.abs(at - below)).toBeLessThan(0.001);
+      expect(Math.abs(above - at)).toBeLessThan(0.001);
+    }
+  });
+
+  it("never slows down as trips get longer", () => {
+    let previous = -Infinity;
+    for (let distance = 0; distance <= 30000; distance += 50) {
+      const speed = distanceSpeedMultiplier(distance);
+      expect(speed).toBeGreaterThanOrEqual(previous);
+      previous = speed;
+    }
+  });
+});
+
+describe("route progress easing", () => {
+  it("keeps the endpoints and midpoint exact", () => {
+    expect(easeRouteProgress(0)).toBe(0);
+    expect(easeRouteProgress(1)).toBe(1);
+    expect(easeRouteProgress(0.5)).toBe(0.5);
+  });
+
+  it("departs gently and creeps into arrival", () => {
+    const { ramp } = CREW_MOTION.ease;
+    expect(easeRouteProgress(ramp / 2)).toBeLessThan(ramp / 2);
+    expect(easeRouteProgress(0.06)).toBeLessThan(0.06);
+    expect(easeRouteProgress(0.94)).toBeGreaterThan(0.94);
+    expect(1 - easeRouteProgress(0.99)).toBeLessThan(0.001);
+  });
+
+  it("moves monotonically forward across the whole trip", () => {
+    let previous = 0;
+    for (let step = 0; step <= 2000; step += 1) {
+      const eased = easeRouteProgress(step / 2000);
+      expect(eased).toBeGreaterThanOrEqual(previous - 1e-12);
+      previous = eased;
+    }
+  });
+
+  it("draws the eased position while reporting raw progress", () => {
+    const requestFrame = vi.fn(() => 1);
+    vi.stubGlobal("requestAnimationFrame", requestFrame);
+    const frames: CrewRender[] = [];
+    const motion = new CrewMotion({
+      render: (_id, frame) => frames.push(frame),
+    });
+    const route: [number, number][] = [
+      [0, 0],
+      [10, 0],
+    ];
+
+    // Early in the trip the truck is drawn behind its linear position.
+    motion.set(1, { route, progress: 0.06, moving: false }, 0);
+    motion.step(16);
+    expect(frames.at(-1)?.x).toBeLessThan(0.6);
+    expect(frames.at(-1)?.x).toBeGreaterThan(0);
+    expect(frames.at(-1)?.progress).toBeCloseTo(0.06, 5);
+
+    // Midpoint of the route is still the midpoint after easing.
+    motion.set(1, { route, progress: 0.5, moving: false }, 1000);
+    for (let i = 0; i < 60; i += 1) motion.step(1016 + i * 100);
+    expect(frames.at(-1)?.x).toBeCloseTo(5, 1);
+    expect(frames.at(-1)?.progress).toBeCloseTo(0.5, 5);
   });
 });

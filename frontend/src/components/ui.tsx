@@ -210,7 +210,7 @@ export function TextLink({
   return (
     <button className="text-link" onClick={onClick}>
       {children}
-      <ArrowUpRight size={13} />
+      <ArrowUpRight size={14} />
     </button>
   );
 }

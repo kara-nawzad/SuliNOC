@@ -7,6 +7,12 @@ export interface CrewRender {
   moving: boolean;
   progress: number;
 }
+
+/** Remaining route metres -> speed factor from the configured distance bands. */
+export function distanceSpeedMultiplier(remainingMeters: number): number;
+
+/** Raw trip progress (0..1) -> eased progress (cosine ramps at both ends). */
+export function easeRouteProgress(t: number): number;
 export class CrewMotion {
   constructor(opts?: {
     render: (id: number, frame: CrewRender) => void;

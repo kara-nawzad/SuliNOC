@@ -57,7 +57,7 @@ export function SimControls({
             )
           }
         >
-          {data.control.paused ? <Play size={15} /> : <Pause size={15} />}
+          {data.control.paused ? <Play size={14} /> : <Pause size={14} />}
         </button>
         <button
           className="icon-button"
@@ -72,7 +72,7 @@ export function SimControls({
             )
           }
         >
-          <StepForward size={15} />
+          <StepForward size={14} />
         </button>
       </div>
       <div className="speed-control">
@@ -81,9 +81,9 @@ export function SimControls({
           aria-expanded={speedOpen}
           onClick={() => setSpeedOpen((v) => !v)}
         >
-          <Gauge size={13} />
+          <Gauge size={14} />
           <span>{data.control.speed}×</span>
-          <ChevronDown size={12} />
+          <ChevronDown size={14} />
         </button>
         {speedOpen && (
           <div className="speed-popover">
@@ -116,7 +116,7 @@ export function SimControls({
                 })
               }
             >
-              <Check size={13} /> Apply speed
+              <Check size={14} /> Apply speed
             </button>
           </div>
         )}
@@ -269,7 +269,7 @@ export function ScenarioModal({
           </>
         )}
         <div className="scenario-disclaimer">
-          <Zap size={15} />
+          <Zap size={14} />
           <span>
             Simulation only · no real network equipment is controlled.
           </span>

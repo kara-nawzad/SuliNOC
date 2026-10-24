@@ -19,7 +19,8 @@ export function useTelemetry() {
       again = false,
       cursor = 0,
       cfg: Config | null = null,
-      runId = "";
+      runId = "",
+      seen = false;
     async function poll() {
       if (abort.signal.aborted) return;
       if (busy) {
@@ -27,6 +28,14 @@ export function useTelemetry() {
         return;
       }
       clearTimeout(timer);
+      // Hidden tabs stop fetching (radio, JSON.parse and a full React render
+      // nobody sees). The run keeps simulating server-side; becoming visible
+      // polls immediately — the delta is a complete snapshot, so one request
+      // catches up with no stale flash in between.
+      if (document.hidden && seen) {
+        timer = setTimeout(poll, 1000);
+        return;
+      }
       busy = true;
       try {
         if (!cfg) {
@@ -42,6 +51,7 @@ export function useTelemetry() {
         // Complete bounded readouts replace rather than merge stale entities.
         if (runId !== next.run_id) runId = next.run_id;
         cursor = next.tick;
+        seen = true;
         setData(next);
         setStatus("live");
         setError(null);
@@ -61,11 +71,19 @@ export function useTelemetry() {
         }
       }
     }
+    const onVisibilityChange = () => {
+      if (!document.hidden && !busy && !abort.signal.aborted) {
+        clearTimeout(timer);
+        void poll();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
     refreshRef.current = () => {
       void poll();
     };
     void poll();
     return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       abort.abort();
       clearTimeout(timer);
       refreshRef.current = () => undefined;
