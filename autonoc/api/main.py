@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import json
 import os
 import re
 import shutil
@@ -33,7 +34,7 @@ from typing import Literal
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from autonoc.engine import config as C
@@ -42,7 +43,11 @@ from autonoc.engine.engine import NOCEngine
 from . import presentation as P
 from . import schemas as S
 from .run_history import RunSummaryStore
-from .wave_ai import WaveAIError, answer_question as answer_wave_question
+from .wave_ai import (
+    WaveAIError,
+    answer_question as answer_wave_question,
+    stream_answer as stream_wave_answer,
+)
 from .wave_ai import provider_status as wave_provider_status
 from .sessions import (Session, SessionRegistry, SessionCapacityError,
                        COOKIE_NAME, requires_session)
@@ -523,7 +528,7 @@ async def browser_session(request: Request, call_next):
         )
     request.state.session_token = session.token
 
-    if request.url.path == "/api/wave/chat":
+    if request.url.path in ("/api/wave/chat", "/api/wave/chat/stream"):
         # Wave needs the same session-aware state as /api/delta, but its provider
         # request can take seconds. Capture an immutable snapshot while this
         # session is active, then release BOTH the session gate and engine lock
@@ -591,6 +596,60 @@ async def wave_chat(payload: S.WaveChatRequest, request: Request):
             headers=exc.headers,
         )
     return S.WaveChatResponse(**result)
+
+
+@app.post("/api/wave/chat/stream")
+async def wave_chat_stream(payload: S.WaveChatRequest, request: Request):
+    """Server-sent-events variant of /api/wave/chat: the provider's answer
+    streams to the browser as `delta` events, ending with one `done` event
+    carrying the same metadata as the JSON reply.
+
+    Pre-flight failures (missing key, rate limits, changed run) raise before
+    the stream starts, so they keep their proper HTTP status and body. A
+    failure after the stream has started becomes an in-stream `error` event.
+    """
+    snapshot = getattr(request.state, "wave_snapshot", None)
+    if snapshot is None:
+        with _lock:
+            snapshot = copy.deepcopy(_snapshot(resync=True))
+    if payload.run_id != snapshot.get("run_id"):
+        raise HTTPException(
+            status_code=409,
+            detail="The simulation run changed before Wave could answer. Refresh and ask again.",
+        )
+
+    try:
+        events = await stream_wave_answer(
+            payload.question,
+            snapshot,
+            session_id=getattr(request.state, "session_token", "__shared__"),
+            history=[{"role": turn.role, "content": turn.content} for turn in payload.history],
+        )
+    except WaveAIError as exc:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"code": exc.code, "detail": exc.detail},
+            headers=exc.headers,
+        )
+
+    async def sse():
+        async for kind, value in events:
+            if kind == "delta":
+                yield (f"event: delta\ndata: "
+                       f"{json.dumps({'text': value}, ensure_ascii=False)}\n\n")
+            elif kind == "error":
+                yield ("event: error\ndata: "
+                       f"{json.dumps({'code': value.code, 'detail': value.detail}, ensure_ascii=False)}\n\n")
+                return
+            elif kind == "done":
+                yield (f"event: done\ndata: "
+                       f"{json.dumps(value, ensure_ascii=False)}\n\n")
+
+    return StreamingResponse(
+        sse(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+    )
 
 
 # ------------------------------------------------------------------ config

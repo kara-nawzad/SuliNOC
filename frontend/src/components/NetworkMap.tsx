@@ -31,7 +31,6 @@ import {
 import type {
   Config,
   Cut,
-  District,
   LatLng,
   NodeData,
   Ring,
@@ -509,58 +508,6 @@ function sameWarnNodes(a: NodeData[], b: NodeData[]) {
   return true;
 }
 
-/** District dots + permanent name labels; memoized on the district slice. */
-const DistrictLabels = memo(
-  function DistrictLabels({
-    districts,
-    color,
-  }: {
-    districts: District[];
-    color: string;
-  }) {
-    return (
-      <>
-        {districts.map((a) => (
-          <CircleMarker
-            key={a.id}
-            center={[a.lat, a.lon]}
-            radius={2}
-            pathOptions={{ opacity: 0.5, color, fillOpacity: 0.8 }}
-            interactive={false}
-          >
-            <Tooltip
-              permanent
-              direction="top"
-              offset={[0, -4]}
-              className="district-label"
-            >
-              {a.name}
-            </Tooltip>
-          </CircleMarker>
-        ))}
-      </>
-    );
-  },
-  (previous, next) =>
-    previous.color === next.color &&
-    sameDistricts(previous.districts, next.districts),
-);
-
-function sameDistricts(a: District[], b: District[]) {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i += 1) {
-    if (
-      a[i].id !== b[i].id ||
-      a[i].lat !== b[i].lat ||
-      a[i].lon !== b[i].lon ||
-      a[i].name !== b[i].name
-    )
-      return false;
-  }
-  return true;
-}
-
 /** Flat-top hexagon points around (cx, cy) — used for the Core badge. */
 function hexPoints(cx: number, cy: number, r: number) {
   const pts: string[] = [];
@@ -833,7 +780,6 @@ export function NetworkMap({
     fiber: true,
     crews: true,
     core: true,
-    districts: true,
     streets: true,
   });
   const [layerMenu, setLayerMenu] = useState(false);
@@ -966,9 +912,6 @@ export function NetworkMap({
               color={p.prediction}
               renderer={svgRenderer}
             />
-          )}
-          {layers.districts && (
-            <DistrictLabels districts={data.agg} color={p.fiber} />
           )}
           {selected && (
             <CircleMarker

@@ -181,3 +181,86 @@ def test_mocked_groq_provider_flows_through_session_api_without_exposing_key(mon
     assert captured["payload"]["model"] == "test-groq-model"
     assert captured["payload"]["max_tokens"] == 700
     assert key not in json.dumps(captured["payload"])
+
+
+def test_wave_chat_stream_emits_deltas_and_done(monkeypatch):
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
+    key = "unit-test-openai-key-not-a-credential"
+    monkeypatch.setenv("OPENAI_API_KEY", key)
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-4.1-mini-test")
+    wave_ai._rate_limiter.clear()
+    captured: dict = {}
+
+    def fake_stream(payload, supplied_key, timeout, emit):
+        captured.update(payload=payload, supplied_key=supplied_key)
+        emit(("delta", "Grounded "))
+        emit(("delta", "streamed reply."))
+        return ("ok", {})
+
+    monkeypatch.setattr(wave_ai, "_provider_stream_call", fake_stream)
+    with TestClient(M.app) as client:
+        data = client.get("/api/delta?since=0").json()
+        response = client.post(
+            "/api/wave/chat/stream",
+            json={"question": "What is the network state?", "run_id": data["run_id"], "history": []},
+        )
+
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
+        body = response.text
+        assert 'event: delta\ndata: {"text": "Grounded "}' in body
+        assert 'event: delta\ndata: {"text": "streamed reply."}' in body
+        assert 'event: error' not in body
+        done_line = next(
+            line for line in body.splitlines() if line.startswith("data: {") and "answer" in line
+        )
+        done = json.loads(done_line[6:])
+        assert done["answer"] == "Grounded streamed reply."
+        assert done["ai_connected"] is True
+        assert done["run_id"] == data["run_id"]
+        assert done["model"] == "gpt-4.1-mini-test"
+        assert key not in body
+        assert client.get("/api/wave/status").json()["status"] == "connected"
+
+    assert captured["supplied_key"] == key
+    assert "TRUSTED SULINOC SNAPSHOT CONTEXT" in captured["payload"]["messages"][-1]["content"]
+
+
+def test_wave_chat_stream_missing_key_stays_a_json_error(monkeypatch):
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    with TestClient(M.app) as client:
+        data = client.get("/api/delta?since=0").json()
+        response = client.post(
+            "/api/wave/chat/stream",
+            json={"question": "Status?", "run_id": data["run_id"], "history": []},
+        )
+        assert response.status_code == 503
+        assert response.json()["code"] == "wave_ai_missing_key"
+        assert "text/event-stream" not in response.headers.get("content-type", "")
+
+
+def test_wave_chat_stream_maps_mid_flight_provider_errors(monkeypatch):
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
+    monkeypatch.setenv("OPENAI_API_KEY", "unit-test-openai-key-not-a-credential")
+    wave_ai._rate_limiter.clear()
+
+    def fake_stream(payload, supplied_key, timeout, emit):
+        emit(("delta", "Partial "))
+        return ("status", 429, {"retry-after": "7"})
+
+    monkeypatch.setattr(wave_ai, "_provider_stream_call", fake_stream)
+    with TestClient(M.app) as client:
+        data = client.get("/api/delta?since=0").json()
+        response = client.post(
+            "/api/wave/chat/stream",
+            json={"question": "Status?", "run_id": data["run_id"], "history": []},
+        )
+        body = response.text
+        assert 'event: delta\ndata: {"text": "Partial "}' in body
+        assert "event: error" in body
+        assert "rate-limiting Wave" in body
+        assert "event: done" not in body
+        # The failed stream must not verify the key.
+        assert client.get("/api/wave/status").json()["status"] != "connected"

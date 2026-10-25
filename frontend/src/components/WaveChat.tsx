@@ -1,4 +1,5 @@
 import {
+  memo,
   useEffect,
   useRef,
   useState,
@@ -7,6 +8,9 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { useReducedMotion } from "framer-motion";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { RefreshCw, Send, X } from "lucide-react";
 import { api } from "../services/api";
 import type { Snapshot } from "../types/api";
@@ -170,58 +174,124 @@ function readMessages(key: string): WaveMessage[] {
   }
 }
 
+function makeMessageId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 function makeMessage(role: WaveMessage["role"], content: string): WaveMessage {
   return {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    id: makeMessageId(),
     role,
     content,
   };
 }
+
+/** Reveal pacing that works without a compositor (tests, older WebViews). */
+const scheduleFrame =
+  typeof requestAnimationFrame === "function"
+    ? (callback: (now: number) => void) => requestAnimationFrame(callback)
+    : (callback: (now: number) => void) =>
+        window.setTimeout(() => callback(performance.now()), 16);
+const cancelFrame =
+  typeof cancelAnimationFrame === "function"
+    ? (handle: number) => cancelAnimationFrame(handle)
+    : (handle: number) => window.clearTimeout(handle);
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
   return "I couldn’t reach Wave’s AI service. Check the connection and try again.";
 }
 
-/** Wave's providers answer in Markdown-flavoured prose, but the panel renders
- * plain text, so `**` markers would print literally. They are stripped at
- * render time only — stored history keeps the original text for follow-ups. */
-function waveReplyLines(content: string): string[] {
-  return content
-    .replace(/\*\*([^*]+)\*\*/g, "$1")
-    .replace(/\*\*/g, "")
-    .split("\n");
+/** Wave's providers answer in markdown. Two normalisations keep the model's
+ * quirks parseable before rendering: a line holding only an em/en dash is a
+ * divider, and a GFM table always gets a blank line before it so it parses
+ * as a table instead of as loose pipes. Stored history keeps the original
+ * text; this runs at render time only. */
+export function normalizeWaveMarkdown(text: string): string {
+  const lines = text.split("\n");
+  const out: string[] = [];
+  for (const line of lines) {
+    const divider = /^[ \t]*[—–][ \t]*$/.test(line);
+    const tableRow = /^[ \t]*\|/.test(line);
+    const previous = out[out.length - 1];
+    if (
+      tableRow &&
+      previous !== undefined &&
+      previous.trim() !== "" &&
+      !/^[ \t]*\|/.test(previous)
+    ) {
+      out.push("");
+    }
+    out.push(divider ? "---" : line);
+  }
+  return out.join("\n");
 }
 
-/** Assistant replies are revealed line by line; older messages render the same
- * lines without motion, so reopening the chat with history stays instant. */
-function AssistantLines({
-  content,
-  animate,
-}: {
-  content: string;
-  animate: boolean;
-}) {
-  const lines = waveReplyLines(content);
-  return (
-    <>
-      {lines.map((line, index) => (
-        <span
-          key={index}
-          className={animate ? "wave-line" : undefined}
-          style={
-            animate
-              ? { animationDelay: `${Math.min(index * 110, 880)}ms` }
-              : undefined
-          }
-        >
-          {line || "\u00A0"}
-          {index < lines.length - 1 ? <br /> : null}
-        </span>
-      ))}
-    </>
-  );
+function countOf(haystack: string, needle: string): number {
+  return haystack.split(needle).length - 1;
 }
+
+/** While a reply is still typing, trailing partial syntax is held back so
+ * the bubble never shows a half-written table row, an unclosed code fence,
+ * or a dangling bold/inline-code opener. The finished reply renders in
+ * full. */
+export function visibleWhileTyping(text: string): string {
+  let visible = text;
+  if (countOf(visible, "```") % 2 === 1) {
+    visible = visible.slice(0, visible.lastIndexOf("```"));
+  }
+  const lines = visible.split("\n");
+  if (lines.length && lines[lines.length - 1].trimStart().startsWith("|")) {
+    lines.pop();
+  }
+  visible = lines.join("\n");
+  if (countOf(visible, "**") % 2 === 1) {
+    const at = visible.lastIndexOf("**");
+    visible = visible.slice(0, at) + visible.slice(at + 2);
+  }
+  if (countOf(visible, "`") % 2 === 1) {
+    const at = visible.lastIndexOf("`");
+    visible = visible.slice(0, at) + visible.slice(at + 1);
+  }
+  return visible;
+}
+
+const markdownComponents: Components = {
+  table: ({ children }) => (
+    <div className="wave-md-tablewrap">
+      <table>{children}</table>
+    </div>
+  ),
+  a: ({ children, href }) => (
+    <a href={href} target="_blank" rel="noreferrer noopener">
+      {children}
+    </a>
+  ),
+};
+
+/** Assistant replies render as sanitized markdown (no raw HTML, no
+ * dangerouslySetInnerHTML): headings, lists, quotes, code, rules and GFM
+ * tables. While `typing`, held-back partial syntax keeps the live text
+ * valid; the caret itself is a CSS pseudo-element on the last block. */
+const WaveMarkdown = memo(function WaveMarkdown({
+  text,
+  typing,
+}: {
+  text: string;
+  typing: boolean;
+}) {
+  const normalized = normalizeWaveMarkdown(text);
+  return (
+    <div className="wave-md">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={markdownComponents}
+      >
+        {typing ? visibleWhileTyping(normalized) : normalized}
+      </ReactMarkdown>
+    </div>
+  );
+});
 
 export function WaveChat({
   data,
@@ -246,6 +316,13 @@ export function WaveChat({
   const [sending, setSending] = useState(false);
   const [responseExpression, setResponseExpression] =
     useState<WaveExpression | null>(null);
+  // The assistant message currently typing out (streaming or paced locally);
+  // history renders instantly because only this id animates.
+  const [typingId, setTypingId] = useState<string | null>(null);
+  const [typingSkipped, setTypingSkipped] = useState(false);
+  const reducedMotion = useReducedMotion() || false;
+  const autoScrollRef = useRef(true);
+  const flushRevealRef = useRef<() => void>(() => {});
   const sendingRef = useRef(false);
   const wasOpenRef = useRef(false);
   const statusRequestRef = useRef(0);
@@ -307,11 +384,20 @@ export function WaveChat({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
+  // Auto-scroll follows the growing reply, but stops the moment the user
+  // scrolls up, and resumes when they return to the bottom.
+  function handleMessagesScroll() {
+    const list = listRef.current;
+    if (!list) return;
+    const distance = list.scrollHeight - list.scrollTop - list.clientHeight;
+    autoScrollRef.current = distance < 80;
+  }
+
   useEffect(() => {
-    if (!open) return;
+    if (!open || !autoScrollRef.current) return;
     const list = listRef.current;
     if (list) list.scrollTop = list.scrollHeight;
-  }, [messages, sending, open]);
+  }, [messages, sending, typingId, open]);
 
   useEffect(() => {
     const input = inputRef.current;
@@ -524,6 +610,188 @@ export function WaveChat({
     }
   }
 
+  /** Shared post-reply bookkeeping: provider verification + mascot response. */
+  function applyProviderMeta(reply: {
+    provider: string;
+    model: string;
+    ai_connected: boolean;
+  }) {
+    const providerName = reply.provider === "groq" ? "Groq" : "OpenAI";
+    setProviderStatus({
+      provider: reply.provider === "groq" ? "groq" : "openai",
+      model: reply.model,
+      configured: true,
+      verified: reply.ai_connected,
+      status: reply.ai_connected ? "connected" : "not_verified",
+      detail: reply.ai_connected
+        ? `${providerName} answered this Wave request successfully.`
+        : "The provider has not been verified by a successful request.",
+    });
+    statusRequestRef.current += 1;
+    setResponseExpression("responding");
+  }
+
+  /** Tap on the typing bubble: stop holding back partial syntax and reveal
+   * everything received so far, instantly. */
+  function skipTyping() {
+    setTypingSkipped(true);
+    flushRevealRef.current();
+  }
+
+  /** Locally paced reveal for the JSON reply path (older backends without
+   * the SSE route): the full text is known, so it types out at ~320 chars/s
+   * through a frame loop, rendering markdown as it grows. */
+  function revealTypewriter(
+    full: string,
+    meta: { provider: string; model: string; ai_connected: boolean },
+  ) {
+    return new Promise<void>((resolve) => {
+      const id = makeMessageId();
+      setTypingId(id);
+      setMessages((current) =>
+        [...current, { id, role: "assistant" as const, content: "" }].slice(
+          -MAX_MESSAGES,
+        ),
+      );
+      let revealed = 0;
+      let last = performance.now();
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === id ? { ...message, content: full } : message,
+          ),
+        );
+        setTypingId(null);
+        applyProviderMeta(meta);
+        resolve();
+      };
+      const step = (now: number) => {
+        if (settled) return;
+        const next = Math.min(
+          full.length,
+          revealed + Math.max(1, Math.round((now - last) * 0.32)),
+        );
+        if (next !== revealed) {
+          revealed = next;
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === id
+                ? {
+                    ...message,
+                    content: visibleWhileTyping(full.slice(0, revealed)),
+                  }
+                : message,
+            ),
+          );
+        }
+        last = now;
+        if (revealed >= full.length) {
+          finish();
+          return;
+        }
+        frame = scheduleFrame(step);
+      };
+      let frame = scheduleFrame(step);
+      flushRevealRef.current = () => {
+        cancelFrame(frame);
+        finish();
+      };
+    });
+  }
+
+  /** Streaming path: the backend relays provider deltas over SSE; each chunk
+   * appends to the live message as it arrives. */
+  async function askStreamed(text: string, history: WaveTurn[]) {
+    const replyId = makeMessageId();
+    let received = "";
+    let appended = false;
+    try {
+      const meta = await api.waveChatStream(
+        text,
+        data.run_id,
+        history,
+        (chunk) => {
+          received += chunk;
+          if (reducedMotion) return; // no progressive reveal: show once, done
+          const content = visibleWhileTyping(normalizeWaveMarkdown(received));
+          if (!appended) {
+            appended = true;
+            setTypingId(replyId);
+            setMessages((current) =>
+              [
+                ...current,
+                { id: replyId, role: "assistant" as const, content },
+              ].slice(-MAX_MESSAGES),
+            );
+            return;
+          }
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === replyId ? { ...message, content } : message,
+            ),
+          );
+        },
+      );
+      if (meta.run_id !== data.run_id) {
+        throw new Error(
+          "The simulation was reset while Wave was answering. Please ask again.",
+        );
+      }
+      const content = normalizeWaveMarkdown(meta.answer || received);
+      if (appended) {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === replyId ? { ...message, content } : message,
+          ),
+        );
+        setTypingId(null);
+      } else {
+        setMessages((current) =>
+          [
+            ...current,
+            { id: replyId, role: "assistant" as const, content },
+          ].slice(-MAX_MESSAGES),
+        );
+      }
+      applyProviderMeta(meta);
+    } catch (error) {
+      // Keep whatever arrived, final-render it, then surface the failure.
+      if (appended) {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === replyId
+              ? { ...message, content: normalizeWaveMarkdown(received) }
+              : message,
+          ),
+        );
+        setTypingId(null);
+      }
+      throw error;
+    }
+  }
+
+  /** JSON path: one request, one reply; the reveal is paced locally. */
+  async function askLegacy(text: string, history: WaveTurn[]) {
+    const reply = await api.waveChat(text, data.run_id, history);
+    if (reply.run_id !== data.run_id) {
+      throw new Error(
+        "The simulation was reset while Wave was answering. Please ask again.",
+      );
+    }
+    const content = normalizeWaveMarkdown(reply.answer);
+    if (reducedMotion) {
+      setMessages((current) =>
+        [...current, makeMessage("assistant", content)].slice(-MAX_MESSAGES),
+      );
+      applyProviderMeta(reply);
+      return;
+    }
+    await revealTypewriter(content, reply);
+  }
+
   async function ask(question: string, addUserMessage = true) {
     const text = question.trim();
     if (!text || sendingRef.current) return;
@@ -536,7 +804,9 @@ export function WaveChat({
 
     sendingRef.current = true;
     setSending(true);
+    setTypingSkipped(false);
     setResponseExpression(null);
+    autoScrollRef.current = true;
     if (addUserMessage) {
       setMessages((current) =>
         [...current, makeMessage("user", text)].slice(-MAX_MESSAGES),
@@ -551,36 +821,27 @@ export function WaveChat({
     try {
       // The backend captures fresh /api/delta-equivalent telemetry for this
       // session. Only the question and bounded prior turns come from the browser.
-      const reply = await api.waveChat(text, data.run_id, history);
-      if (reply.run_id !== data.run_id) {
-        throw new Error(
-          "The simulation was reset while Wave was answering. Please ask again.",
-        );
+      if (typeof api.waveChatStream === "function") {
+        await askStreamed(text, history);
+      } else {
+        await askLegacy(text, history);
       }
-      setMessages((current) =>
-        [...current, makeMessage("assistant", reply.answer)].slice(
-          -MAX_MESSAGES,
-        ),
-      );
-      const providerName = reply.provider === "groq" ? "Groq" : "OpenAI";
-      setProviderStatus({
-        provider: reply.provider,
-        model: reply.model,
-        configured: true,
-        verified: reply.ai_connected,
-        status: reply.ai_connected ? "connected" : "not_verified",
-        detail: reply.ai_connected
-          ? `${providerName} answered this Wave request successfully.`
-          : "The provider has not been verified by a successful request.",
-      });
-      statusRequestRef.current += 1;
-      setResponseExpression("responding");
-    } catch (error) {
+    } catch (streamError) {
+      let failure: unknown = streamError;
+      if ((failure as { status?: number }).status === 404) {
+        // Backend without the SSE route: fall back to the JSON reply.
+        try {
+          await askLegacy(text, history);
+          return;
+        } catch (legacyError) {
+          failure = legacyError;
+        }
+      }
       setMessages((current) =>
         [
           ...current,
           {
-            ...makeMessage("assistant", errorMessage(error)),
+            ...makeMessage("assistant", errorMessage(failure)),
             error: true,
             retryText: text,
           },
@@ -654,12 +915,17 @@ export function WaveChat({
             aria-label="Conversation with Wave"
             aria-live="polite"
             aria-relevant="additions text"
+            onScroll={handleMessagesScroll}
           >
-            {messages.map((message, index) => (
+            {messages.map((message) => (
               <article
                 key={message.id}
-                className={`wave-message wave-message--${message.role}${message.error ? " is-error" : ""}`}
+                className={`wave-message wave-message--${message.role}${message.error ? " is-error" : ""}${message.id === typingId ? " is-typing" : ""}`}
                 role={message.error ? "alert" : undefined}
+                onClick={message.id === typingId ? skipTyping : undefined}
+                title={
+                  message.id === typingId ? "Show the full reply" : undefined
+                }
               >
                 {message.role === "assistant" && (
                   <img
@@ -670,16 +936,14 @@ export function WaveChat({
                   />
                 )}
                 <div className="wave-message-content">
-                  <p>
-                    {message.role === "assistant" ? (
-                      <AssistantLines
-                        content={message.content}
-                        animate={index === messages.length - 1}
-                      />
-                    ) : (
-                      message.content
-                    )}
-                  </p>
+                  {message.role === "assistant" ? (
+                    <WaveMarkdown
+                      text={message.content}
+                      typing={message.id === typingId && !typingSkipped}
+                    />
+                  ) : (
+                    <p>{message.content}</p>
+                  )}
                   {message.error && (
                     <div className="wave-error-actions">
                       <button
@@ -700,7 +964,7 @@ export function WaveChat({
                 </div>
               </article>
             ))}
-            {sending && (
+            {sending && !typingId && (
               <div className="wave-thinking" role="status">
                 <span className="wave-thinking-dots" aria-hidden="true">
                   <i />

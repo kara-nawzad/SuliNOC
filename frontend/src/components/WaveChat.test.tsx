@@ -13,7 +13,20 @@ import type { WaveChatReply, WaveProviderState } from "../types/wave";
 import { WaveChat } from "./WaveChat";
 
 vi.mock("../services/api", () => ({
-  api: { waveStatus: vi.fn(), waveChat: vi.fn() },
+  api: {
+    waveStatus: vi.fn(),
+    waveChat: vi.fn(),
+    // Streaming is tried first in the component; the factory default
+    // pretends the backend predates the SSE route (a 404), so every test
+    // that only mocks waveChat exercises the JSON fallback path.
+    waveChatStream: vi.fn(async () => {
+      const error = new Error("streaming route not available") as Error & {
+        status?: number;
+      };
+      error.status = 404;
+      throw error;
+    }),
+  },
 }));
 
 function makeSnapshot(activeIncidents = 0): Snapshot {
@@ -239,7 +252,7 @@ describe("Wave generative assistant", () => {
     expect(screen.getByText("Hey, I’m Wave 👋")).toBeInTheDocument();
   });
 
-  it("renders answers without literal ** markers, line by line", async () => {
+  it("renders markdown answers without literal ** markers", async () => {
     vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
     vi.mocked(api.waveChat).mockResolvedValue(
       reply(
@@ -250,21 +263,86 @@ describe("Wave generative assistant", () => {
     openWave();
     askWave("Status?");
 
-    expect(await screen.findByText("All good.")).toBeInTheDocument();
+    // The JSON path types out at ~320 chars/s; wait for the final render.
     expect(
-      screen.getByText("Crews are EN_ROUTE to two sites."),
+      await screen.findByText("All good.", { selector: "strong" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Nothing else to report.")).toBeInTheDocument();
-    expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument();
-    // Line breaks survive the markdown cleanup as real breaks.
-    const replyParagraph = screen
-      .getByText("Nothing else to report.")
-      .closest("p");
-    expect(replyParagraph?.querySelectorAll("br")).toHaveLength(2);
-    // The newest assistant message carries the staggered reveal class.
-    expect(screen.getByText("All good.").className.includes("wave-line")).toBe(
-      true,
+    expect(
+      await screen.findByText("EN_ROUTE", { selector: "strong" }),
+    ).toBeInTheDocument();
+    const bubble = screen
+      .getByText("All good.", { selector: "strong" })
+      .closest(".wave-md");
+    expect(bubble).not.toBeNull();
+    await waitFor(() =>
+      expect(bubble?.textContent).toContain("Nothing else to report."),
     );
+    // Single line breaks survive (rendered as breaks by pre-wrap in CSS).
+    expect(bubble?.textContent).toContain("EN_ROUTE to two sites.");
+    expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument();
+  });
+
+  it("renders headings, GFM tables, quotes and em-dash dividers", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    vi.mocked(api.waveChat).mockResolvedValue(
+      reply(
+        "## Quick KPI Snapshot\n\nAvailability is **99.5%**.\n\n—\n\n| Site | Status |\n| --- | --- |\n| S12 | Degraded |\n\n> Crews are on site.",
+      ),
+    );
+    renderWave();
+    openWave();
+    askWave("Give me the snapshot.");
+
+    // Wait for the last block (the quote) so the reveal has finished.
+    expect(await screen.findByText("Crews are on site.")).toBeInTheDocument();
+
+    const heading = screen.getByRole("heading", {
+      level: 2,
+      name: "Quick KPI Snapshot",
+    });
+    expect(heading).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    expect(table.querySelector("th")).toHaveTextContent("Site");
+    expect(table.querySelectorAll("tbody td")).toHaveLength(2);
+    expect(
+      screen.getByText("99.5%", { selector: "strong" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("S12", { selector: "td" })).toBeInTheDocument();
+    // The em-dash divider and heading markers never leak as literal text.
+    expect(screen.queryByText("—")).not.toBeInTheDocument();
+    expect(screen.queryByText(/##/)).not.toBeInTheDocument();
+  });
+
+  it("streams replies over SSE instead of waiting for the whole answer", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    vi.mocked(api.waveChatStream).mockImplementationOnce(
+      async (_question, _runId, _history, onDelta) => {
+        onDelta("Grounded ");
+        onDelta("streamed reply.");
+        return reply("Grounded streamed reply.");
+      },
+    );
+    renderWave();
+    openWave();
+    askWave("How is the network?");
+
+    expect(
+      await screen.findByText("Grounded streamed reply."),
+    ).toBeInTheDocument();
+    expect(api.waveChatStream).toHaveBeenCalledOnce();
+    expect(api.waveChat).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the JSON reply when the stream route is missing", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    vi.mocked(api.waveChat).mockResolvedValue(reply("Fallback answer."));
+    renderWave();
+    openWave();
+    askWave("Status?");
+
+    expect(await screen.findByText("Fallback answer.")).toBeInTheDocument();
+    expect(api.waveChatStream).toHaveBeenCalledOnce();
+    expect(api.waveChat).toHaveBeenCalledOnce();
   });
 
   it("shows Wave's updated friendly, read-only in-chat greeting", () => {
@@ -304,10 +382,12 @@ describe("Wave generative assistant", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Wave is checking this simulation snapshot",
     );
-    expect(api.waveChat).toHaveBeenCalledWith(
-      "How is the network?",
-      "wave-test-run",
-      [],
+    await waitFor(() =>
+      expect(api.waveChat).toHaveBeenCalledWith(
+        "How is the network?",
+        "wave-test-run",
+        [],
+      ),
     );
 
     await act(async () => {
