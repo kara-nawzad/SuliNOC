@@ -8565,10 +8565,10 @@ dialog.dialog::backdrop,
 
 /* --- Topology panel: Core row ---------------------------------------- */
 .topology-core {
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
-  gap: var(--space-3);
-  align-items: center;
+  display: grid !important;
+  grid-template-columns: 32px minmax(0, 1fr) auto !important;
+  gap: var(--space-3) !important;
+  align-items: center !important;
   width: 100%;
   margin-top: var(--space-2);
   padding: 10px var(--space-3);
@@ -8607,16 +8607,18 @@ dialog.dialog::backdrop,
 .cluster-block {
   margin-top: var(--space-3);
 }
-.cluster-head {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: var(--space-3);
-  align-items: baseline;
+/* The light skin's global button rule (white card + border, very high
+   specificity) also styles this button. Keep the three-column grid and give
+   the card real horizontal padding so the health chip never touches its
+   edge; the kit's own hover/focus behaviour is welcome here. */
+.app-shell .cluster-head {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: var(--space-3) !important;
+  align-items: baseline !important;
   width: 100%;
-  padding: 8px 0 6px;
-  background: none;
-  border: 0;
-  border-bottom: 1px solid var(--line);
+  padding: 10px var(--space-3) 9px !important;
+  border-radius: var(--radius-sm);
   text-align: left;
 }
 .cluster-head strong {
@@ -8627,61 +8629,70 @@ dialog.dialog::backdrop,
   font-size: var(--fs-caption);
   color: var(--t2);
 }
+/* Health chip: tinted by the inline --tone (blue when healthy, amber when
+   degraded, red when critical) — the same recipe the kit's other chips use. */
 .cluster-health {
   font-size: var(--fs-caption);
   padding: 2px 8px;
-  border: 1px solid var(--ln);
+  color: var(--tone);
+  border: 1px solid color-mix(in srgb, var(--tone) 28%, transparent);
+  background: color-mix(in srgb, var(--tone) 9%, transparent);
   border-radius: var(--radius-pill);
   white-space: nowrap;
 }
-.cluster-head:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-  border-radius: var(--radius-sm);
+/* The cluster whose Core links are shown on the map. */
+.app-shell .cluster-head.selected {
+  background: var(--sn-link-wash) !important;
+  border-color: var(--sn-link) !important;
+}
+.app-shell .cluster-head.selected strong {
+  color: var(--sn-link);
 }
 
-/* --- Topology panel: ring rows (grid moves onto the row wrapper) ----- */
-.ring-list .ring-row {
-  display: grid;
-  grid-template-columns: 70px 78px 64px minmax(56px, 1fr);
-  gap: var(--space-3);
-  align-items: center;
-  width: 100%;
-  text-align: left;
+/* --- Topology panel: ring rows ---------------------------------------
+   The row wrapper (a button for faulted rings, a span otherwise) is laid
+   out with display: contents, so the list item's own four-column grid —
+   the one the light skin asserts with !important — positions the cells
+   exactly as it did before the wrapper existed. */
+.app-shell .ring-list .ring-row {
+  display: contents;
 }
-.ring-row > span:last-child {
+.app-shell .ring-list .ring-row > span:last-child {
   text-align: right;
   white-space: nowrap;
 }
-.ring-row-button {
-  background: none;
-  border: 0;
-  padding: 8px 0;
+/* Faulted ring rows are buttons: strip the global white-card chrome (the
+   row already carries the list's rules) and keep the pointer + underline. */
+.app-shell .ring-list .ring-row-button {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
-.ring-row-button:hover .mono {
+.app-shell .ring-list .ring-row-button:hover .mono {
   text-decoration: underline;
 }
-.ring-row-button:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-  border-radius: var(--radius-sm);
+.app-shell .ring-list li:focus-within {
+  outline: 2px solid var(--sn-link);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
 }
 .ring-list li.fault .ring-status {
   color: var(--crit);
   font-weight: 600;
 }
-.ring-list li.fault {
+.app-shell .ring-list li.fault {
   border-left: 2px solid var(--crit);
-  padding-left: var(--space-2);
+  padding-left: var(--space-2) !important;
 }
 
 /* Phones: keep every tap target comfortably above the 44 px minimum. */
 @media (max-width: 767px) {
-  .cluster-head {
-    padding: 12px 0 10px;
+  .app-shell .cluster-head {
+    padding: 12px var(--space-3) 11px !important;
   }
-  .ring-row-button {
-    padding: 12px 0;
+  .app-shell .ring-list li.fault {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
   }
   .topology-core {
     padding: 12px var(--space-3);
@@ -8791,5 +8802,80 @@ dialog.dialog::backdrop,
   }
   .app-shell .towers-cluster {
     min-height: 46px;
+  }
+}
+
+/* --- Core links: fade in/out on selection ------------------------------
+   The paths stay mounted; Map view hides them (Map default) and shows them
+   while the Core panel is open or a cluster is selected. Schematic shows
+   them permanently. Toggled imperatively on the SVG elements. */
+.core-link {
+  transition: opacity 0.35s var(--ease);
+}
+.core-link.core-link-hidden {
+  opacity: 0;
+}
+
+/* --- Core modal: crew status row -------------------------------------- */
+.core-crews {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-body);
+  color: var(--tx);
+}
+.core-crews svg {
+  flex: none;
+  color: var(--sn-link);
+}
+
+/* --- Fleet modal: on-call list ---------------------------------------- */
+.fleet-oncall {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+.fleet-oncall > strong {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-emphasis);
+  color: var(--tx);
+}
+.fleet-oncall ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fleet-oncall li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+.fleet-oncall li svg {
+  align-self: center;
+  flex: none;
+  color: var(--sn-link);
+}
+.fleet-oncall .mono {
+  color: var(--tx);
+}
+.fleet-oncall-target {
+  margin-left: auto;
+  color: var(--tx);
+  text-align: right;
+}
+@media (max-width: 767px) {
+  .fleet-oncall-target {
+    margin-left: 0;
+    flex-basis: 100%;
+    text-align: left;
   }
 }

@@ -61,8 +61,10 @@ RING_CLUSTERS: Final = {
     8: 3,   # Airport          — west
 }
 
-DEPOT_LAT: Final = 35.5500
-DEPOT_LON: Final = 45.4200
+# The crew depot is the Core itself (Salim Street): idle crews are based
+# there and appear on the map only while dispatched, returning here after.
+DEPOT_LAT: Final = CORE_LAT
+DEPOT_LON: Final = CORE_LON
 
 # ---------------------------------------------------------------- time
 TICK_MINUTES: Final = 5

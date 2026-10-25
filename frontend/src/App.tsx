@@ -2,6 +2,7 @@ import { TowerList } from "./components/TowerList";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -58,6 +59,10 @@ type Dialog =
   | "impact"
   | null;
 
+/** Cluster health reads blue when healthy (the kit's link blue); amber and
+ * red stay reserved for degraded and critical clusters. */
+const CLUSTER_HEALTHY_BLUE = "#1479c4";
+
 function Console({
   heroOpen,
   setHeroOpen,
@@ -71,6 +76,16 @@ function Console({
   if (data?.run_id) activeRunId.current = data.run_id;
   const [selected, setSelected] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
+  // Crews split by the depot rule: idle crews wait at the Core and are not
+  // drawn on the map; "on call" crews are dispatched, on site or returning.
+  const onCallCrews = useMemo(
+    () => (data ? data.teams.filter((t) => t.state !== "IDLE") : []),
+    [data],
+  );
+  const idleCrews = useMemo(
+    () => (data ? data.teams.filter((t) => t.state === "IDLE") : []),
+    [data],
+  );
   const [injectNode, setInjectNode] = useState<string>();
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
@@ -517,6 +532,7 @@ function Console({
                 selectedId={selected}
                 onSelect={selectNode}
                 onCoreClick={() => setDialog("core")}
+                coreActive={dialog === "core"}
               />
               <AlertsSidebar
                 key={data.run_id}
@@ -591,9 +607,30 @@ function Console({
         {dialog === "fleet" && (
           <Modal title="Maintenance fleet" onClose={closeDialog} wide>
             <p className="dialog-intro">
-              {config.num_teams} crews · {data.dashboard.fleet.IDLE} available.
-              Travel and repairs are controlled by the engine.
+              {config.num_teams} crews · {idleCrews.length} idle at the Core ·{" "}
+              {onCallCrews.length} on call. Travel and repairs are controlled by
+              the engine.
             </p>
+            {onCallCrews.length > 0 && (
+              <div className="fleet-oncall">
+                <strong>On call</strong>
+                <ul>
+                  {onCallCrews.map((team) => (
+                    <li key={team.id}>
+                      <Truck size={14} />
+                      <span className="mono">{team.name}</span>
+                      <span>Cluster {team.cluster}</span>
+                      <span className="fleet-oncall-target">
+                        {team.target ?? "Returning to the Core"}
+                      </span>
+                      <span>
+                        ETA {team.eta} {team.eta === 1 ? "tick" : "ticks"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="fleet-grid">
               {data.teams.map((team) => (
                 <article key={team.id} className="fleet-card">
@@ -611,7 +648,7 @@ function Console({
                   >
                     {team.state.replaceAll("_", " ")}
                   </span>
-                  <p>{team.target ?? "Returning / available at depot"}</p>
+                  <p>{team.target ?? "Idle at the Core (depot)"}</p>
                   <div className="fleet-card-foot">
                     <span>ETA {team.eta} ticks</span>
                     <span>
@@ -631,6 +668,12 @@ function Console({
               aggregates all three clusters and is not one of the{" "}
               {config.num_nodes} sites.
             </p>
+            <div className="core-crews">
+              <Truck size={14} />
+              <span>
+                Crews: {idleCrews.length} idle, {onCallCrews.length} on call
+              </span>
+            </div>
             <div className="core-epc">
               {config.core.epc.map((el) => (
                 <div key={el.id} className="core-epc-card">
@@ -662,7 +705,7 @@ function Console({
                       style={{
                         color:
                           pct >= 99
-                            ? p.healthy
+                            ? CLUSTER_HEALTHY_BLUE
                             : pct >= 95
                               ? p.warning
                               : p.critical,

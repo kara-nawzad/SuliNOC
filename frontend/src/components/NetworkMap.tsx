@@ -3,6 +3,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -47,6 +48,10 @@ import TileBasemap, { type StreetStatus } from "./TileBasemap";
 
 /** A fly-to request raised by the topology panel (cluster or ring click). */
 type ClusterFocus = { bounds: L.LatLngBounds; key: number };
+
+/** Cluster health reads blue when healthy (the kit's link blue), amber when
+ * degraded and red when critical — green stays reserved for site status. */
+const CLUSTER_HEALTHY_BLUE = "#1479c4";
 const LocalBasemap = memo(function LocalBasemap({
   config,
 }: {
@@ -610,7 +615,7 @@ const CoreMarker = memo(function CoreMarker({
       eventHandlers={{ click: onCoreClick }}
     >
       <Tooltip direction="top" offset={[0, -16]}>
-        <strong>{core.name}</strong> · {core.place}
+        <strong>{core.name}</strong> · {core.place} · crew depot
         <br />
         EPC: {core.epc.map((el) => el.id).join(" · ")}
       </Tooltip>
@@ -618,27 +623,61 @@ const CoreMarker = memo(function CoreMarker({
   );
 });
 
+/** When the Core's thin backhaul links are shown:
+ *  - "all": every Core-to-aggregation link (Schematic view, or the Core panel
+ *    is open in Map view),
+ *  - a cluster id: only that cluster's rings (a cluster is selected in Map
+ *    view),
+ *  - "none": hidden (Map view default). */
+export type CoreLinkMode = "all" | "none" | number;
+
+const pathElement = (line: L.Polyline | null): SVGElement | null =>
+  (line as unknown as { _path?: SVGElement } | null)?._path ?? null;
+
 /** Thin light-styled backhaul links from the Core to each ring's
- * aggregation node. Purely decorative, so they never catch pointer events. */
+ * aggregation node. The paths stay mounted and fade through a CSS class
+ * toggle on the SVG element, so selections fade in and out instead of
+ * popping. Purely decorative, so they never catch pointer events. */
 const CoreLinks = memo(function CoreLinks({
   config,
   renderer,
   color,
+  mode,
 }: {
   config: Config;
   renderer: L.SVG;
   color: string;
+  mode: CoreLinkMode;
 }) {
+  const lines = useRef<(L.Polyline | null)[]>([]);
   const core: LatLng = [config.core.lat, config.core.lon];
+  useLayoutEffect(() => {
+    // Runs before paint, so a fresh "none" never flashes the links.
+    config.agg_sites.forEach((site, i) => {
+      const element = pathElement(lines.current[i]);
+      if (!element) return;
+      const visible =
+        mode === "all" || (typeof mode === "number" && site.cluster === mode);
+      element.classList.toggle("core-link-hidden", !visible);
+    });
+  }, [mode, config]);
   return (
     <>
-      {config.agg_sites.map((site) => (
+      {config.agg_sites.map((site, i) => (
         <Polyline
           key={site.id}
+          ref={(instance) => {
+            lines.current[i] = instance;
+          }}
           positions={[core, [site.lat, site.lon]]}
           renderer={renderer}
           interactive={false}
-          pathOptions={{ color, weight: 1, opacity: 0.4 }}
+          pathOptions={{
+            color,
+            weight: 1,
+            opacity: 0.4,
+            className: "core-link",
+          }}
         />
       ))}
     </>
@@ -777,12 +816,14 @@ export function NetworkMap({
   selectedId,
   onSelect,
   onCoreClick,
+  coreActive,
 }: {
   config: Config;
   data: Snapshot;
   selectedId: string | null;
   onSelect: (id: string) => void;
   onCoreClick: () => void;
+  coreActive: boolean;
 }) {
   // Padding trimmed from 0.4: the overlay canvas used to paint ~3.2x the
   // viewport on every redraw; 0.15 keeps ~1.3x and no visible clipping.
@@ -801,6 +842,9 @@ export function NetworkMap({
   const [district, setDistrict] = useState<number | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const [clusterFocus, setClusterFocus] = useState<ClusterFocus | null>(null);
+  // The cluster whose Core links are shown in Map view (toggle in the
+  // topology panel); cleared by the reset-view button.
+  const [selectedCluster, setSelectedCluster] = useState<number | null>(null);
   const p = config.presentation.palette;
   const selected = data.nodes.find((n) => n.id === selectedId);
   const storm = data.agg.find((a) => a.weather === "Storm");
@@ -843,6 +887,10 @@ export function NetworkMap({
     const bounds = L.latLngBounds(ring.path);
     if (bounds.isValid()) setClusterFocus({ bounds, key: Date.now() });
   };
+  // Core links: permanent in Schematic; in Map view only while the Core
+  // panel is open (all rings) or a cluster is selected (its rings only).
+  const linksMode: CoreLinkMode =
+    !layers.streets || coreActive ? "all" : (selectedCluster ?? "none");
   return (
     <section
       id="network"
@@ -887,7 +935,12 @@ export function NetworkMap({
             <TileBasemap key={streetAttempt} onStatus={setStreetStatus} />
           )}
           {layers.core && (
-            <CoreLinks config={config} renderer={svgRenderer} color={p.fiber} />
+            <CoreLinks
+              config={config}
+              renderer={svgRenderer}
+              color={p.fiber}
+              mode={linksMode}
+            />
           )}
           {layers.fiber && (
             <FiberOverlays
@@ -1003,6 +1056,7 @@ export function NetworkMap({
               aria-label="Reset map view"
               onClick={() => {
                 setDistrict(null);
+                setSelectedCluster(null);
                 setResetKey((k) => k + 1);
               }}
             >
@@ -1110,14 +1164,27 @@ export function NetworkMap({
             ? Math.round((cluster.healthy / cluster.sites) * 100)
             : 100;
           const healthTone =
-            pct >= 99 ? p.healthy : pct >= 95 ? p.warning : p.critical;
+            pct >= 99
+              ? CLUSTER_HEALTHY_BLUE
+              : pct >= 95
+                ? p.warning
+                : p.critical;
           return (
             <div className="cluster-block" key={cluster.id}>
               <button
                 type="button"
-                className="cluster-head"
-                onClick={() => focusCluster(cluster.id)}
+                className={`cluster-head${selectedCluster === cluster.id ? " selected" : ""}`}
+                aria-pressed={selectedCluster === cluster.id}
                 title={`Zoom to Cluster ${cluster.id}`}
+                onClick={() => {
+                  if (selectedCluster === cluster.id) {
+                    // Deselect: the cluster's Core links fade out.
+                    setSelectedCluster(null);
+                  } else {
+                    setSelectedCluster(cluster.id);
+                    focusCluster(cluster.id);
+                  }
+                }}
               >
                 <strong>Cluster {cluster.id}</strong>
                 <span className="cluster-meta">
