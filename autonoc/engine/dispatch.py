@@ -96,15 +96,30 @@ def priority_score(inc: Incident, net, tick: int) -> float:
             * (1.0 + wait / 50.0) / (1.0 + travel / 10.0))
 
 
-def best_team(inc: Incident, free: list, tick: int):
+def best_team(inc: Incident, free: list, tick: int, net=None):
     """Choose by expected completion time, not distance.
 
     nearby generalist : 2 travel + 12 x 1.2 = 16.4 ticks
     distant RF tech   : 5 travel + 12 x 1.0 = 17.0 ticks   -> send the generalist
+
+    Cluster preference: a free crew based in the affected site's cluster is
+    tried first (ties and non-matches still settle on completion time), and
+    when no home-cluster crew is free the nearest crew wins — the fallback,
+    never a block.
     """
+    cluster = None
+    if net is not None and inc.affected:
+        first = net.by_id.get(inc.affected[0])
+        if first is not None:
+            cluster = first.cluster
+
     def completion(team):
         d_km = haversine_km(team.lat, team.lon, inc.target_lat, inc.target_lon)
         travel = d_km / (C.TEAM_SPEED_KMH / C.TICKS_PER_HOUR)
         return travel + inc.repair_ticks * team.skill_mult(inc.required_skill)
 
-    return min(free, key=completion)
+    def ranking(team):
+        return (0 if cluster is not None and team.home_cluster == cluster
+                else 1, completion(team))
+
+    return min(free, key=ranking)

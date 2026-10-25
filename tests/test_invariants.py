@@ -251,3 +251,44 @@ def _dummy_nodes():
     from autonoc.engine.network import build_network
     net = build_network(seed=0)
     return net.nodes
+
+
+# ---------------------------------------------------------------- LTE hierarchy
+def test_LTE_ring_clusters_are_complete_and_sized_433():
+    """Every ring belongs to exactly one of the three clusters (4/3/3)."""
+    from autonoc.engine import config as C
+
+    assert C.CLUSTER_NAMES == ("Cluster 1", "Cluster 2", "Cluster 3")
+    assert set(C.RING_CLUSTERS) == set(range(C.NUM_RINGS))
+    assert sorted(C.RING_CLUSTERS.values()) == [1, 1, 1, 2, 2, 2, 2, 3, 3, 3]
+
+
+def test_LTE_site_cluster_is_derived_from_its_ring():
+    """A site's cluster comes from its ring — one source of truth."""
+    from autonoc.engine import config as C
+    from autonoc.engine.network import build_network
+
+    net = build_network(seed=7)
+    assert len(net.nodes) == C.NUM_NODES
+    for node in net.nodes:
+        assert node.ring_id in C.RING_CLUSTERS
+        assert node.cluster == C.RING_CLUSTERS[node.ring_id]
+    for ring in net.rings:
+        assert ring.cluster == C.RING_CLUSTERS[ring.ring_id]
+
+
+def test_LTE_every_crew_has_a_home_cluster_and_core_is_not_a_site():
+    """Crews carry a home cluster; the Core is a separate marker, never one
+    of the eNodeB sites (site counts must exclude it)."""
+    from autonoc.engine import config as C
+    from autonoc.engine.network import build_network
+
+    net = build_network(seed=7)
+    assert len(net.teams) == C.NUM_TEAMS
+    for team in net.teams:
+        assert team.home_cluster in (1, 2, 3)
+        assert team.to_dict()["cluster"] == team.home_cluster
+    # The Core sits on Salim Street and is not any node or aggregation site.
+    core_ids = {n.node_id for n in net.nodes}
+    assert (C.CORE_LAT, C.CORE_LON) not in {(n.lat, n.lon) for n in net.nodes}
+    assert C.CORE_NAME not in core_ids

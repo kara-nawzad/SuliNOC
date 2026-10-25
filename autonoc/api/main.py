@@ -615,12 +615,30 @@ async def get_config():
         map_zoom=12,
         bounds={"lat_min": C.LAT_MIN, "lat_max": C.LAT_MAX,
                 "lon_min": C.LON_MIN, "lon_max": C.LON_MAX},
-        epc_primary={"name": C.EPC_PRIMARY[0], "lat": C.EPC_PRIMARY[1],
-                     "lon": C.EPC_PRIMARY[2], "backhaul": C.EPC_PRIMARY[3]},
-        epc_backup={"name": C.EPC_BACKUP[0], "lat": C.EPC_BACKUP[1],
-                    "lon": C.EPC_BACKUP[2], "backhaul": C.EPC_BACKUP[3]},
+        core={
+            "name": C.CORE_NAME,
+            "place": C.CORE_PLACE,
+            "lat": C.CORE_LAT,
+            "lon": C.CORE_LON,
+            "status_label": "Operational · simulated EPC",
+            "epc": [{"id": el[0], "name": el[1]} for el in C.CORE_EPC],
+            "clusters": [
+                {
+                    "id": cid,
+                    "name": C.CLUSTER_NAMES[cid - 1],
+                    "rings": sorted(r for r, c in C.RING_CLUSTERS.items()
+                                    if c == cid),
+                    # sites inherit their cluster from their ring, so count
+                    # by ring membership, not by district placement
+                    "sites": sum(1 for n in engine.net.nodes
+                                 if n.cluster == cid),
+                }
+                for cid in (1, 2, 3)
+            ],
+        },
         depot={"lat": C.DEPOT_LAT, "lon": C.DEPOT_LON},
         agg_sites=[{"id": s[0], "name": s[1], "lat": s[2], "lon": s[3],
+                    "cluster": C.RING_CLUSTERS[s[0]],
                     "nodes": len(engine.net.agg_sites[s[0]].node_ids), "clutter": s[5], "color": s[6]}
                    for s in C.AGG_SITES],
         num_nodes=C.NUM_NODES,
@@ -641,7 +659,9 @@ def _agg_payload() -> list[dict]:
         w = w_now[site.agg_id]
         out.append({
             "id": site.agg_id, "name": site.name, "lat": site.lat,
-            "lon": site.lon, "color": site.color, "node_count": len(nodes),
+            "lon": site.lon, "color": site.color,
+            "cluster": C.RING_CLUSTERS[site.agg_id],
+            "node_count": len(nodes),
             "health": round(ok / len(nodes) * 100.0, 1) if nodes else 100.0,
             "weather": w["type"], "wind": round(w["wind"], 1),
             "clutter": site.clutter_c,
@@ -679,7 +699,8 @@ def _ring_payload() -> list[dict]:
             c = ring.cuts[0]
             cut = {"lat": c.lat, "lon": c.lon, "seg": c.segment.seg_id,
                    "cause": c.cause}
-        out.append({"id": ring.ring_id, "nodes": ring.node_ids, "path": path,
+        out.append({"id": ring.ring_id, "cluster": ring.cluster,
+                    "nodes": ring.node_ids, "path": path,
                     "circumference_km": round(ring.circumference_km, 2),
                     "cut": cut, "isolated": ring.is_isolated,
                     "cuts": [{"lat": c.lat, "lon": c.lon,

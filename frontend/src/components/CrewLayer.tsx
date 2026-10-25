@@ -203,7 +203,7 @@ export function CrewLayer({
         { route: track.route, progress: track.progress, moving: track.moving },
         now,
       );
-      const text = `${team.name} · ${team.state.replaceAll("_", " ")} · ETA ${team.eta} ticks`;
+      const text = `Crew ${team.id}, Cluster ${team.cluster} · ${team.name} · ${team.state.replaceAll("_", " ")} · ETA ${team.eta} ticks`;
       if (marker.options.title !== text) {
         const content = document.createElement("span");
         content.textContent = text;

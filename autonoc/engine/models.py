@@ -127,6 +127,12 @@ class ENodeB:
         return self.status != C.STATUS_HEALTHY
 
     @property
+    def cluster(self) -> int:
+        """LTE aggregation cluster, derived from the ring (single source of
+        truth: config.RING_CLUSTERS). A node keeps its cluster via its ring."""
+        return C.RING_CLUSTERS.get(self.ring_id, 1)
+
+    @property
     def needs_technician(self) -> bool:
         return self.status in (C.STATUS_RF, C.STATUS_POWER, C.STATUS_BACKHAUL)
 
@@ -172,7 +178,8 @@ class ENodeB:
     def to_dict(self) -> dict:
         return {
             "id": self.node_id, "lat": round(self.lat, 6), "lon": round(self.lon, 6),
-            "agg": self.agg_id, "ring": self.ring_id, "gen": self.generation,
+            "agg": self.agg_id, "ring": self.ring_id,
+            "cluster": self.cluster, "gen": self.generation,
             "critical": self.is_critical, "status": self.status,
             "rsrp": round(self.rsrp, 1), "sinr": round(self.sinr, 1),
             "s11": round(self.s11, 1), "latency": round(self.latency, 1),
@@ -234,6 +241,11 @@ class FiberRing:
     cuts: list = field(default_factory=list)     # list[FiberCut]
 
     @property
+    def cluster(self) -> int:
+        """Aggregation cluster this ring belongs to (config.RING_CLUSTERS)."""
+        return C.RING_CLUSTERS.get(self.ring_id, 1)
+
+    @property
     def is_isolated(self) -> bool:
         """One cut reroutes the long way; two isolate everything between."""
         return len(self.cuts) >= 2
@@ -259,6 +271,7 @@ class Team:
     team_id: int
     name: str
     skill: str
+    home_cluster: int = 1            # LTE cluster this crew is based in
     lat: float = C.DEPOT_LAT
     lon: float = C.DEPOT_LON
     state: str = "IDLE"      # IDLE -> EN_ROUTE -> (STANDBY) -> REPAIRING -> RETURNING
@@ -329,6 +342,7 @@ class Team:
     def to_dict(self) -> dict:
         return {
             "id": self.team_id, "name": self.name, "skill": self.skill,
+            "cluster": self.home_cluster,
             "lat": round(self.lat, 6), "lon": round(self.lon, 6),
             "state": self.state, "available": self.available,
             "target": self.target_id,

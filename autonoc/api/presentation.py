@@ -60,7 +60,8 @@ def incidents(engine):
         result.append({
             "id": f"ring-{ring.ring_id}", "node_id": None,
             "title": "Fiber ring isolated" if ring.is_isolated else "Fiber protection lost",
-            "detail": f"Ring {ring.ring_id:02d} · {len(ring.cuts)} open cut(s)",
+            "detail": (f"Cluster {ring.cluster}, Ring {ring.ring_id:02d} · "
+                       f"{len(ring.cuts)} open cut(s)"),
             "severity": "CRITICAL" if ring.is_isolated else "MINOR",
             "affected": len(affected), "since_tick": min(c.started_tick for c in ring.cuts),
             "dispatched": any(c.dispatched for c in ring.cuts),
@@ -70,7 +71,8 @@ def incidents(engine):
             result.append({
                 "id": f"node-{node.node_id}-{node.fault_started_tick}",
                 "node_id": node.node_id, "title": C.STATUS_NAMES[node.status],
-                "detail": engine.net.agg_sites[node.agg_id].name,
+                "detail": (f"Cluster {node.cluster}, "
+                           f"{engine.net.agg_sites[node.agg_id].name}"),
                 "severity": C.X733_SEVERITY[node.status], "affected": 1,
                 "since_tick": max(0, node.fault_started_tick),
                 "dispatched": node.tech_dispatched,
@@ -178,6 +180,7 @@ def dashboard(engine, history):
         "current": current, "history": rows, "traffic_change_pct": change,
         "operational_pct": current["availability"], "incidents": incidents(engine),
         "top_cells": [{"node_id": n.node_id, "district": engine.net.agg_sites[n.agg_id].name,
+                       "cluster": n.cluster, "ring": n.ring_id,
                        "prb": round(n.prb_util, 1), "cqi": n.cqi, "status": n.status}
                       for n in top],
         "forecast": forecasts[0] if forecasts else None,

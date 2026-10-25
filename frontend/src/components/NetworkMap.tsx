@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   MapContainer,
+  Marker,
   Pane,
   CircleMarker,
   Polyline,
@@ -43,6 +44,9 @@ import TileBasemap, { type StreetStatus } from "./TileBasemap";
  * corridors are drawn. There are deliberately no remote image tiles, API keys,
  * fabricated streets or inferred district boundaries. A dedicated lower pane
  * keeps these reference routes behind the live operational overlays. */
+
+/** A fly-to request raised by the topology panel (cluster or ring click). */
+type ClusterFocus = { bounds: L.LatLngBounds; key: number };
 const LocalBasemap = memo(function LocalBasemap({
   config,
 }: {
@@ -552,16 +556,107 @@ function sameDistricts(a: District[], b: District[]) {
   return true;
 }
 
+/** Flat-top hexagon points around (cx, cy) — used for the Core badge. */
+function hexPoints(cx: number, cy: number, r: number) {
+  const pts: string[] = [];
+  for (let a = 0; a < 6; a += 1) {
+    const rad = (a * Math.PI) / 3;
+    pts.push(
+      `${(cx + r * Math.cos(rad)).toFixed(2)},${(cy + r * Math.sin(rad)).toFixed(2)}`,
+    );
+  }
+  return pts.join(" ");
+}
+
+/** The LTE Core (EPC): one distinct marker above every site dot and truck —
+ * a solid midnight hexagon badge with a cyan inner ring and a cobalt outer
+ * ring, a white server glyph and a soft static glow. It is never one of the
+ * sites: it joins no counts, lists or KPIs. */
+const CoreMarker = memo(function CoreMarker({
+  core,
+  onCoreClick,
+}: {
+  core: Config["core"];
+  onCoreClick: () => void;
+}) {
+  const icon = useMemo(
+    () =>
+      L.divIcon({
+        className: "core-marker",
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        html: `<svg viewBox="0 0 44 44" width="40" height="40" role="img" aria-hidden="true" focusable="false">
+          <polygon points="${hexPoints(22, 22, 19)}" fill="#060B18" stroke="#3768F5" stroke-width="2"/>
+          <polygon points="${hexPoints(22, 22, 15.5)}" fill="none" stroke="#36DFFF" stroke-width="1.25" class="core-pulse"/>
+          <g fill="#FFFFFF">
+            <rect x="15.5" y="14.6" width="13" height="3.4" rx="1.2"/>
+            <rect x="15.5" y="20.3" width="13" height="3.4" rx="1.2"/>
+            <rect x="15.5" y="26" width="13" height="3.4" rx="1.2"/>
+          </g>
+          <g fill="#36DFFF">
+            <circle cx="25.9" cy="16.3" r="0.9"/>
+            <circle cx="25.9" cy="22" r="0.9"/>
+            <circle cx="25.9" cy="27.7" r="0.9"/>
+          </g>
+        </svg>`,
+      }),
+    [],
+  );
+  return (
+    <Marker
+      position={[core.lat, core.lon]}
+      icon={icon}
+      zIndexOffset={1000}
+      eventHandlers={{ click: onCoreClick }}
+    >
+      <Tooltip direction="top" offset={[0, -16]}>
+        <strong>{core.name}</strong> · {core.place}
+        <br />
+        EPC: {core.epc.map((el) => el.id).join(" · ")}
+      </Tooltip>
+    </Marker>
+  );
+});
+
+/** Thin light-styled backhaul links from the Core to each ring's
+ * aggregation node. Purely decorative, so they never catch pointer events. */
+const CoreLinks = memo(function CoreLinks({
+  config,
+  renderer,
+  color,
+}: {
+  config: Config;
+  renderer: L.SVG;
+  color: string;
+}) {
+  const core: LatLng = [config.core.lat, config.core.lon];
+  return (
+    <>
+      {config.agg_sites.map((site) => (
+        <Polyline
+          key={site.id}
+          positions={[core, [site.lat, site.lon]]}
+          renderer={renderer}
+          interactive={false}
+          pathOptions={{ color, weight: 1, opacity: 0.4 }}
+        />
+      ))}
+    </>
+  );
+});
+
 function MapTools({
   config,
   selected,
   district,
   resetKey,
+  focus,
 }: {
   config: Config;
   selected?: NodeData;
   district: number | null;
   resetKey: number;
+  focus: ClusterFocus | null;
 }) {
   const map = useMap();
   const reduced = useReducedMotion();
@@ -594,6 +689,19 @@ function MapTools({
         zoomend: end,
       });
       container.classList.remove("map-interacting");
+    };
+  }, [map]);
+  // Also pause the decorative animations (Core pulse) while the tab is
+  // hidden: CSS cannot see document visibility, so toggle a helper class.
+  useEffect(() => {
+    const container = map.getContainer();
+    const onVisibility = () =>
+      container.classList.toggle("map-tab-hidden", document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
+    onVisibility();
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      container.classList.remove("map-tab-hidden");
     };
   }, [map]);
   // Refs read by the resize observer, so it always sees the latest config and selection.
@@ -642,6 +750,15 @@ function MapTools({
         });
     }
   }, [map, config, district, reduced]);
+  // Topology requests: zoom to a cluster (or a faulted ring) from the panel
+  // below the map. `key` lets the same target be re-requested.
+  useEffect(() => {
+    if (focus)
+      map.flyToBounds(focus.bounds, {
+        padding: [18, 18],
+        duration: reduced ? 0 : 0.9,
+      });
+  }, [map, focus, reduced]);
   return (
     <div className="map-zoom" onMouseDown={(e) => e.stopPropagation()}>
       <button aria-label="Zoom in" onClick={() => map.zoomIn()}>
@@ -659,11 +776,13 @@ export function NetworkMap({
   data,
   selectedId,
   onSelect,
+  onCoreClick,
 }: {
   config: Config;
   data: Snapshot;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onCoreClick: () => void;
 }) {
   // Padding trimmed from 0.4: the overlay canvas used to paint ~3.2x the
   // viewport on every redraw; 0.15 keeps ~1.3x and no visible clipping.
@@ -672,6 +791,7 @@ export function NetworkMap({
     sites: true,
     fiber: true,
     crews: true,
+    core: true,
     districts: true,
     streets: true,
   });
@@ -680,10 +800,49 @@ export function NetworkMap({
   const [streetAttempt, setStreetAttempt] = useState(0);
   const [district, setDistrict] = useState<number | null>(null);
   const [resetKey, setResetKey] = useState(0);
+  const [clusterFocus, setClusterFocus] = useState<ClusterFocus | null>(null);
   const p = config.presentation.palette;
   const selected = data.nodes.find((n) => n.id === selectedId);
   const storm = data.agg.find((a) => a.weather === "Storm");
   const b = config.bounds;
+  // ---- topology panel helpers -------------------------------------------
+  const healthyStatus = config.presentation.healthy_status;
+  // Live per-cluster health, computed from the node stream (sites inherit
+  // their cluster from their ring; the Core joins no count).
+  const clusterHealth = useMemo(() => {
+    const stats = [
+      { id: 1, sites: 0, healthy: 0 },
+      { id: 2, sites: 0, healthy: 0 },
+      { id: 3, sites: 0, healthy: 0 },
+    ];
+    for (const n of data.nodes) {
+      const row = stats[n.cluster - 1];
+      if (!row) continue;
+      row.sites += 1;
+      if (n.status === healthyStatus) row.healthy += 1;
+    }
+    return stats;
+  }, [data.nodes, healthyStatus]);
+  // Sites per ring that are not healthy right now — the "affected" count a
+  // fiber cut or ring fault highlights.
+  const ringAffected = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const n of data.nodes) {
+      if (n.status === healthyStatus) continue;
+      counts.set(n.ring, (counts.get(n.ring) ?? 0) + 1);
+    }
+    return counts;
+  }, [data.nodes, healthyStatus]);
+  const focusCluster = (clusterId: number) => {
+    const bounds = L.latLngBounds([]);
+    for (const r of data.rings)
+      if (r.cluster === clusterId) bounds.extend(r.path);
+    if (bounds.isValid()) setClusterFocus({ bounds, key: Date.now() });
+  };
+  const focusRing = (ring: Ring) => {
+    const bounds = L.latLngBounds(ring.path);
+    if (bounds.isValid()) setClusterFocus({ bounds, key: Date.now() });
+  };
   return (
     <section
       id="network"
@@ -727,6 +886,9 @@ export function NetworkMap({
           {layers.streets && (
             <TileBasemap key={streetAttempt} onStatus={setStreetStatus} />
           )}
+          {layers.core && (
+            <CoreLinks config={config} renderer={svgRenderer} color={p.fiber} />
+          )}
           {layers.fiber && (
             <FiberOverlays
               rings={data.rings}
@@ -764,11 +926,15 @@ export function NetworkMap({
             />
           )}
           {layers.crews && <CrewLayer data={data} config={config} />}
+          {layers.core && (
+            <CoreMarker core={config.core} onCoreClick={onCoreClick} />
+          )}
           <MapTools
             config={config}
             selected={selected}
             district={district}
             resetKey={resetKey}
+            focus={clusterFocus}
           />
         </MapContainer>
         <div className="map-top-overlay">
@@ -897,27 +1063,114 @@ export function NetworkMap({
           Select a site to inspect <span>↗</span>
         </span>
       </div>
-      <div className="ring-list" aria-label="Fibre rings">
+      <div className="ring-list" aria-label="Network topology">
         <div className="ring-list-heading">
-          <h3 className="ring-list-title">Fibre rings</h3>
-          <PanelInfoButton title="Fibre rings" compact />
+          <h3 className="ring-list-title">Network topology</h3>
+          <PanelInfoButton title="Network topology" compact />
         </div>
-        <ul>
-          {data.rings.map((r) => (
-            <li key={r.id}>
-              <span className="mono">RING {r.id}</span>
-              <span>{r.nodes.length} sites</span>
-              <span>{r.circumference_km.toFixed(1)} km</span>
-              <span>
-                {r.isolated
-                  ? "isolated"
-                  : r.cuts.length
-                    ? `${r.cuts.length} cut${r.cuts.length > 1 ? "s" : ""}`
-                    : "intact"}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <button
+          type="button"
+          className="topology-core"
+          onClick={onCoreClick}
+          title="Core — Salim Street"
+        >
+          <span className="topology-core-badge" aria-hidden="true">
+            <svg viewBox="0 0 44 44" width="28" height="28" focusable="false">
+              <polygon
+                points={hexPoints(22, 22, 19)}
+                fill="#060B18"
+                stroke="#3768F5"
+                strokeWidth="2"
+              />
+              <polygon
+                points={hexPoints(22, 22, 15.5)}
+                fill="none"
+                stroke="#36DFFF"
+                strokeWidth="1.25"
+              />
+              <g fill="#FFFFFF">
+                <rect x="15.5" y="14.6" width="13" height="3.4" rx="1.2" />
+                <rect x="15.5" y="20.3" width="13" height="3.4" rx="1.2" />
+                <rect x="15.5" y="26" width="13" height="3.4" rx="1.2" />
+              </g>
+            </svg>
+          </span>
+          <span className="topology-core-text">
+            <strong>Core</strong>
+            <span>
+              {config.core.place} · EPC:{" "}
+              {config.core.epc.map((e) => e.id).join(" · ")}
+            </span>
+          </span>
+          <span className="topology-core-sites">{config.num_nodes} sites</span>
+        </button>
+        {clusterHealth.map((cluster) => {
+          const rings = data.rings.filter((r) => r.cluster === cluster.id);
+          const pct = cluster.sites
+            ? Math.round((cluster.healthy / cluster.sites) * 100)
+            : 100;
+          const healthTone =
+            pct >= 99 ? p.healthy : pct >= 95 ? p.warning : p.critical;
+          return (
+            <div className="cluster-block" key={cluster.id}>
+              <button
+                type="button"
+                className="cluster-head"
+                onClick={() => focusCluster(cluster.id)}
+                title={`Zoom to Cluster ${cluster.id}`}
+              >
+                <strong>Cluster {cluster.id}</strong>
+                <span className="cluster-meta">
+                  {rings.length} rings · {cluster.sites} sites
+                </span>
+                <span
+                  className="cluster-health"
+                  style={tone(healthTone)}
+                >{`${pct}% healthy`}</span>
+              </button>
+              <ul>
+                {rings.map((r) => {
+                  const cuts = r.cuts.length;
+                  const faulted = cuts > 0;
+                  const affected = ringAffected.get(r.id) ?? 0;
+                  const status = !faulted
+                    ? "intact"
+                    : `${r.isolated ? "isolated" : `${cuts} cut${cuts > 1 ? "s" : ""}`} · ${affected} hit`;
+                  const row = (
+                    <>
+                      <span className="mono">RING {r.id}</span>
+                      <span>{r.nodes.length} sites</span>
+                      <span>{r.circumference_km.toFixed(1)} km</span>
+                      <span
+                        className={
+                          faulted ? "ring-status fault" : "ring-status"
+                        }
+                      >
+                        {status}
+                      </span>
+                    </>
+                  );
+                  return (
+                    <li key={r.id} className={faulted ? "fault" : undefined}>
+                      {faulted ? (
+                        <button
+                          type="button"
+                          className="ring-row ring-row-button"
+                          onClick={() => focusRing(r)}
+                          title={`Zoom to Ring ${r.id} — ${cuts} open cut${cuts > 1 ? "s" : ""}, ${affected} affected site${affected === 1 ? "" : "s"}`}
+                        >
+                          {row}
+                        </button>
+                      ) : (
+                        <span className="ring-row">{row}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

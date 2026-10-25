@@ -274,7 +274,7 @@ The implementation uses hidden simulator state beyond telemetry:
 - A successfully applied tier-1 action immediately marks an actual gradual soft episode pre-empted and cancels it; success is not established by a physical trajectory under mitigation.
 - `_standby_horizon()` uses the exact hidden `onset_tick` to set crew waiting duration.
 
-Ground truth is appropriate for scoring and simulating physical outcomes. It should not silently decide whether an imperfect controller incurs the consequences of its chosen action. As written, false-positive tier-1 harm is suppressed, biasing the autonomous comparison favorably.
+Ground truth is appropriate for scoring and simulating physical outcomes. It should not silently decide whether an imperfect agent incurs the consequences of its chosen action. As written, false-positive tier-1 harm is suppressed, biasing the autonomous comparison favorably.
 
 The study's arms also differ in more than human latency:
 
@@ -492,7 +492,7 @@ The existing `docs/PROJECT_NOTES.md` is a useful orientation document, but its s
 | P1 | Global warning state, same-tick updates, restart ambiguity | `api/main.py:183,258,313` | Independent revision cursor, run ID, replay-safe logs |
 | P1 | Non-uniform “random” helper breaks grid probabilities | `engine/noise.py:32`, `engine/physics.py:136` | Correct uniform stream; regenerate downstream artifacts |
 | P1 | Oracle test-label threshold optimization and uncalibrated live cutoff | `ai/oracle.py:141,167`, `engine/commander.py:57` | Separate train/validation/test, probability calibration, live-policy evaluation |
-| P1 | Hidden truth gates tier-1 actions | `engine/engine.py:548,684` | Separate controller observables from world truth; charge false actions |
+| P1 | Hidden truth gates tier-1 actions | `engine/engine.py:548,684` | Separate agent observables from world truth; charge false actions |
 | P1 | HTML injection and unauthenticated shared controls | `api/main.py:333`, `web/app.js:188` | Render untrusted text safely; restrict access/origins |
 | P1 | Deployment without tests; deploy on PR events | `.github/workflows/ci.yml` | Test gate plus main-push-only deployment |
 | P2 | Live rules fallback not wired; hidden scoring failures | `ai/serve.py:235,267,279,335` | Explicit tested ML/partial/rules/off states |
@@ -512,7 +512,7 @@ The existing `docs/PROJECT_NOTES.md` is a useful orientation document, but its s
 2. **Repair the live contract:** delta completeness, warning replay, same-tick writes, run resets, UI error handling.
 3. **Harden exposure:** HTML text rendering, controls/access policy, CORS, Docker exclusions, CI gates.
 4. **Correct the simulation:** uniform probabilities, ring paths, sustained isolation, battery edge states, ledger resolution, horizon handling.
-5. **Rebuild evaluation honestly:** shared observations, validation/calibration split, controller/world separation, corrected metrics and paired experiments.
+5. **Rebuild evaluation honestly:** shared observations, validation/calibration split, agent/world separation, corrected metrics and paired experiments.
 6. **Regenerate data/models/results:** only after simulation semantics stabilize; update headline claims from the new artifacts.
 7. **Then expand the product:** real sidebar views, history, richer policy controls, or a React migration if maintainability warrants it.
 
@@ -562,6 +562,6 @@ These are recommendations, not changes applied during this review.
 
 ## Final conclusion
 
-The project has a useful, understandable architecture and enough existing tests to support careful evolution. The biggest risks are not framework choice or visual polish: they are **state-delivery correctness, stochastic-model correctness, separation of controller knowledge from simulator truth, and validation of the actual deployed AI policy**.
+The project has a useful, understandable architecture and enough existing tests to support careful evolution. The biggest risks are not framework choice or visual polish: they are **state-delivery correctness, stochastic-model correctness, separation of agent knowledge from simulator truth, and validation of the actual deployed AI policy**.
 
 Preserve the layered design. Correct those foundations in small tested steps. Then build the requested new features on a baseline whose live behavior and published evidence agree.

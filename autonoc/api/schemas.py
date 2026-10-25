@@ -20,6 +20,7 @@ class NodeModel(BaseModel):
     lon: float = Field(ge=C.LON_MIN - 0.01, le=C.LON_MAX + 0.01)
     agg: int = Field(ge=0, le=9)
     ring: int = Field(ge=-1, le=C.NUM_RINGS)
+    cluster: int = Field(ge=1, le=3)      # derived from the ring, never set
     gen: int = Field(ge=0, le=2)
     critical: bool
     status: int = Field(ge=0, le=5)
@@ -59,6 +60,7 @@ class TeamModel(BaseModel):
     id: int = Field(ge=1, le=C.NUM_TEAMS)
     name: str
     skill: Literal["RF", "POWER", "GENERAL"]
+    cluster: int = Field(default=1, ge=1, le=3)   # home cluster of the crew
     lat: float
     lon: float
     state: Literal["IDLE", "EN_ROUTE", "STANDBY", "REPAIRING", "RETURNING"]
@@ -117,6 +119,7 @@ class LogModel(BaseModel):
 
 class RingModel(BaseModel):
     id: int
+    cluster: int = Field(default=1, ge=1, le=3)
     nodes: list[str]
     path: list[list[float]]
     circumference_km: float
@@ -271,8 +274,10 @@ class ConfigResponse(BaseModel):
     map_center: list[float]
     map_zoom: int
     bounds: dict[str, float]
-    epc_primary: dict
-    epc_backup: dict
+    # LTE core: one node above the clusters, with its EPC elements and the
+    # static cluster/ring/site hierarchy. Live cluster health is derived by
+    # the client from the node stream.
+    core: dict
     depot: dict
     agg_sites: list[dict]
     num_nodes: int

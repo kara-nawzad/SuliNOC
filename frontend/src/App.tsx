@@ -51,6 +51,7 @@ type Dialog =
   | "inject"
   | "activity"
   | "fleet"
+  | "core"
   | "search"
   | "settings"
   | "about"
@@ -515,6 +516,7 @@ function Console({
                 data={data}
                 selectedId={selected}
                 onSelect={selectNode}
+                onCoreClick={() => setDialog("core")}
               />
               <AlertsSidebar
                 key={data.run_id}
@@ -599,6 +601,9 @@ function Console({
                     <Truck size={18} />
                     <strong>{team.name}</strong>
                     <span>{team.skill}</span>
+                    <span className="fleet-cluster">
+                      Cluster {team.cluster}
+                    </span>
                   </div>
                   <span
                     className="fleet-state"
@@ -617,6 +622,61 @@ function Console({
                 </article>
               ))}
             </div>
+          </Modal>
+        )}
+        {dialog === "core" && (
+          <Modal title="Core" onClose={closeDialog}>
+            <p className="dialog-intro">
+              {config.core.place} · {config.core.status_label}. The Core
+              aggregates all three clusters and is not one of the{" "}
+              {config.num_nodes} sites.
+            </p>
+            <div className="core-epc">
+              {config.core.epc.map((el) => (
+                <div key={el.id} className="core-epc-card">
+                  <span className="mono">{el.id}</span>
+                  <span>{el.name}</span>
+                </div>
+              ))}
+            </div>
+            <div className="core-clusters">
+              {config.core.clusters.map((cluster) => {
+                const nodes = data.nodes.filter(
+                  (n) => n.cluster === cluster.id,
+                );
+                const healthy = nodes.filter(
+                  (n) => n.status === config.presentation.healthy_status,
+                ).length;
+                const pct = nodes.length
+                  ? Math.round((healthy / nodes.length) * 100)
+                  : 100;
+                return (
+                  <div key={cluster.id} className="core-cluster-card">
+                    <strong>{cluster.name}</strong>
+                    <span className="core-cluster-meta">
+                      {cluster.rings.length} rings ·{" "}
+                      {nodes.length || cluster.sites} sites
+                    </span>
+                    <span
+                      className="core-cluster-health"
+                      style={{
+                        color:
+                          pct >= 99
+                            ? p.healthy
+                            : pct >= 95
+                              ? p.warning
+                              : p.critical,
+                      }}
+                    >
+                      {pct}% healthy
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="dialog-footnote">
+              Simulated network · Core status is not part of the fault model.
+            </p>
           </Modal>
         )}
         {dialog === "search" && (

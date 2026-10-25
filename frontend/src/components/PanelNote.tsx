@@ -69,9 +69,9 @@ const NOTES: { key: string; title: string; text: string }[] = [
     text: "The live status of every tower: state, radio load, signal quality and fibre ring. Select a row to show it on the map.",
   },
   {
-    key: "fibre rings",
-    title: "Fibre rings",
-    text: "Loop routes that connect sites. A ring with a cut can still be served from its other side.",
+    key: "network topology",
+    title: "Network topology",
+    text: "The network's shape: one Core (EPC), three clusters, and the fibre rings that carry each cluster's sites. Select a cluster to zoom the map to it; a ring with a cut shows the sites it affects.",
   },
   {
     key: "maintenance",

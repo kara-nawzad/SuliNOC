@@ -13,6 +13,21 @@ export interface GaugeSpec {
   bad: number;
   lower_bad: boolean;
 }
+/** LTE core: one node above the clusters with its EPC elements. */
+export interface CoreInfo {
+  name: string;
+  place: string;
+  lat: number;
+  lon: number;
+  status_label: string;
+  epc: { id: string; name: string }[];
+  clusters: {
+    id: number;
+    name: string;
+    rings: number[];
+    sites: number;
+  }[];
+}
 export interface Config {
   status_names: Record<number, string>;
   status_colors: Record<number, string>;
@@ -31,14 +46,14 @@ export interface Config {
     lon_min: number;
     lon_max: number;
   };
-  epc_primary: { name: string; lat: number; lon: number; backhaul: string };
-  epc_backup: { name: string; lat: number; lon: number; backhaul: string };
+  core: CoreInfo;
   depot: { lat: number; lon: number };
   agg_sites: {
     id: number;
     name: string;
     lat: number;
     lon: number;
+    cluster: number;
     nodes: number;
     clutter: number;
     color: string;
@@ -80,6 +95,7 @@ export interface NodeData {
   lon: number;
   agg: number;
   ring: number;
+  cluster: number;
   gen: number;
   critical: boolean;
   status: number;
@@ -110,6 +126,7 @@ export interface Team {
   id: number;
   name: string;
   skill: "RF" | "POWER" | "GENERAL";
+  cluster: number;
   lat: number;
   lon: number;
   state: FleetState;
@@ -125,6 +142,7 @@ export interface District {
   name: string;
   lat: number;
   lon: number;
+  cluster: number;
   color: string;
   node_count: number;
   health: number;
@@ -142,6 +160,7 @@ export interface Cut {
 }
 export interface Ring {
   id: number;
+  cluster: number;
   nodes: string[];
   path: LatLng[];
   circumference_km: number;
@@ -240,6 +259,8 @@ export interface Dashboard {
   top_cells: {
     node_id: string;
     district: string;
+    cluster: number;
+    ring: number;
     prb: number;
     cqi: number;
     status: number;

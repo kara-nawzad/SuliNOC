@@ -69,7 +69,7 @@ polish.
 3. **Tier-1 pre-emption silently consults simulator ground truth.**
    `engine/engine.py:568-578` — before a tier-1 mitigation is applied, the
    engine reads the ledger's actual fault kind and only proceeds for
-   congestion/overheat. A real controller cannot do this; the autonomous arm of
+   congestion/overheat. A real field agent cannot do this; the autonomous arm of
    the study therefore never pays for false-positive tier-1 actions, making it
    look better than a telemetry-only policy would.
    **Change:** let tier-1 actions fire on the Doctor's classification alone,
@@ -195,7 +195,7 @@ rather than editing claims along the way.
 | 1. Noise uniformity (P1) | **done** | true U(0,1) pool in `NoisePool`; statistical uniformity + dropout-rate tests in `tests/test_power_fleet.py` |
 | "Site power & fleet" donut (user-reported) | **done** | root cause was item 1 plus an architecture-blind power machine: Type C Goizha is now off-grid Solar/Battery/DG, A/B ride Grid→Battery→DG with Solar only where PV exists; the DG latches (`dg_running`) instead of re-rolling the ATS coin around the crank threshold; donut contract tests on both sides (`test_power_fleet.py`, `AnalyticsRow.test.tsx`) |
 | 2. Oracle thresholds/calibration (P1) | **code done** | chronological validation holdout picks thresholds; Platt calibration fitted there and consumed by the live Commander when present; artifacts need regeneration to carry it |
-| 3. Truth-gate (P1) | **done** | `PREEMPTABLE_BY_TIER1` is world physics in `mark_preempted`; the controller commits on its verdict. Tier-1 attempts settle as 60-min **bets** against real failures (the tier-2 standby symmetry): a failure inside the Oracle horizon is a true positive even when the mitigation could not stop it, and only an uneventful window is a false dispatch. Tests pin all three settlements |
+| 3. Truth-gate (P1) | **done** | `PREEMPTABLE_BY_TIER1` is world physics in `mark_preempted`; the agent commits on its verdict. Tier-1 attempts settle as 60-min **bets** against real failures (the tier-2 standby symmetry): a failure inside the Oracle horizon is a true positive even when the mitigation could not stop it, and only an uneventful window is a false dispatch. Tests pin all three settlements |
 | 4. CI gate (P1) | **done** | `.github/workflows/ci.yml` = test job + main-only deploy (push accepted; the old workflow-write blocker is gone) |
 | 5. CORS/controls (P1) | **done** | same-origin default, `AUTONOC_ALLOWED_ORIGINS` escape hatch; per-session isolation already bounds control abuse |
 | 6. Legacy HTML sink (P1) | **done** | `web/app.js` FM feed renders messages with `textContent` |

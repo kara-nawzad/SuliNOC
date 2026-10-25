@@ -8525,3 +8525,271 @@ dialog.dialog::backdrop,
     flex-wrap: wrap;
   }
 }
+
+/* =====================================================================
+   LTE topology: Core marker + topology panel
+   Hierarchy: Core (EPC) -> Cluster 1/2/3 -> fiber rings -> eNodeB sites.
+   Core badge palette only: midnight #060B18 fill, cyan #36DFFF inner ring,
+   cobalt #3768F5 outer ring, white glyph — no other accents.
+   ===================================================================== */
+
+/* --- Core marker on the map ----------------------------------------- */
+.core-marker {
+  background: none !important;
+  border: 0 !important;
+}
+.core-marker svg {
+  display: block;
+  /* soft static cyan glow */
+  filter: drop-shadow(0 0 6px rgba(54, 223, 255, 0.45));
+}
+/* at most one slow light pulse: the cyan inner ring breathes */
+.core-marker .core-pulse {
+  animation: core-pulse 4.5s ease-in-out infinite;
+}
+@keyframes core-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+/* paused while the user pans/zooms or the tab is hidden (class toggled by
+   MapTools); prefers-reduced-motion is covered by the global media block */
+.map-interacting .core-pulse,
+.map-tab-hidden .core-pulse {
+  animation-play-state: paused;
+}
+
+/* --- Topology panel: Core row ---------------------------------------- */
+.topology-core {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: 10px var(--space-3);
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  text-align: left;
+}
+.topology-core:hover {
+  border-color: var(--link);
+}
+.topology-core-badge {
+  display: inline-flex;
+  justify-content: center;
+}
+.topology-core-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.topology-core-text strong {
+  font-size: var(--fs-emphasis);
+  color: var(--tx);
+}
+.topology-core-text span {
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+.topology-core-sites {
+  font-size: var(--fs-caption);
+  color: var(--t2);
+  white-space: nowrap;
+}
+
+/* --- Topology panel: cluster blocks ---------------------------------- */
+.cluster-block {
+  margin-top: var(--space-3);
+}
+.cluster-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  width: 100%;
+  padding: 8px 0 6px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.cluster-head strong {
+  font-size: var(--fs-emphasis);
+  color: var(--tx);
+}
+.cluster-meta {
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+.cluster-health {
+  font-size: var(--fs-caption);
+  padding: 2px 8px;
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.cluster-head:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+/* --- Topology panel: ring rows (grid moves onto the row wrapper) ----- */
+.ring-list .ring-row {
+  display: grid;
+  grid-template-columns: 70px 78px 64px minmax(56px, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  width: 100%;
+  text-align: left;
+}
+.ring-row > span:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+.ring-row-button {
+  background: none;
+  border: 0;
+  padding: 8px 0;
+}
+.ring-row-button:hover .mono {
+  text-decoration: underline;
+}
+.ring-row-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+.ring-list li.fault .ring-status {
+  color: var(--crit);
+  font-weight: 600;
+}
+.ring-list li.fault {
+  border-left: 2px solid var(--crit);
+  padding-left: var(--space-2);
+}
+
+/* Phones: keep every tap target comfortably above the 44 px minimum. */
+@media (max-width: 767px) {
+  .cluster-head {
+    padding: 12px 0 10px;
+  }
+  .ring-row-button {
+    padding: 12px 0;
+  }
+  .topology-core {
+    padding: 12px var(--space-3);
+  }
+}
+
+/* --- Core modal (EPC elements + cluster summaries) -------------------- */
+.core-epc {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+.core-epc-card {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+.core-epc-card .mono {
+  color: var(--link);
+  font-size: var(--fs-emphasis);
+}
+.core-epc-card span:last-child {
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+.core-clusters {
+  display: grid;
+  gap: var(--space-3);
+}
+.core-cluster-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-3);
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+.core-cluster-card strong {
+  font-size: var(--fs-emphasis);
+  color: var(--tx);
+}
+.core-cluster-meta {
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+.core-cluster-health {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dialog-footnote {
+  margin: var(--space-4) 0 0;
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+@media (max-width: 767px) {
+  .core-epc {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .core-cluster-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .core-cluster-meta {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- Fleet card: home-cluster chip ------------------------------------ */
+.fleet-cluster {
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-caption);
+  color: var(--t2);
+  white-space: nowrap;
+}
+
+/* --- Towers table: cluster column (sixth) + cluster filter select ------ */
+.app-shell .tower-row {
+  grid-template-columns: 1.1fr 1.3fr 0.7fr 0.55fr 0.55fr 0.95fr;
+}
+.app-shell .towers-cluster {
+  height: var(--control-h);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--sn-ln) !important;
+  border-radius: var(--radius-sm) !important;
+  background: #ffffff !important;
+  color: var(--sn-t2);
+  font-size: var(--fs-body);
+}
+.app-shell .towers-cluster:focus-visible {
+  border-color: var(--sn-link);
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+@media (max-width: 600px) {
+  /* six columns need a little more room when the table scrolls sideways */
+  .app-shell .tower-row {
+    min-width: 520px;
+  }
+  .app-shell .towers-cluster {
+    min-height: 46px;
+  }
+}
