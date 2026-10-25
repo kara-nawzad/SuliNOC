@@ -174,7 +174,7 @@ class NOCEngine:
         window settles the bet as a true positive; an uneventful expiry
         charges it exactly like an expired standby. This is the tier-2
         accounting symmetry, settled by world events, never by peeking at
-        the ledger from the controller path (audit P1, 2026-10-15).
+        the ledger from the agent's own path (audit P1, 2026-10-15).
         """
         if not self._action_bets:
             return
@@ -441,7 +441,7 @@ class NOCEngine:
         for inc in incidents:
             if not free:
                 break
-            team = D.best_team(inc, free, self.tick)
+            team = D.best_team(inc, free, self.tick, self.net)
             free.remove(team)
             team.dispatch_to(inc.target_id, inc.target_lat, inc.target_lon, self.tick)
             if inc.kind == "FIBER_CUT":
@@ -617,7 +617,7 @@ class NOCEngine:
                 if verdict.get("_resolved"):
                     continue          # this verdict already acted (or was charged)
                 verdict["_resolved"] = True
-                # Controller knowledge stops at its own verdict: the cheap
+                # The agent's knowledge stops at its own verdict: the cheap
                 # reversible action is committed on the Doctor's guess alone.
                 # Whether that action CAN stop the pending fault is world
                 # physics (CM.mark_preempted refuses crew-worthy kinds), and
@@ -731,7 +731,7 @@ class NOCEngine:
             root_cause=f"predicted {C.STATUS_NAMES.get(cls, 'fault')} "
                        f"(P={p_fail:.2f})",
         )
-        team = D.best_team(inc, free, self.tick)
+        team = D.best_team(inc, free, self.tick, self.net)
         team.dispatch_to(node.node_id, node.lat, node.lon, self.tick)
         team.incident = inc
         node.tech_dispatched = True

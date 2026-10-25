@@ -170,6 +170,23 @@ export function CrewLayer({
     const ids = new Set<number>();
     for (const team of data.teams) {
       ids.add(team.id);
+      // Depot visibility rule: the Core (Salim Street) is the crew depot and
+      // idle crews are not drawn. A crew appears only when dispatched, stays
+      // visible while on site, and disappears again once it has returned to
+      // the Core. Motion, icon and tooltip are unchanged — this only decides
+      // whether a marker exists at all.
+      if (team.available) {
+        const parked = markers.current.get(team.id);
+        if (parked) {
+          parked.remove();
+          markers.current.delete(team.id);
+          movingCrews.current.delete(team.id);
+          truePositions.current.delete(team.id);
+          repairTracks.current.delete(team.id);
+          motion.remove(team.id);
+        }
+        continue;
+      }
       let marker = markers.current.get(team.id);
       if (!marker) {
         const vehicle = document.createElement("div");
@@ -203,7 +220,7 @@ export function CrewLayer({
         { route: track.route, progress: track.progress, moving: track.moving },
         now,
       );
-      const text = `${team.name} · ${team.state.replaceAll("_", " ")} · ETA ${team.eta} ticks`;
+      const text = `Crew ${team.id}, Cluster ${team.cluster} · ${team.name} · ${team.state.replaceAll("_", " ")} · ETA ${team.eta} ticks`;
       if (marker.options.title !== text) {
         const content = document.createElement("span");
         content.textContent = text;

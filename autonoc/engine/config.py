@@ -21,12 +21,50 @@ LON_MAX: Final = 45.485
 
 EARTH_RADIUS_M: Final = 6_371_000.0
 
-# Dual core: metro-redundant, 1.70 km apart. NOT geo-redundant (30-100 km) —
-# an operator in a city this size would not build a core 50 km away.
-EPC_PRIMARY: Final = ("SPU University", 35.5500, 45.4200, "fiber")
-EPC_BACKUP: Final = ("Grand Millennium", 35.5602, 45.4340, "microwave")
-DEPOT_LAT: Final = 35.5500
-DEPOT_LON: Final = 45.4200
+# ---------------------------------------------------------------- LTE core
+# One Evolved Packet Core node, named exactly "Core", on Salim Street — the
+# anchor the ROADS path and AGG_SITES already use. The dual EPC sites of the
+# earlier design (SPU University / Grand Millennium) are consolidated into
+# this single Core; nothing in the engine ever depended on their positions.
+CORE_NAME: Final = "Core"
+CORE_LAT: Final = 35.5565          # Salim Street (see ROADS / AGG_SITES id 2)
+CORE_LON: Final = 45.4295
+CORE_PLACE: Final = "Salim Street"
+# EPC elements shown in the Core detail panel. The simulation has no core
+# failure model, so these are presented as simulated, always-on elements.
+CORE_EPC: Final = (
+    ("MME", "Mobility Management Entity"),
+    ("S-GW", "Serving Gateway"),
+    ("P-GW", "PDN Gateway"),
+    ("HSS", "Home Subscriber Server"),
+)
+
+# ---------------------------------------------------------------- clusters
+# LTE aggregation hierarchy above the fiber rings: Core -> Cluster -> ring ->
+# eNodeB site. Ring i is seeded at AGG_SITES[i] (network._build_rings), so a
+# ring's anchor point picks its cluster. The 4/3/3 split below is the
+# geographic optimum: it minimises total within-cluster pairwise distance
+# between ring anchors (~45.8 km; computed exhaustively over every 4/3/3
+# partition). Cluster 1 = northern belt, Cluster 2 = city core, Cluster 3 =
+# western belt.
+CLUSTER_NAMES: Final = ("Cluster 1", "Cluster 2", "Cluster 3")
+RING_CLUSTERS: Final = {
+    0: 1,   # Goizha Mountain  — north
+    3: 1,   # University       — north-west
+    4: 1,   # Sarchinar        — north-west
+    1: 2,   # Grand Millennium — city core
+    2: 2,   # Salim Street     — city core
+    7: 2,   # Hawara Barza     — city core
+    9: 2,   # Rizgari          — south-east core
+    5: 3,   # Bakrajo          — south-west
+    6: 3,   # Tasluja Road     — west
+    8: 3,   # Airport          — west
+}
+
+# The crew depot is the Core itself (Salim Street): idle crews are based
+# there and appear on the map only while dispatched, returning here after.
+DEPOT_LAT: Final = CORE_LAT
+DEPOT_LON: Final = CORE_LON
 
 # ---------------------------------------------------------------- time
 TICK_MINUTES: Final = 5
@@ -78,6 +116,13 @@ TEAM_NAMES: Final = (
 # structurally identical to v1's dispatch bug.
 TEAM_SKILLS: Final = ("RF", "RF", "RF", "POWER", "POWER", "POWER",
                       "GENERAL", "GENERAL", "GENERAL", "GENERAL")
+# Field-crew home clusters (index i is crew i+1): every cluster keeps one RF
+# and one POWER specialist; the remaining generalists follow the cluster site
+# share (82 / 140 / 78 sites). Dispatch prefers a crew whose home cluster
+# matches the affected site's cluster, falling back to the nearest crew.
+TEAM_HOME_CLUSTER: Final = (1, 2, 3, 1, 2, 3, 1, 2, 3, 2)
+assert len(TEAM_HOME_CLUSTER) == NUM_TEAMS
+assert sorted(TEAM_HOME_CLUSTER) == [1] * 3 + [2] * 4 + [3] * 3
 SKILL_MULT_MATCHED: Final = 1.0
 SKILL_MULT_GENERAL: Final = 1.2
 SKILL_MULT_MISMATCH: Final = 1.5
@@ -342,6 +387,8 @@ STUCK_WATCHDOG_TICKS: Final = 120
 # real-world 0.03-0.1/day — roughly 300x too many. The demo gets its cut from
 # a cast seed instead.
 NUM_RINGS: Final = 10
+assert set(RING_CLUSTERS) == set(range(NUM_RINGS))
+assert sorted(RING_CLUSTERS.values()) == [1, 1, 1, 2, 2, 2, 2, 3, 3, 3]
 FIBER_CUT_CHANCE_PER_TICK: Final = 0.08 / TICKS_PER_DAY
 RING_MAX_CIRCUMFERENCE_KM: Final = 12.0
 RING_MAX_MEMBER_SEPARATION_KM: Final = 6.0

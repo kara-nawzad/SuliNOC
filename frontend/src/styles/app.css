@@ -842,22 +842,6 @@ h1 {
 .network-tooltip:before {
   display: none !important;
 }
-.district-label {
-  background: #0a121c99 !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  color: #93a7b4 !important;
-  font-size: var(--fs-small) !important;
-  letter-spacing: 0.06em !important;
-  border-radius: var(--radius-xs) !important;
-  padding: var(--space-1) var(--space-2) !important;
-  font-weight: 500;
-  text-shadow: 0 2px 5px #000;
-  pointer-events: none;
-}
-.district-label:before {
-  display: none !important;
-}
 .fiber-flow {
   animation: fiberFlow 18s linear infinite;
   /* Dash offset changes every frame; avoid rerasterizing a blur per ring. */
@@ -3650,7 +3634,6 @@ input[type="text"] {
 .map-location,
 .weather-chip,
 .play-controls,
-.leaflet-tooltip.district-label,
 .leaflet-control-scale-line,
 .leaflet-control-attribution,
 .skip-link {
@@ -3662,14 +3645,6 @@ input[type="text"] {
 }
 .leaflet-control-attribution a {
   color: #1479c4 !important;
-}
-.leaflet-tooltip.district-label {
-  font-weight: 600;
-  font-size: var(--fs-caption);
-}
-.leaflet-tooltip.district-label::before {
-  border-top-color: rgba(255, 255, 255, 0.94);
-  border-bottom-color: rgba(255, 255, 255, 0.94);
 }
 
 /* Tower table header was a dark navy band. */
@@ -4148,9 +4123,6 @@ button.wordmark,
     font-size: var(--fs-caption) !important;
   }
   .network-tooltip {
-    font-size: var(--fs-caption) !important;
-  }
-  .district-label {
     font-size: var(--fs-caption) !important;
   }
   .layer-menu label {
@@ -4682,9 +4654,6 @@ button.wordmark,
     font-size: var(--fs-caption) !important;
   }
   .network-tooltip {
-    font-size: var(--fs-caption) !important;
-  }
-  .district-label {
     font-size: var(--fs-caption) !important;
   }
   .layer-menu label {
@@ -5701,9 +5670,6 @@ body {
 }
 /* chips keep the tighter step inside their own background (severity is set
    further down, next to its type) */
-.app-shell .district-label {
-  padding: var(--space-1) var(--space-2);
-}
 /* a chip keeps its intrinsic width when it shares a row with a wrapping title */
 .app-shell .severity,
 .app-shell .count-badge {
@@ -5921,10 +5887,6 @@ body {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-2);
   font-size: var(--fs-body) !important;
-}
-.app-shell .district-label {
-  font-size: var(--fs-small) !important;
-  font-weight: 600;
 }
 /* dialogs: native <dialog> loses its auto margin under the CSS reset, so it sat in the top-left corner */
 dialog {
@@ -7787,19 +7749,153 @@ dialog.dialog::backdrop,
 .wave-message--user .wave-message-content p {
   color: #fff;
 }
-/* The newest assistant reply reveals line by line instead of popping in as
-   one block. Lines live in normal flow (they reserve their height), only the
-   opacity/offset animate. */
-.wave-line {
-  display: inline-block;
-  opacity: 0;
-  transform: translateY(4px);
-  animation: wave-line-in 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+/* Assistant replies render as markdown inside the bubble: modest headings,
+ * kit-tinted quotes and code, and GFM tables that scroll horizontally in a
+ * wrapper so they never overflow the bubble or the phone layout. */
+.wave-md {
+  color: inherit;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
 }
-@keyframes wave-line-in {
-  to {
+.wave-md > :first-child {
+  margin-top: 0;
+}
+.wave-md > :last-child {
+  margin-bottom: 0;
+}
+.wave-md p {
+  margin: 0 0 8px;
+  color: inherit;
+}
+.wave-md h1,
+.wave-md h2,
+.wave-md h3,
+.wave-md h4,
+.wave-md h5,
+.wave-md h6 {
+  margin: 12px 0 6px;
+  font-family: inherit;
+  font-weight: 650;
+  line-height: var(--lh-title);
+  color: inherit;
+}
+.wave-md h1 {
+  font-size: 15px;
+}
+.wave-md h2 {
+  font-size: 14px;
+}
+.wave-md h3,
+.wave-md h4,
+.wave-md h5,
+.wave-md h6 {
+  font-size: 13px;
+}
+.wave-md ul,
+.wave-md ol {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  display: grid;
+  gap: 2px;
+}
+.wave-md li::marker {
+  color: var(--sn-link, #1479c4);
+}
+.wave-md blockquote {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--sn-link, #1479c4);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--sn-link-wash, #d5f1f7);
+}
+.wave-md blockquote p {
+  margin: 0;
+}
+.wave-md code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border: 1px solid var(--sn-line, rgba(16, 38, 92, 0.1));
+  border-radius: var(--radius-xs);
+  background: #e8f0fb;
+}
+.wave-md pre {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #0e1c33;
+  color: #d9e8fb;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.wave-md pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 12px;
+}
+.wave-md hr {
+  margin: 10px 0;
+  border: 0;
+  border-top: 1px solid var(--sn-ln-soft, #c4d7ef);
+}
+.wave-md a {
+  color: var(--sn-link, #1479c4);
+  text-decoration: underline;
+}
+.wave-md img {
+  max-width: 100%;
+}
+.wave-md-tablewrap {
+  margin: 0 0 8px;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.wave-md table {
+  border-collapse: collapse;
+  font-size: var(--fs-caption);
+  line-height: 1.35;
+}
+.wave-md th,
+.wave-md td {
+  border: 1px solid var(--sn-ln-soft, #c4d7ef);
+  padding: 5px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+.wave-md th {
+  background: var(--sn-s1, #eaf3fe);
+  color: var(--sn-tx, #10265c);
+  font-weight: 600;
+}
+.wave-md tbody tr:nth-child(even) {
+  background: #f2f7fd;
+}
+/* Typing replies: a subtle blinking cursor rides the end of the last block,
+ * and tapping the bubble skips straight to the full text. */
+.wave-message.is-typing {
+  cursor: pointer;
+}
+.wave-message.is-typing .wave-md > :last-child::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 0.95em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  border-radius: 1px;
+  background: currentColor;
+  animation: wave-caret-blink 1.1s steps(1, end) infinite;
+}
+@keyframes wave-caret-blink {
+  0%,
+  100% {
     opacity: 1;
-    transform: none;
+  }
+  50% {
+    opacity: 0;
   }
 }
 .wave-message.is-error .wave-message-content {
@@ -8235,7 +8331,7 @@ dialog.dialog::backdrop,
   .wave-thinking-dots i,
   .wave-panel,
   .wave-message,
-  .wave-line,
+  .wave-message.is-typing .wave-md > :last-child::after,
   .wave-launcher,
   .wave-greeting,
   .wave-error-actions button,
@@ -8244,12 +8340,6 @@ dialog.dialog::backdrop,
     animation: none !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-  /* Reduced motion kills the reveal animation, so its starting opacity must
-     go too or the text would stay invisible. */
-  .wave-line {
-    opacity: 1;
-    transform: none;
   }
 }
 
@@ -8523,5 +8613,359 @@ dialog.dialog::backdrop,
   .app-shell .policy-foot,
   .app-shell .dialog-actions {
     flex-wrap: wrap;
+  }
+}
+
+/* =====================================================================
+   LTE topology: Core marker + topology panel
+   Hierarchy: Core (EPC) -> Cluster 1/2/3 -> fiber rings -> eNodeB sites.
+   Core badge palette only: midnight #060B18 fill, cyan #36DFFF inner ring,
+   cobalt #3768F5 outer ring, white glyph — no other accents.
+   ===================================================================== */
+
+/* --- Core marker on the map ----------------------------------------- */
+.core-marker {
+  background: none !important;
+  border: 0 !important;
+}
+.core-marker svg {
+  display: block;
+  /* soft static cyan glow */
+  filter: drop-shadow(0 0 6px rgba(54, 223, 255, 0.45));
+}
+/* at most one slow light pulse: the cyan inner ring breathes */
+.core-marker .core-pulse {
+  animation: core-pulse 4.5s ease-in-out infinite;
+}
+@keyframes core-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+/* paused while the user pans/zooms or the tab is hidden (class toggled by
+   MapTools); prefers-reduced-motion is covered by the global media block */
+.map-interacting .core-pulse,
+.map-tab-hidden .core-pulse {
+  animation-play-state: paused;
+}
+
+/* --- Topology panel: Core row ---------------------------------------- */
+.topology-core {
+  display: grid !important;
+  grid-template-columns: 32px minmax(0, 1fr) auto !important;
+  gap: var(--space-3) !important;
+  align-items: center !important;
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: 10px var(--space-3);
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  text-align: left;
+}
+.topology-core:hover {
+  border-color: var(--link);
+}
+.topology-core-badge {
+  display: inline-flex;
+  justify-content: center;
+}
+.topology-core-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.topology-core-text strong {
+  font-size: var(--fs-emphasis);
+  color: var(--tx);
+}
+.topology-core-text span {
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+.topology-core-sites {
+  font-size: var(--fs-caption);
+  color: var(--t2);
+  white-space: nowrap;
+}
+
+/* --- Topology panel: cluster blocks ---------------------------------- */
+.cluster-block {
+  margin-top: var(--space-3);
+}
+/* The light skin's global button rule (white card + border, very high
+   specificity) also styles this button. Keep the three-column grid and give
+   the card real horizontal padding so the health chip never touches its
+   edge; the kit's own hover/focus behaviour is welcome here. */
+.app-shell .cluster-head {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: var(--space-3) !important;
+  align-items: baseline !important;
+  width: 100%;
+  padding: 10px var(--space-3) 9px !important;
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+.cluster-head strong {
+  font-size: var(--fs-emphasis);
+  color: var(--tx);
+}
+.cluster-meta {
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+/* Health chip: tinted by the inline --tone (blue when healthy, amber when
+   degraded, red when critical) — the same recipe the kit's other chips use. */
+.cluster-health {
+  font-size: var(--fs-caption);
+  padding: 2px 8px;
+  color: var(--tone);
+  border: 1px solid color-mix(in srgb, var(--tone) 28%, transparent);
+  background: color-mix(in srgb, var(--tone) 9%, transparent);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+/* The cluster whose Core links are shown on the map. */
+.app-shell .cluster-head.selected {
+  background: var(--sn-link-wash) !important;
+  border-color: var(--sn-link) !important;
+}
+.app-shell .cluster-head.selected strong {
+  color: var(--sn-link);
+}
+
+/* --- Topology panel: ring rows ---------------------------------------
+   The row wrapper (a button for faulted rings, a span otherwise) is laid
+   out with display: contents, so the list item's own four-column grid —
+   the one the light skin asserts with !important — positions the cells
+   exactly as it did before the wrapper existed. */
+.app-shell .ring-list .ring-row {
+  display: contents;
+}
+.app-shell .ring-list .ring-row > span:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+/* Faulted ring rows are buttons: strip the global white-card chrome (the
+   row already carries the list's rules) and keep the pointer + underline. */
+.app-shell .ring-list .ring-row-button {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.app-shell .ring-list .ring-row-button:hover .mono {
+  text-decoration: underline;
+}
+.app-shell .ring-list li:focus-within {
+  outline: 2px solid var(--sn-link);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+.ring-list li.fault .ring-status {
+  color: var(--crit);
+  font-weight: 600;
+}
+.app-shell .ring-list li.fault {
+  border-left: 2px solid var(--crit);
+  padding-left: var(--space-2) !important;
+}
+
+/* Phones: keep every tap target comfortably above the 44 px minimum. */
+@media (max-width: 767px) {
+  .app-shell .cluster-head {
+    padding: 12px var(--space-3) 11px !important;
+  }
+  .app-shell .ring-list li.fault {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+  .topology-core {
+    padding: 12px var(--space-3);
+  }
+}
+
+/* --- Core modal (EPC elements + cluster summaries) -------------------- */
+.core-epc {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+.core-epc-card {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+.core-epc-card .mono {
+  color: var(--link);
+  font-size: var(--fs-emphasis);
+}
+.core-epc-card span:last-child {
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+.core-clusters {
+  display: grid;
+  gap: var(--space-3);
+}
+.core-cluster-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-3);
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+.core-cluster-card strong {
+  font-size: var(--fs-emphasis);
+  color: var(--tx);
+}
+.core-cluster-meta {
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+.core-cluster-health {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dialog-footnote {
+  margin: var(--space-4) 0 0;
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+@media (max-width: 767px) {
+  .core-epc {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .core-cluster-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .core-cluster-meta {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- Fleet card: home-cluster chip ------------------------------------ */
+.fleet-cluster {
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-caption);
+  color: var(--t2);
+  white-space: nowrap;
+}
+
+/* --- Towers table: cluster column (sixth) + cluster filter select ------ */
+.app-shell .tower-row {
+  grid-template-columns: 1.1fr 1.3fr 0.7fr 0.55fr 0.55fr 0.95fr;
+}
+.app-shell .towers-cluster {
+  height: var(--control-h);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--sn-ln) !important;
+  border-radius: var(--radius-sm) !important;
+  background: #ffffff !important;
+  color: var(--sn-t2);
+  font-size: var(--fs-body);
+}
+.app-shell .towers-cluster:focus-visible {
+  border-color: var(--sn-link);
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+@media (max-width: 600px) {
+  /* six columns need a little more room when the table scrolls sideways */
+  .app-shell .tower-row {
+    min-width: 520px;
+  }
+  .app-shell .towers-cluster {
+    min-height: 46px;
+  }
+}
+
+/* --- Core links: fade in/out on selection ------------------------------
+   The paths stay mounted; Map view hides them (Map default) and shows them
+   while the Core panel is open or a cluster is selected. Schematic shows
+   them permanently. Toggled imperatively on the SVG elements. */
+.core-link {
+  transition: opacity 0.35s var(--ease);
+}
+.core-link.core-link-hidden {
+  opacity: 0;
+}
+
+/* --- Core modal: crew status row -------------------------------------- */
+.core-crews {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-body);
+  color: var(--tx);
+}
+.core-crews svg {
+  flex: none;
+  color: var(--sn-link);
+}
+
+/* --- Fleet modal: on-call list ---------------------------------------- */
+.fleet-oncall {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--ln);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+.fleet-oncall > strong {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-emphasis);
+  color: var(--tx);
+}
+.fleet-oncall ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fleet-oncall li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--fs-caption);
+  color: var(--t2);
+}
+.fleet-oncall li svg {
+  align-self: center;
+  flex: none;
+  color: var(--sn-link);
+}
+.fleet-oncall .mono {
+  color: var(--tx);
+}
+.fleet-oncall-target {
+  margin-left: auto;
+  color: var(--tx);
+  text-align: right;
+}
+@media (max-width: 767px) {
+  .fleet-oncall-target {
+    margin-left: 0;
+    flex-basis: 100%;
+    text-align: left;
   }
 }

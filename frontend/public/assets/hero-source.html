@@ -92,6 +92,32 @@
         opacity: 0;
         pointer-events: none;
       }
+      /* Atmospheric dusk wash behind the copy: the app navy carries the
+         contrast for the subtitle and capability row, a whisper of violet
+         sits in the sunset sky. Both feather to fully transparent before
+         the tower and the right-hand scenery. Painted above the photo
+         (z-index -3) and below the content (z-index 1). */
+      #hero::before {
+        content: "";
+        position: absolute;
+        z-index: -2;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            130% 95% at 18% 36%,
+            rgb(94 66 160 / 28%),
+            rgb(94 66 160 / 12%) 38%,
+            transparent 70%
+          ),
+          linear-gradient(
+            93deg,
+            rgb(8 20 38 / 62%),
+            rgb(8 20 38 / 40%) 34%,
+            rgb(8 20 38 / 14%) 58%,
+            transparent 76%
+          );
+      }
       .hero-background {
         position: absolute;
         z-index: -3;
@@ -257,6 +283,24 @@
         .hero-background {
           object-position: 74% center;
         }
+        /* The copy lives at the bottom on phones, so the wash rises from
+           below and leans left, keeping the tower (right of frame) clear. */
+        #hero::before {
+          background:
+            radial-gradient(
+              140% 110% at 24% 108%,
+              rgb(94 66 160 / 26%),
+              rgb(94 66 160 / 10%) 42%,
+              transparent 72%
+            ),
+            linear-gradient(
+              178deg,
+              transparent 38%,
+              rgb(8 20 38 / 16%) 55%,
+              rgb(8 20 38 / 34%) 72%,
+              rgb(8 20 38 / 62%) 100%
+            );
+        }
         .hero-topbar {
           top: max(16px, env(safe-area-inset-top));
           left: 20px;
@@ -346,6 +390,24 @@
         .hero-copy {
           top: auto;
           bottom: 18px;
+        }
+        /* Copy hugs the bottom edge in short viewports; mirror the phone
+           wash so the text keeps its contrast. */
+        #hero::before {
+          background:
+            radial-gradient(
+              140% 110% at 24% 108%,
+              rgb(94 66 160 / 26%),
+              rgb(94 66 160 / 10%) 42%,
+              transparent 72%
+            ),
+            linear-gradient(
+              178deg,
+              transparent 38%,
+              rgb(8 20 38 / 16%) 55%,
+              rgb(8 20 38 / 34%) 72%,
+              rgb(8 20 38 / 62%) 100%
+            );
         }
         h1 {
           font-size: clamp(36px, 7vh, 56px);

@@ -49,7 +49,9 @@ export function AnalyticsRow({
                 {cell.node_id}
                 <ArrowUpRight size={14} />
               </strong>
-              <small>{cell.district}</small>
+              <small>
+                Cluster {cell.cluster} · Ring {cell.ring} · {cell.district}
+              </small>
             </span>
             <span className="cell-load">
               <span>{cell.prb.toFixed(0)}%</span>

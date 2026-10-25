@@ -73,7 +73,7 @@ def build_network(seed: int) -> Network:
     for agg_id in sorted(site_by_id):
         net.agg_sites.append(site_by_id[agg_id])
 
-    net.teams = [Team(i + 1, n, C.TEAM_SKILLS[i])
+    net.teams = [Team(i + 1, n, C.TEAM_SKILLS[i], C.TEAM_HOME_CLUSTER[i])
                  for i, n in enumerate(C.TEAM_NAMES)]
 
     _build_neighbours(net)

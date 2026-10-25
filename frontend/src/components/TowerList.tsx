@@ -25,7 +25,8 @@ export function sameTowerRows(
       row.status !== other.status ||
       row.prb !== other.prb ||
       row.cqi !== other.cqi ||
-      row.ring !== other.ring
+      row.ring !== other.ring ||
+      row.cluster !== other.cluster
     )
       return false;
   }
@@ -44,17 +45,22 @@ export const TowerList = memo(function TowerList({
   onSelect: (id: string) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [cluster, setCluster] = useState(0);
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     return [...data.nodes]
-      .filter((n) => n.id.toLowerCase().includes(q))
+      .filter(
+        (n) =>
+          n.id.toLowerCase().includes(q) &&
+          (cluster === 0 || n.cluster === cluster),
+      )
       .sort(
         (a, b) =>
           Number(a.status === config.presentation.healthy_status) -
             Number(b.status === config.presentation.healthy_status) ||
           a.id.localeCompare(b.id),
       );
-  }, [data.nodes, query, config]);
+  }, [data.nodes, query, cluster, config]);
   const faulty = data.nodes.filter(
     (n) => n.status !== config.presentation.healthy_status,
   ).length;
@@ -81,6 +87,17 @@ export const TowerList = memo(function TowerList({
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
+        <select
+          className="towers-cluster"
+          aria-label="Filter by cluster"
+          value={cluster}
+          onChange={(e) => setCluster(Number(e.target.value))}
+        >
+          <option value={0}>All clusters</option>
+          <option value={1}>Cluster 1</option>
+          <option value={2}>Cluster 2</option>
+          <option value={3}>Cluster 3</option>
+        </select>
         <span className="towers-hint">
           Faulty sites first · select a row to inspect it on the network
         </span>
@@ -92,6 +109,7 @@ export const TowerList = memo(function TowerList({
           <span role="columnheader">PRB</span>
           <span role="columnheader">CQI</span>
           <span role="columnheader">Ring</span>
+          <span role="columnheader">Cluster</span>
         </div>
         {rows.map((n) => (
           <button
@@ -112,6 +130,7 @@ export const TowerList = memo(function TowerList({
             <span className="mono" role="cell">
               {n.ring}
             </span>
+            <span role="cell">Cluster {n.cluster}</span>
           </button>
         ))}
       </div>

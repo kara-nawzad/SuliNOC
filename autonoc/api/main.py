@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import json
 import os
 import re
 import shutil
@@ -33,7 +34,7 @@ from typing import Literal
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from autonoc.engine import config as C
@@ -42,7 +43,11 @@ from autonoc.engine.engine import NOCEngine
 from . import presentation as P
 from . import schemas as S
 from .run_history import RunSummaryStore
-from .wave_ai import WaveAIError, answer_question as answer_wave_question
+from .wave_ai import (
+    WaveAIError,
+    answer_question as answer_wave_question,
+    stream_answer as stream_wave_answer,
+)
 from .wave_ai import provider_status as wave_provider_status
 from .sessions import (Session, SessionRegistry, SessionCapacityError,
                        COOKIE_NAME, requires_session)
@@ -523,7 +528,7 @@ async def browser_session(request: Request, call_next):
         )
     request.state.session_token = session.token
 
-    if request.url.path == "/api/wave/chat":
+    if request.url.path in ("/api/wave/chat", "/api/wave/chat/stream"):
         # Wave needs the same session-aware state as /api/delta, but its provider
         # request can take seconds. Capture an immutable snapshot while this
         # session is active, then release BOTH the session gate and engine lock
@@ -593,6 +598,60 @@ async def wave_chat(payload: S.WaveChatRequest, request: Request):
     return S.WaveChatResponse(**result)
 
 
+@app.post("/api/wave/chat/stream")
+async def wave_chat_stream(payload: S.WaveChatRequest, request: Request):
+    """Server-sent-events variant of /api/wave/chat: the provider's answer
+    streams to the browser as `delta` events, ending with one `done` event
+    carrying the same metadata as the JSON reply.
+
+    Pre-flight failures (missing key, rate limits, changed run) raise before
+    the stream starts, so they keep their proper HTTP status and body. A
+    failure after the stream has started becomes an in-stream `error` event.
+    """
+    snapshot = getattr(request.state, "wave_snapshot", None)
+    if snapshot is None:
+        with _lock:
+            snapshot = copy.deepcopy(_snapshot(resync=True))
+    if payload.run_id != snapshot.get("run_id"):
+        raise HTTPException(
+            status_code=409,
+            detail="The simulation run changed before Wave could answer. Refresh and ask again.",
+        )
+
+    try:
+        events = await stream_wave_answer(
+            payload.question,
+            snapshot,
+            session_id=getattr(request.state, "session_token", "__shared__"),
+            history=[{"role": turn.role, "content": turn.content} for turn in payload.history],
+        )
+    except WaveAIError as exc:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"code": exc.code, "detail": exc.detail},
+            headers=exc.headers,
+        )
+
+    async def sse():
+        async for kind, value in events:
+            if kind == "delta":
+                yield (f"event: delta\ndata: "
+                       f"{json.dumps({'text': value}, ensure_ascii=False)}\n\n")
+            elif kind == "error":
+                yield ("event: error\ndata: "
+                       f"{json.dumps({'code': value.code, 'detail': value.detail}, ensure_ascii=False)}\n\n")
+                return
+            elif kind == "done":
+                yield (f"event: done\ndata: "
+                       f"{json.dumps(value, ensure_ascii=False)}\n\n")
+
+    return StreamingResponse(
+        sse(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+    )
+
+
 # ------------------------------------------------------------------ config
 @app.get("/api/config", response_model=S.ConfigResponse)
 async def get_config():
@@ -615,12 +674,30 @@ async def get_config():
         map_zoom=12,
         bounds={"lat_min": C.LAT_MIN, "lat_max": C.LAT_MAX,
                 "lon_min": C.LON_MIN, "lon_max": C.LON_MAX},
-        epc_primary={"name": C.EPC_PRIMARY[0], "lat": C.EPC_PRIMARY[1],
-                     "lon": C.EPC_PRIMARY[2], "backhaul": C.EPC_PRIMARY[3]},
-        epc_backup={"name": C.EPC_BACKUP[0], "lat": C.EPC_BACKUP[1],
-                    "lon": C.EPC_BACKUP[2], "backhaul": C.EPC_BACKUP[3]},
+        core={
+            "name": C.CORE_NAME,
+            "place": C.CORE_PLACE,
+            "lat": C.CORE_LAT,
+            "lon": C.CORE_LON,
+            "status_label": "Operational · simulated EPC",
+            "epc": [{"id": el[0], "name": el[1]} for el in C.CORE_EPC],
+            "clusters": [
+                {
+                    "id": cid,
+                    "name": C.CLUSTER_NAMES[cid - 1],
+                    "rings": sorted(r for r, c in C.RING_CLUSTERS.items()
+                                    if c == cid),
+                    # sites inherit their cluster from their ring, so count
+                    # by ring membership, not by district placement
+                    "sites": sum(1 for n in engine.net.nodes
+                                 if n.cluster == cid),
+                }
+                for cid in (1, 2, 3)
+            ],
+        },
         depot={"lat": C.DEPOT_LAT, "lon": C.DEPOT_LON},
         agg_sites=[{"id": s[0], "name": s[1], "lat": s[2], "lon": s[3],
+                    "cluster": C.RING_CLUSTERS[s[0]],
                     "nodes": len(engine.net.agg_sites[s[0]].node_ids), "clutter": s[5], "color": s[6]}
                    for s in C.AGG_SITES],
         num_nodes=C.NUM_NODES,
@@ -641,7 +718,9 @@ def _agg_payload() -> list[dict]:
         w = w_now[site.agg_id]
         out.append({
             "id": site.agg_id, "name": site.name, "lat": site.lat,
-            "lon": site.lon, "color": site.color, "node_count": len(nodes),
+            "lon": site.lon, "color": site.color,
+            "cluster": C.RING_CLUSTERS[site.agg_id],
+            "node_count": len(nodes),
             "health": round(ok / len(nodes) * 100.0, 1) if nodes else 100.0,
             "weather": w["type"], "wind": round(w["wind"], 1),
             "clutter": site.clutter_c,
@@ -679,7 +758,8 @@ def _ring_payload() -> list[dict]:
             c = ring.cuts[0]
             cut = {"lat": c.lat, "lon": c.lon, "seg": c.segment.seg_id,
                    "cause": c.cause}
-        out.append({"id": ring.ring_id, "nodes": ring.node_ids, "path": path,
+        out.append({"id": ring.ring_id, "cluster": ring.cluster,
+                    "nodes": ring.node_ids, "path": path,
                     "circumference_km": round(ring.circumference_km, 2),
                     "cut": cut, "isolated": ring.is_isolated,
                     "cuts": [{"lat": c.lat, "lon": c.lon,

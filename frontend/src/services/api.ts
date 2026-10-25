@@ -40,8 +40,12 @@ function storeSessionToken(token: string) {
   }
 }
 
-async function send(path: string, init: RequestInit): Promise<Response> {
-  const timeout = AbortSignal.timeout(15_000);
+async function send(
+  path: string,
+  init: RequestInit,
+  timeoutMs = 15_000,
+): Promise<Response> {
+  const timeout = AbortSignal.timeout(timeoutMs);
   const signal = init.signal
     ? AbortSignal.any([init.signal, timeout])
     : timeout;
@@ -144,6 +148,94 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question, run_id: runId, history }),
     }),
+  /** Streaming chat: the backend relays the provider's answer as SSE. onDelta
+   * fires per chunk as it arrives; the promise resolves with the terminal
+   * `done` metadata (same shape as the JSON reply) or rejects with the
+   * server's user-facing error detail. A 404 status marks a backend without
+   * the route so the caller can fall back to the JSON reply. */
+  waveChatStream: async (
+    question: string,
+    runId: string,
+    history: WaveTurn[],
+    onDelta: (text: string) => void,
+    signal?: AbortSignal,
+  ): Promise<WaveChatReply> => {
+    const response = await send(
+      "/api/wave/chat/stream",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, run_id: runId, history }),
+        signal,
+      },
+      60_000,
+    );
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      const detail =
+        typeof (body as { detail?: string } | null)?.detail === "string"
+          ? (body as { detail: string }).detail
+          : `Request failed (${response.status})`;
+      const error = new Error(detail) as Error & { status?: number };
+      error.status = response.status;
+      throw error;
+    }
+    if (!response.body)
+      throw new Error("The server returned an invalid response.");
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    const consumeEvent = (raw: string): WaveChatReply | null => {
+      let event = "message";
+      const dataLines: string[] = [];
+      for (const line of raw.split("\n")) {
+        if (line.startsWith("event:")) event = line.slice(6).trim();
+        else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
+      }
+      if (!dataLines.length) return null;
+      let payload: unknown;
+      try {
+        payload = JSON.parse(dataLines.join("\n"));
+      } catch {
+        return null;
+      }
+      if (event === "delta") {
+        const text = (payload as { text?: unknown }).text;
+        if (typeof text === "string" && text) onDelta(text);
+        return null;
+      }
+      if (event === "error") {
+        const detail = (payload as { detail?: unknown }).detail;
+        throw new Error(
+          typeof detail === "string" && detail
+            ? detail
+            : "Wave could not finish the answer. Please retry.",
+        );
+      }
+      if (event === "done") return payload as WaveChatReply;
+      return null;
+    };
+
+    let buffer = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+      let separator = buffer.indexOf("\n\n");
+      while (separator >= 0) {
+        const raw = buffer.slice(0, separator);
+        buffer = buffer.slice(separator + 2);
+        const result = consumeEvent(raw);
+        if (result) return result;
+        separator = buffer.indexOf("\n\n");
+      }
+    }
+    if (buffer.trim()) {
+      const result = consumeEvent(buffer);
+      if (result) return result;
+    }
+    throw new Error("Wave’s answer ended unexpectedly. Please retry.");
+  },
   delta: async (cursor: number, signal?: AbortSignal) =>
     validateSnapshot(
       await request<Snapshot>(`/api/delta?since=${cursor}`, { signal }),

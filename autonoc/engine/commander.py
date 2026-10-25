@@ -151,7 +151,7 @@ def mark_preempted(engine, node) -> bool:
 
     Returns False when the attempt cannot physically pre-empt this episode
     (see PREEMPTABLE_BY_TIER1) - the caller then registers a 60-minute bet
-    so the WORLD settles the attempt's value, not the controller.
+    so the WORLD settles the attempt's value, not the deciding agent.
 
     The ledger transition is injected -> pre_empted: the schedule event still
     exists (I10), it just never became a real fault in this arm. Both

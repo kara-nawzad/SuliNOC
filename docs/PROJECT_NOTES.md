@@ -1113,7 +1113,7 @@ Changes applied after the whole-project audit, all covered by tests:
   Solar branch exists only where PV exists. The diesel plant latches
   (`dg_running`, `GEN_STOP_BATTERY_PCT`) instead of flip-flopping around the
   crank threshold and re-rolling the ATS coin every tick.
-- **Controller/physics separation (evaluation honesty).** Tier-1 actions are
+- **Agent/physics separation (evaluation honesty).** Tier-1 actions are
   committed on the Doctor's verdict alone; `PREEMPTABLE_BY_TIER1` is world
   physics inside `mark_preempted`, and a wasted attempt is charged as a
   false dispatch instead of being silently dropped on a peek at the ledger.

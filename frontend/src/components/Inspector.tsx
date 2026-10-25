@@ -74,7 +74,8 @@ export function Inspector({
           <div className="inspector-place">
             <MapPin size={14} />
             {config.agg_sites.find((a) => a.id === node.agg)?.name}{" "}
-            <span>·</span> Ring {node.ring}
+            <span>·</span> Cluster {node.cluster} <span>·</span> Ring{" "}
+            {node.ring}
           </div>
           <span
             className="severity site-status"
