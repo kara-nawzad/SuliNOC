@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Config, NodeData, Snapshot } from "../types/api";
-import { sameSiteNodes } from "./NetworkMap";
+import { sameSiteNodes, siteTooltipHtml } from "./NetworkMap";
 import { sameTowerRows } from "./TowerList";
 
 /** Telemetry replaces every node object every second. These tests pin the
@@ -98,5 +98,28 @@ describe("tower table slice", () => {
         rowsProps(nodes, configA, otherSelect),
       ),
     ).toBe(false);
+  });
+});
+
+describe("site tooltip (one shared tooltip for 300 sites)", () => {
+  const config = {
+    status_names: { 0: "Healthy", 3: "Critical fault" },
+    metric_labels: { vswr: "VSWR", prb: "PRB load" },
+  } as unknown as Config;
+
+  it("renders exactly the content the per-marker tooltip used to", () => {
+    const html = siteTooltipHtml(
+      node({ id: "SLY-032", status: 3, vswr: 1.87, prb: 62.35 }),
+      config,
+    );
+    expect(html).toBe(
+      "<strong>SLY-032</strong><br>Critical fault<br>VSWR 1.87 · PRB load 62.4%",
+    );
+  });
+
+  it("escapes site ids instead of injecting markup", () => {
+    expect(siteTooltipHtml(node({ id: "<b>x</b>" }), config)).toContain(
+      "&lt;b&gt;x&lt;/b&gt;",
+    );
   });
 });
