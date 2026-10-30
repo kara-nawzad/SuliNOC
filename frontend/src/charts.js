@@ -34,7 +34,10 @@ export function downsample(points, maxPoints = 300) {
   const size = points.length / buckets;
   const out = [];
   for (let b = 0; b < buckets; b += 1) {
-    const chunk = points.slice(Math.floor(b * size), Math.floor((b + 1) * size));
+    const chunk = points.slice(
+      Math.floor(b * size),
+      Math.floor((b + 1) * size),
+    );
     if (!chunk.length) continue;
     let lo = chunk[0],
       hi = chunk[0];
@@ -291,7 +294,10 @@ export function lineChart(
     /** Fix the y-axis to [min, max]; pass null to return to automatic. */
     setDomain(min, max) {
       const next = min == null ? null : [min, max];
-      if (next === dom || (next && dom && next[0] === dom[0] && next[1] === dom[1]))
+      if (
+        next === dom ||
+        (next && dom && next[0] === dom[0] && next[1] === dom[1])
+      )
         return;
       dom = next;
       if (!raf) raf = requestAnimationFrame(draw);

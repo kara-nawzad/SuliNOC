@@ -9060,7 +9060,7 @@ dialog.dialog::backdrop,
     backdrop-filter: none !important;
   }
   .app-shell .inspector {
-    background: #0c1421 !important;      /* #0c1421f7, alpha folded in */
+    background: #0c1421 !important; /* #0c1421f7, alpha folded in */
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
@@ -9177,14 +9177,28 @@ dialog.dialog::backdrop,
     white-space: nowrap;
     color: var(--sn-t2);
   }
-  .app-shell .tower-row > span:nth-child(3) { grid-column: 1; }
-  .app-shell .tower-row > span:nth-child(4) { grid-column: 2; }
-  .app-shell .tower-row > span:nth-child(5) { grid-column: 3; }
-  .app-shell .tower-row > span:nth-child(6) { grid-column: 4; }
+  .app-shell .tower-row > span:nth-child(3) {
+    grid-column: 1;
+  }
+  .app-shell .tower-row > span:nth-child(4) {
+    grid-column: 2;
+  }
+  .app-shell .tower-row > span:nth-child(5) {
+    grid-column: 3;
+  }
+  .app-shell .tower-row > span:nth-child(6) {
+    grid-column: 4;
+  }
   /* The numbers are bare ("15", "7"), so each carries its column name. */
-  .app-shell .tower-row > span:nth-child(3)::before { content: "PRB "; }
-  .app-shell .tower-row > span:nth-child(4)::before { content: "CQI "; }
-  .app-shell .tower-row > span:nth-child(5)::before { content: "RING "; }
+  .app-shell .tower-row > span:nth-child(3)::before {
+    content: "PRB ";
+  }
+  .app-shell .tower-row > span:nth-child(4)::before {
+    content: "CQI ";
+  }
+  .app-shell .tower-row > span:nth-child(5)::before {
+    content: "RING ";
+  }
   .app-shell .tower-row > span:nth-child(3)::before,
   .app-shell .tower-row > span:nth-child(4)::before,
   .app-shell .tower-row > span:nth-child(5)::before {

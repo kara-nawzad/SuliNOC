@@ -226,8 +226,8 @@ export function ScenarioModal({
             >
               {data.rings.map((r) => (
                 <option key={r.id} value={r.id}>
-                  Ring {r.id.toString().padStart(2, "0")} · {r.node_count}{" "}
-                  sites · {r.cuts.length} open cuts
+                  Ring {r.id.toString().padStart(2, "0")} · {r.node_count} sites
+                  · {r.cuts.length} open cuts
                 </option>
               ))}
             </select>

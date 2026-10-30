@@ -55,8 +55,8 @@ describe("site slice (map canvas layer)", () => {
     // that changes a 12 px dot, so none of it may re-render the 300 markers.
     const before = [node({ id: "S1", prb: 62.31, vswr: 1.871 })];
     for (const changed of [
-      { prb: 62.34 },                    // sub-precision
-      { prb: 66 },                       // a whole displayed unit
+      { prb: 62.34 }, // sub-precision
+      { prb: 66 }, // a whole displayed unit
       { vswr: 1.879 },
       { vswr: 2.4 },
     ]) {
@@ -92,7 +92,10 @@ describe("tower table slice", () => {
     ).toBe(true);
     // ...but a change that moves the printed tenth still re-renders.
     expect(
-      sameTowerRow(node({ id: "S1", prb: 62.31 }), node({ id: "S1", prb: 62.4 })),
+      sameTowerRow(
+        node({ id: "S1", prb: 62.31 }),
+        node({ id: "S1", prb: 62.4 }),
+      ),
     ).toBe(false);
   });
 

@@ -148,7 +148,10 @@ describe("chart x-axis window", () => {
 
 describe("chart downsampling", () => {
   it("leaves a short series untouched", () => {
-    const points = Array.from({ length: 40 }, (_, i) => [i, i] as [number, number]);
+    const points = Array.from(
+      { length: 40 },
+      (_, i) => [i, i] as [number, number],
+    );
     expect(downsample(points)).toBe(points);
   });
 
@@ -221,7 +224,8 @@ describe("chart frames", () => {
     ]);
     frame?.(0);
     const points = () =>
-      (host.querySelector(".ln")?.getAttribute("d")?.match(/[ML]/g) ?? []).length;
+      (host.querySelector(".ln")?.getAttribute("d")?.match(/[ML]/g) ?? [])
+        .length;
     expect(points()).toBe(3);
 
     chart.append([45, 4]);

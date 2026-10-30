@@ -152,7 +152,7 @@ it("says it is warming up when the handshake is slow, then stops", async () => {
   } as never);
   vi.mocked(api.delta).mockResolvedValue(sample(8));
   const { result } = renderHook(() => useTelemetry());
-  expect(result.current.warming).toBe(false);          // not instantly alarming
+  expect(result.current.warming).toBe(false); // not instantly alarming
   await waitFor(() => expect(result.current.warming).toBe(true));
   expect(result.current.status).toBe("connecting");
   await waitFor(() => expect(result.current.status).toBe("live"));
@@ -164,9 +164,7 @@ it("keeps its own rolling dashboard history because the wire sends one row", asy
     presentation: { poll_ms: 10_000 },
   } as never);
   let tick = 8;
-  vi.mocked(api.delta).mockImplementation(async () =>
-    sample(tick++) as never,
-  );
+  vi.mocked(api.delta).mockImplementation(async () => sample(tick++) as never);
   const { result } = renderHook(() => useTelemetry());
   await waitFor(() => expect(result.current.data?.tick).toBe(8));
   expect(result.current.data?.dashboard.history).toHaveLength(1);
@@ -278,7 +276,7 @@ it("seeds the dashboard window once from the server, without duplicate ticks", a
   expect(api.telemetryHistory).toHaveBeenCalledWith("30m", "run1");
   const ticks = result.current.data!.dashboard.history.map((row) => row.tick);
   expect(ticks).toEqual(Array.from({ length: 30 }, (_, i) => 71 + i));
-  expect(new Set(ticks).size).toBe(30);   // the seam tick is not duplicated
+  expect(new Set(ticks).size).toBe(30); // the seam tick is not duplicated
   // The console was usable before the seed landed.
   expect(result.current.status).toBe("live");
   // One seed per run, not one per poll.

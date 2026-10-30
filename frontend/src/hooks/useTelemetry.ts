@@ -24,9 +24,7 @@ export function mergeHistorySeed(
   const byTick = new Map<number, TelemetrySample>();
   for (const row of seed) byTick.set(row.tick, row);
   for (const row of live) byTick.set(row.tick, row); // live wins
-  return [...byTick.values()]
-    .sort((a, b) => a.tick - b.tick)
-    .slice(-limit);
+  return [...byTick.values()].sort((a, b) => a.tick - b.tick).slice(-limit);
 }
 
 /** One cancellable request at a time. Controls can request an immediate refresh
@@ -114,9 +112,10 @@ export function useTelemetry() {
         // Complete bounded readouts replace rather than merge stale entities.
         if (runId !== next.run_id) {
           runId = next.run_id;
-          history = [];           // a new run starts its own window
+          history = []; // a new run starts its own window
         }
-        const newest = next.dashboard.history[next.dashboard.history.length - 1];
+        const newest =
+          next.dashboard.history[next.dashboard.history.length - 1];
         if (newest && history[history.length - 1]?.tick !== newest.tick)
           history = [...history, newest].slice(-30);
         next.dashboard.history = history;

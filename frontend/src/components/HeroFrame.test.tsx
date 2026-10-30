@@ -37,7 +37,9 @@ it("keeps the hero copy, capability row, and Enter action in the intro", () => {
   expect(html).toContain('type="image/webp"');
   expect(html).toContain('srcset="/assets/hero-city-sunset.webp"');
   // The picture wrapper must not create a box around the full-bleed image.
-  expect(html).toContain(".hero-background-frame {\n        display: contents;");
+  expect(html).toContain(
+    ".hero-background-frame {\n        display: contents;",
+  );
   expect(html).toContain('class="hero-logo"');
   expect(html).toContain('src="/assets/suli-noc-logo-dark.png"');
   expect(html).toContain("filter: brightness(0) invert(1)");

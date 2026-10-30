@@ -176,7 +176,7 @@ export function TrafficQualityCard({
     const windowMinutes = WINDOW_MINUTES[timeframe];
     if (settings.window !== windowMinutes) {
       settings.window = windowMinutes;
-      c.primary.setWindow(windowMinutes);       // fixed axis: QCI 9 traffic 20–50 Gbps
+      c.primary.setWindow(windowMinutes); // fixed axis: QCI 9 traffic 20–50 Gbps
       c.drop.setWindow(windowMinutes);
     }
     const domainKey = `${metric}`;

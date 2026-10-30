@@ -70,8 +70,16 @@ function Console({
   heroOpen: boolean;
   setHeroOpen: (open: boolean) => void;
 }) {
-  const { config, data, status, error, warming, lastUpdateAt, retryDelay, refresh } =
-    useTelemetry();
+  const {
+    config,
+    data,
+    status,
+    error,
+    warming,
+    lastUpdateAt,
+    retryDelay,
+    refresh,
+  } = useTelemetry();
   const activeRunId = useRef<string | null>(null);
   const observedRunId = useRef<string | null>(null);
   if (data?.run_id) activeRunId.current = data.run_id;

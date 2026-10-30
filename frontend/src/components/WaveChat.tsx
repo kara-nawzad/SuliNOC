@@ -306,9 +306,7 @@ const WaveMarkdown = memo(function WaveMarkdown({
     <div className="wave-md">
       <Suspense
         // Plain text until the parser chunk lands: same words, same bubble.
-        fallback={
-          <p className="wave-md-plain">{body}</p>
-        }
+        fallback={<p className="wave-md-plain">{body}</p>}
       >
         <WaveMarkdownBody text={body} />
       </Suspense>
