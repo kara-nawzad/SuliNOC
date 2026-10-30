@@ -242,7 +242,7 @@ class DeltaResponse(BaseModel):
 # question in that conversation fail request validation with a bare HTTP 422 —
 # a permanent, self-inflicted outage that looked like Wave refusing to answer.
 # The prompt itself is still trimmed per turn inside autonoc/api/wave_ai.py.
-WAVE_ANSWER_MAX_CHARS = 4000
+WAVE_ANSWER_MAX_CHARS = 8000
 WAVE_CHAT_TURN_MAX_CHARS = WAVE_ANSWER_MAX_CHARS
 WAVE_CHAT_HISTORY_MAX_TURNS = 8
 WAVE_CHAT_QUESTION_MAX_CHARS = 1000
@@ -267,12 +267,18 @@ class WaveChatRequest(BaseModel):
 
 class WaveChatResponse(BaseModel):
     answer: str = Field(min_length=1, max_length=WAVE_ANSWER_MAX_CHARS)
-    provider: Literal["openai", "groq"] = "openai"
+    # "local" is Wave's deterministic snapshot reader: it answers from the run
+    # data and built-in telecom notes whenever no live model can be reached,
+    # so the assistant never goes silent mid-demo.
+    provider: Literal["openai", "groq", "local"] = "openai"
     model: str
     ai_connected: bool
     run_id: str
     tick: int
     sim_time: str
+    # The run restarted (Day-30 rollover) while the question was in flight; the
+    # answer is grounded in the new run instead of being thrown away.
+    run_restarted: bool = False
 
 
 class SessionStartResponse(BaseModel):

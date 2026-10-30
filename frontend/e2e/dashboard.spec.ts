@@ -108,6 +108,28 @@ test("live controls, map inspector, scenarios, and mobile layout", async ({
 test("Wave chat has a compact readable composer and uses the Wave avatar", async ({
   page,
 }) => {
+  // The console asks the SSE route first; both are stubbed so this spec does
+  // not depend on whether the backend has a provider key configured.
+  await page.route("**/api/wave/chat/stream", async (route) => {
+    const { run_id: runId } = route.request().postDataJSON();
+    const meta = {
+      answer: "The test snapshot is stable.",
+      provider: "openai",
+      model: "gpt-4.1-mini",
+      ai_connected: true,
+      run_id: runId,
+      tick: 0,
+      sim_time: "D1 00:00",
+      run_restarted: false,
+    };
+    await route.fulfill({
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+      body:
+        'event: delta\ndata: {"text":"The test snapshot is stable."}\n\n' +
+        `event: done\ndata: ${JSON.stringify(meta)}\n\n`,
+    });
+  });
   await page.route("**/api/wave/chat", async (route) => {
     const { run_id: runId } = route.request().postDataJSON();
     await route.fulfill({
