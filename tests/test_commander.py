@@ -402,6 +402,43 @@ def test_live_scoring_falls_back_to_rules_when_models_missing(tmp_path, monkeypa
         w.stop()
 
 
+def test_idle_worker_sleeps_until_ai_is_enabled(tmp_path, monkeypatch):
+    """With the Commander off there is nothing to infer.
+
+    The loop used to wake every 250 ms — four times a second per open tab —
+    to take the lock and discover `ai_enabled` was still False. It now waits
+    on an event that the AI toggle and a run replacement set, so the switch
+    still takes effect immediately.
+    """
+    import time
+    from autonoc.ai import serve
+    monkeypatch.setattr(serve, "MODEL_DIR", pathlib.Path(tmp_path))
+    e = NOCEngine(seed=3, ai_enabled=False, horizon=1000)
+    w = serve.InferenceWorker(e, threading.Lock(), bundle=serve.ModelBundle())
+    cycles: list[bool] = []
+    w._process_cycle = lambda: cycles.append(e.ai_enabled) or False  # type: ignore[method-assign]
+    try:
+        w.start()
+        time.sleep(0.7)                 # two old polls would have fired here
+        assert cycles == [], "an idle worker must not poll"
+        assert w.is_alive()
+
+        e.ai_enabled = True
+        w.wake()
+        deadline = time.monotonic() + 2.0
+        while not cycles and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert cycles == [True], "enabling AI must take effect at once"
+
+        # ...and with the Commander on, the 250 ms cadence is unchanged.
+        before = len(cycles)
+        time.sleep(0.8)
+        assert len(cycles) - before >= 2
+    finally:
+        w.stop()
+        time.sleep(0.05)
+
+
 def test_worker_scores_batch_with_real_models():
     """End-to-end: the inference worker produces ~300 verdicts with real
     trained artifacts loaded, on healthy nodes only.

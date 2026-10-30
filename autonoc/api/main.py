@@ -1244,6 +1244,9 @@ async def set_ai(
             engine.ai_mode = "off"
         if worker is not None:
             worker.set_auto_approve(auto_approve_seconds)
+            # The worker sleeps while the Commander is off: this is the nudge
+            # that makes the new state take effect now, not on the next sweep.
+            worker.wake()
     return {"ai_enabled": enabled, "auto_approve_seconds": auto_approve_seconds}
 
 
