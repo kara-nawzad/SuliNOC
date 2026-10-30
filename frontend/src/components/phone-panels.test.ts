@@ -23,15 +23,29 @@ describe("phone panels", () => {
 
   it("sizes the inspector sheet to a peek, not the whole screen", () => {
     expect(phone).toMatch(
-      /\.app-shell \.inspector\s*\{[^}]*max-height:\s*min\(62dvh,\s*560px\)/s,
+      /\.app-shell \.inspector\s*\{[^}]*max-height:\s*min\(50dvh,\s*480px\)/s,
     );
     // Older browsers that do not parse min()/dvh keep the plain fallback.
-    expect(phone).toMatch(/\.app-shell \.inspector\s*\{[^}]*max-height:\s*62vh/s);
+    expect(phone).toMatch(/\.app-shell \.inspector\s*\{[^}]*max-height:\s*50vh/s);
     expect(phone).toMatch(
       /\.app-shell \.inspector\s*\{[^}]*overscroll-behavior:\s*contain/s,
     );
     // Desktop still gets the fixed side panel it has always had.
     expect(styles).toMatch(/\.inspector\s*\{[^}]*width:\s*330px/s);
+  });
+
+  it("keeps the Wave greeting beside the launcher, never stacked above it", () => {
+    // The phone rule is the last `.wave-greeting {` in the sheet.
+    const from = styles.lastIndexOf(".wave-greeting {");
+    expect(from).toBeGreaterThan(-1);
+    const greeting = styles.slice(from, styles.indexOf("}", from));
+    expect(greeting).toMatch(/right:\s*calc\(var\(--wave-launcher-right\)/);
+    // Vertically centred on the launcher: half its size, half a 48 px pill.
+    expect(greeting).toMatch(
+      /bottom:\s*calc\(\s*var\(--wave-launcher-bottom\)\s*\+\s*var\(--wave-launcher-size\)\s*\/\s*2\s*-\s*24px/s,
+    );
+    // Not the old "sits 12 px above the launcher's bottom edge" placement.
+    expect(greeting).not.toMatch(/\+\s*12px\)/);
   });
 
   it("lays the towers table out as two lines per row instead of a sideways scroll", () => {

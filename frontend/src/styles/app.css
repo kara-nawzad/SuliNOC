@@ -8299,11 +8299,20 @@ dialog.dialog::backdrop,
     --wave-launcher-size: 72px;
   }
   /* Phones: sit beside the launcher, not above it. Above it the bubble
-     floated over the map card and read like a tooltip for the wrong control. */
+     floated over the map card and read like a tooltip for the wrong control;
+     stacked high it also covered the towers table. Centred on the launcher's
+     middle now — the same relationship it has on a laptop, just closer. The
+     bubble is a one-line 48 px pill, so half its height is 24 px. */
   .wave-greeting {
     right: calc(var(--wave-launcher-right) + var(--wave-launcher-size) + 8px);
-    bottom: calc(var(--wave-launcher-bottom) + 12px);
+    bottom: calc(
+      var(--wave-launcher-bottom) + var(--wave-launcher-size) / 2 - 24px
+    );
     max-width: min(232px, calc(100vw - var(--wave-launcher-size) - 34px));
+  }
+  /* Its tail follows the bubble's middle, so it still points at Wave. */
+  .wave-greeting::after {
+    bottom: calc(50% - 5.5px);
   }
   .wave-launcher.is-open {
     visibility: hidden;
@@ -9102,12 +9111,12 @@ dialog.dialog::backdrop,
 
 @media (max-width: 767px) {
   /* The sheet used to stop at 82 vh: on a 390 x 720 phone that is nearly the
-     whole screen, with no map visible above it. It is a peek sheet now — the
-     reading list still scrolls, the map (and the site you tapped) stays in
+     whole screen, with no map visible above it. It is half the screen now —
+     the reading list still scrolls, the map (and the site you tapped) stays in
      view — and scrolling it does not drag the page behind it. */
   .app-shell .inspector {
-    max-height: 62vh;
-    max-height: min(62dvh, 560px);
+    max-height: 50vh;
+    max-height: min(50dvh, 480px);
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
