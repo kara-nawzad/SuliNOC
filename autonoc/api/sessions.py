@@ -141,6 +141,10 @@ class SessionRegistry:
         self._sessions: dict[str, Session] = {}
         self._lock = threading.RLock()
         self._reclaims = 0
+        # Slots reserved by a claim that is still building its world outside the
+        # lock. Counted against the cap so a burst cannot overshoot it, but never
+        # registered (an abandoned build leaves nothing behind).
+        self._pending = 0
 
     # ------------------------------------------------------------ internals
     def _drop(self, token: str, session: Session) -> None:
@@ -182,9 +186,28 @@ class SessionRegistry:
                 return
 
     def _create(self) -> tuple[Session, bool]:
-        token = secrets.token_urlsafe(32)
-        session = self.factory(token)
-        self._sessions[token] = session
+        """Reserve a slot, build the world outside the lock, then register it.
+
+        The factory builds a whole simulation world (~640 ms). Holding
+        ``self._lock`` for that long paused every other lookup — including the
+        token lookups the event loop makes for unrelated requests — so the slot
+        is reserved under the lock and the build happens after it is released.
+        """
+        with self._lock:
+            self._pending += 1
+        return self._build_reserved()
+
+    def _build_reserved(self) -> tuple[Session, bool]:
+        """Build a slot the caller already reserved with ``_pending``."""
+        try:
+            session = self.factory(secrets.token_urlsafe(32))
+        except BaseException:
+            with self._lock:
+                self._pending -= 1
+            raise
+        with self._lock:
+            self._pending -= 1
+            self._sessions[session.token] = session
         return session, True
 
     # ---------------------------------------------------------------- public
@@ -197,7 +220,7 @@ class SessionRegistry:
                 session = self._sessions[token]
                 session.last_seen = now
                 return session, False
-            if len(self._sessions) >= self.max_sessions:
+            if len(self._sessions) + self._pending >= self.max_sessions:
                 victim = (self._oldest(now, token, self.reclaim_grace)
                           if self.reclaim else None)
                 if victim is None:
@@ -207,7 +230,9 @@ class SessionRegistry:
                         retry_after=1.0,
                     )
                 self._reclaim(victim)
-            return self._create()
+            self._pending += 1
+        # Outside the lock: see _create.
+        return self._build_reserved()
 
     def get_or_default(self, token: str | None) -> tuple[Session, bool]:
         """Never raises: capacity pressure degrades to the oldest session.
@@ -216,15 +241,18 @@ class SessionRegistry:
         waiting must not be locked out, so even a busy session is adopted before
         the request is refused.
         """
-        with self._lock:
-            try:
-                return self.get(token)
-            except SessionCapacityError:
+        try:
+            return self.get(token)
+        except SessionCapacityError:
+            # Never raises: take the quietest slot, or create into a drained
+            # registry. The reservation happens under the lock; the build does
+            # not.
+            with self._lock:
                 victim = self._oldest(time.monotonic(), token)
-                if victim is None:
-                    return self._create()   # registry drained; just create
-                self._reclaim(victim)
-                return self._create()
+                if victim is not None:
+                    self._reclaim(victim)
+                self._pending += 1
+            return self._build_reserved()
 
     def peek(self, token: str | None) -> Session | None:
         """Return the session this token already owns — never create one.
