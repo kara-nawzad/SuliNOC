@@ -186,7 +186,9 @@ class InferenceWorker(threading.Thread):
         self.engine = engine
         self.lock = lock
         self.run_id = run_id
-        self._stop = threading.Event()
+        # Named `_stopped`, not `_stop`: Thread has its own private `_stop()`
+        # method, and shadowing it breaks `join()` on a live worker.
+        self._stopped = threading.Event()
         # Set when something outside this thread makes a cycle worth running
         # (AI toggled, engine replaced). See run() for the idle cadence.
         self._wake = threading.Event()
@@ -204,7 +206,10 @@ class InferenceWorker(threading.Thread):
 
     # ------------------------------------------------------------ lifecycle
     def stop(self) -> None:
-        self._stop.set()
+        self._stopped.set()
+        # The loop waits on `_wake`, so stopping has to wake it too — otherwise
+        # shutdown waits for the idle sweep (up to IDLE_WAIT seconds).
+        self._wake.set()
 
     def set_auto_approve(self, seconds: float) -> None:
         self.auto_approve_seconds = max(0.0, float(seconds))
@@ -254,10 +259,10 @@ class InferenceWorker(threading.Thread):
         return bool(getattr(self.engine, "ai_enabled", False))
 
     def run(self) -> None:
-        while not self._stop.is_set():
+        while not self._stopped.is_set():
             self._wake.wait(self.POLL_WAIT if self._ai_enabled() else self.IDLE_WAIT)
             self._wake.clear()
-            if self._stop.is_set():
+            if self._stopped.is_set():
                 return
             try:
                 self._process_cycle()

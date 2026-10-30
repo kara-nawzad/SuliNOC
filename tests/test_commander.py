@@ -439,6 +439,35 @@ def test_idle_worker_sleeps_until_ai_is_enabled(tmp_path, monkeypatch):
         time.sleep(0.05)
 
 
+def test_stopped_worker_can_be_joined(tmp_path, monkeypatch):
+    """`stop()` then `join()` must work — including after the thread has ended.
+
+    The worker kept its stop flag in `self._stop`, which is also the name of the
+    private Thread method `join()` calls once the thread is finished, so
+    `worker.join()` raised `TypeError: 'Event' object is not callable` on a
+    worker that had already stopped. The flag is `_stopped` now, and `stop()`
+    also nudges the loop's wake event, so shutting down does not wait for the
+    idle sweep.
+    """
+    import time
+    from autonoc.ai import serve
+    monkeypatch.setattr(serve, "MODEL_DIR", pathlib.Path(tmp_path))
+    e = NOCEngine(seed=4, ai_enabled=False, horizon=1000)
+    w = serve.InferenceWorker(e, threading.Lock(), bundle=serve.ModelBundle())
+    w.start()
+    assert w.is_alive()
+    started = time.monotonic()
+    w.stop()
+    deadline = started + 5.0
+    while w.is_alive() and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert not w.is_alive(), "stop() must not wait for the idle sweep"
+    assert time.monotonic() - started < 2.0
+    # The thread is finished: Thread.join() now calls its own _stop().
+    w.join(timeout=1.0)
+    w.join()
+
+
 def test_worker_scores_batch_with_real_models():
     """End-to-end: the inference worker produces ~300 verdicts with real
     trained artifacts loaded, on healthy nodes only.
