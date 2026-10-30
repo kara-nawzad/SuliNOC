@@ -129,8 +129,9 @@ test("Esri tile failures show a visible schematic status and retry can recover",
 
   await page.setViewportSize({ width: 1280, height: 720 });
   await welcome.getByRole("button", { name: "Enter workspace" }).click();
-  await expect(welcomeFrame).toHaveCSS("visibility", "hidden");
-  await expect(welcomeFrame).toHaveCSS("pointer-events", "none");
+  // Entering unmounts the frame: the welcome document and its hero bitmap are
+  // released rather than kept hidden behind the console.
+  await expect(welcomeFrame).toHaveCount(0);
   const navigation = page.getByRole("navigation", { name: "Main navigation" });
   await expect(navigation).toBeVisible();
   await expect(
