@@ -70,7 +70,8 @@ function Console({
   heroOpen: boolean;
   setHeroOpen: (open: boolean) => void;
 }) {
-  const { config, data, status, error, warming, refresh } = useTelemetry();
+  const { config, data, status, error, warming, lastUpdateAt, retryDelay, refresh } =
+    useTelemetry();
   const activeRunId = useRef<string | null>(null);
   const observedRunId = useRef<string | null>(null);
   if (data?.run_id) activeRunId.current = data.run_id;
@@ -118,10 +119,12 @@ function Console({
     setSection("overview");
     busyRef.current = false;
     setBusy(false);
+    // A new run id that is not our own reset means the server replaced this
+    // tab's world (restart, eviction, capacity): say so, the numbers changed.
     setToast(
       data.reset_notice
         ? { text: "Demo restarted · Day 1", error: false }
-        : null,
+        : { text: "Your simulation was restarted", error: false },
     );
   }, [data]);
   useEffect(() => {
@@ -142,6 +145,19 @@ function Console({
       return () => clearTimeout(timer);
     }
   }, [toast]);
+  // "Last update N s ago" has to keep counting while the link is down, but the
+  // shell must not re-render once a second while everything is fine.
+  const [ageNow, setAgeNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (status === "live") return;
+    setAgeNow(Date.now());
+    const timer = setInterval(() => setAgeNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [status]);
+  const staleSeconds =
+    lastUpdateAt === null
+      ? null
+      : Math.max(0, Math.round((ageNow - lastUpdateAt) / 1000));
   const execute: Execute = useCallback(
     async (command, label, commandRunId) => {
       if (
@@ -532,6 +548,14 @@ function Console({
                   Telemetry connection interrupted. Showing the last received
                   state. {error}
                 </span>
+                {staleSeconds !== null && (
+                  <span className="mono">
+                    Last update {staleSeconds} s ago
+                    {retryDelay > 1000
+                      ? ` · retrying every ${Math.round(retryDelay / 1000)} s`
+                      : ""}
+                  </span>
+                )}
                 <button onClick={refresh}>Reconnect</button>
               </div>
             )}
