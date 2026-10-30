@@ -117,7 +117,8 @@ describe("typed API transport", () => {
     const fetcher = respond({
       tick: 42,
       run_id: "run-token",
-      dashboard: {},
+      // The wire carries one dashboard sample; the client appends its window.
+      dashboard: { history: [{ tick: 42 }] },
       control: {},
       nodes: [],
     });

@@ -120,7 +120,9 @@ class LogModel(BaseModel):
 class RingModel(BaseModel):
     id: int
     cluster: int = Field(default=1, ge=1, le=3)
-    nodes: list[str]
+    # Only the count was ever read (topology panel, cut dialog); the full id list
+    # cost ~3 KB of every 1 Hz frame.
+    node_count: int = Field(ge=0)
     path: list[list[float]]
     circumference_km: float
     cut: Optional[dict] = None
@@ -203,6 +205,13 @@ class RunHistoryResponse(BaseModel):
     summaries: list[RunSummary]
 
 
+class ActivityResponse(BaseModel):
+    """On-demand event log for the Activity/History dialog."""
+    run_id: str
+    tick: int
+    logs: list[LogModel]
+
+
 class DeltaResponse(BaseModel):
     """Bounded current snapshot at the legacy tick-cursor endpoint.
 
@@ -221,7 +230,8 @@ class DeltaResponse(BaseModel):
     agg: list[AggModel]
     nodes: list[NodeModel]
     teams: list[TeamModel]
-    logs: list[LogModel]
+    # ``logs`` moved to GET /api/activity: the Activity dialog is closed almost
+    # always, and the array grew to ~8 KB of every 1 Hz frame.
     rings: list[RingModel] = []
     ai: Optional[dict] = None        # M6 — Commander panel payload
 

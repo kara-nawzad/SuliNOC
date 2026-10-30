@@ -192,7 +192,6 @@ test("run reset shows Day 1, clears stale UI state, and histories completions by
         { ...baseline.dashboard.current, tick: 0, sim_time: "D1 00:00" },
       ],
     },
-    logs: [],
     control: { ...baseline.control, paused: true },
   };
   const completedAt = "2026-10-04T08:15:00Z";
@@ -255,7 +254,6 @@ test("run reset shows Day 1, clears stale UI state, and histories completions by
       current: { ...frame.dashboard.current, tick: 0, sim_time: "D1 00:00" },
       history: [{ ...frame.dashboard.current, tick: 0, sim_time: "D1 00:00" }],
     },
-    logs: [],
   };
   await expect(page.getByRole("status")).toContainText(
     "Demo restarted · Day 1",

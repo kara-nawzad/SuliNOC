@@ -1,5 +1,6 @@
 import type {
   ActionResult,
+  Activity,
   Config,
   RunHistory,
   SessionInfo,
@@ -138,6 +139,8 @@ export function validateSnapshot(value: Snapshot): Snapshot {
   // Fail visibly rather than silently rendering an old backend as zeroes.
   if (
     !value.dashboard ||
+    !Array.isArray(value.dashboard.history) ||
+    !value.dashboard.history.length ||
     !value.control ||
     !Array.isArray(value.nodes) ||
     !Number.isFinite(value.tick) ||
@@ -176,6 +179,10 @@ export const api = {
   startSession: (signal?: AbortSignal) =>
     request<SessionInfo>("/api/session", { method: "POST", signal }),
   config: (signal?: AbortSignal) => request<Config>("/api/config", { signal }),
+  /** Engine events for the Activity dialog. Fetched only while it is open; the
+   * 1 Hz frame no longer carries the log (~8 KB of every poll). */
+  activity: (signal?: AbortSignal) =>
+    request<Activity>("/api/activity", { signal }),
   waveStatus: (signal?: AbortSignal) =>
     request<WaveProviderState>("/api/wave/status", { signal }),
   waveChat: (question: string, runId: string, history: WaveTurn[]) =>

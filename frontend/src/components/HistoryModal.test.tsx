@@ -5,7 +5,7 @@ import { api } from "../services/api";
 import type { Config, RunSummary, Snapshot } from "../types/api";
 
 vi.mock("../services/api", () => ({
-  api: { history: vi.fn() },
+  api: { history: vi.fn(), activity: vi.fn() },
 }));
 
 afterEach(() => {
@@ -47,7 +47,12 @@ it("labels completed summaries by completion date and simulated day, never run n
     precision: 0.86,
   };
   vi.mocked(api.history).mockResolvedValue({ summaries: [summary] });
-  const data = { run_id: "internal-run-id", logs: [] } as unknown as Snapshot;
+  vi.mocked(api.activity).mockResolvedValue({
+    run_id: "internal-run-id",
+    tick: 0,
+    logs: [],
+  });
+  const data = { run_id: "internal-run-id", tick: 0 } as unknown as Snapshot;
   const config = { presentation: { severity_colors: {} } } as Config;
   render(<HistoryModal data={data} config={config} onClose={vi.fn()} />);
 
@@ -57,4 +62,35 @@ it("labels completed summaries by completion date and simulated day, never run n
   expect(screen.getByText("30 simulated days")).toBeInTheDocument();
   expect(screen.getByText("Day 30 · D30 23:55")).toBeInTheDocument();
   expect(document.body.textContent).not.toMatch(/Cycle\s+\d+/i);
+});
+
+it("loads the engine log on demand and shows it in the events tab", async () => {
+  vi.stubGlobal("HTMLDialogElement", window.HTMLDialogElement);
+  window.HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+    this.open = true;
+  };
+  window.HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+    this.open = false;
+  };
+  vi.mocked(api.history).mockResolvedValue({ summaries: [] });
+  vi.mocked(api.activity).mockResolvedValue({
+    run_id: "internal-run-id",
+    tick: 7,
+    logs: [
+      {
+        tick: 7,
+        time: "D1 00:35",
+        severity: "MAJOR",
+        message: "SLY-007 feeder VSWR alarm",
+        node_id: "SLY-007",
+      },
+    ],
+  });
+  const data = { run_id: "internal-run-id", tick: 7 } as unknown as Snapshot;
+  const config = { presentation: { severity_colors: {} } } as Config;
+  render(<HistoryModal data={data} config={config} onClose={vi.fn()} />);
+  // The 1 Hz frame no longer carries the log: it arrives from /api/activity.
+  expect(await screen.findByText(/feeder VSWR alarm/)).toBeInTheDocument();
+  expect(api.activity).toHaveBeenCalledTimes(1);
+  expect(screen.getByText(/Latest 1 retained events/)).toBeInTheDocument();
 });

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { CalendarClock, CircleCheck, Loader2 } from "lucide-react";
-import type { Config, RunSummary, Snapshot } from "../types/api";
+import type { Config, LogEntry, RunSummary, Snapshot } from "../types/api";
 import { api } from "../services/api";
 import { Badge, Modal } from "./ui";
 
@@ -86,6 +86,10 @@ export function HistoryModal({
   const [tab, setTab] = useState<"events" | "runs">("events");
   const [summaries, setSummaries] = useState<RunSummary[] | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  // The 1 Hz frame carries no log any more, so the dialog asks for it — once on
+  // open and again whenever the engine ticks while it stays open, which is the
+  // same freshness the snapshot used to give it.
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   useEffect(() => {
     let current = true;
     void api
@@ -105,6 +109,22 @@ export function HistoryModal({
       current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (tab !== "events") return;
+    let current = true;
+    void api
+      .activity()
+      .then((reply) => {
+        if (current) setLogs(reply.logs);
+      })
+      .catch(() => {
+        /* keep the last log we showed rather than blanking the dialog */
+      });
+    return () => {
+      current = false;
+    };
+  }, [tab, data.tick, data.run_id]);
 
   return (
     <Modal title="History" onClose={onClose} wide>
@@ -129,11 +149,11 @@ export function HistoryModal({
       {tab === "events" ? (
         <>
           <p className="dialog-intro">
-            Latest {data.logs.length} retained events · engine time. Cleared
+            Latest {logs.length} retained events · engine time. Cleared
             alarms remain here for context.
           </p>
           <div className="event-history">
-            {[...data.logs].reverse().map((entry, i) => (
+            {[...logs].reverse().map((entry, i) => (
               <div
                 className="history-row"
                 key={`${data.run_id}-${entry.tick}-${i}-${entry.message}`}
@@ -143,7 +163,7 @@ export function HistoryModal({
                 <p>{entry.message}</p>
               </div>
             ))}
-            {!data.logs.length && (
+            {!logs.length && (
               <div className="empty-state">
                 <CircleCheck size={24} />
                 <strong>No events yet</strong>
