@@ -120,7 +120,9 @@ class LogModel(BaseModel):
 class RingModel(BaseModel):
     id: int
     cluster: int = Field(default=1, ge=1, le=3)
-    nodes: list[str]
+    # Only the count was ever read (topology panel, cut dialog); the full id list
+    # cost ~3 KB of every 1 Hz frame.
+    node_count: int = Field(ge=0)
     path: list[list[float]]
     circumference_km: float
     cut: Optional[dict] = None
@@ -203,6 +205,13 @@ class RunHistoryResponse(BaseModel):
     summaries: list[RunSummary]
 
 
+class ActivityResponse(BaseModel):
+    """On-demand event log for the Activity/History dialog."""
+    run_id: str
+    tick: int
+    logs: list[LogModel]
+
+
 class DeltaResponse(BaseModel):
     """Bounded current snapshot at the legacy tick-cursor endpoint.
 
@@ -221,34 +230,61 @@ class DeltaResponse(BaseModel):
     agg: list[AggModel]
     nodes: list[NodeModel]
     teams: list[TeamModel]
-    logs: list[LogModel]
+    # ``logs`` moved to GET /api/activity: the Activity dialog is closed almost
+    # always, and the array grew to ~8 KB of every 1 Hz frame.
     rings: list[RingModel] = []
     ai: Optional[dict] = None        # M6 — Commander panel payload
+
+
+# Bound on a single resent turn. The browser echoes Wave's own answers back as
+# history, and those can be WAVE_ANSWER_MAX_CHARS long, so the turn ceiling has
+# to sit at or above that. When it was 1200, one long answer made every later
+# question in that conversation fail request validation with a bare HTTP 422 —
+# a permanent, self-inflicted outage that looked like Wave refusing to answer.
+# The prompt itself is still trimmed per turn inside autonoc/api/wave_ai.py.
+WAVE_ANSWER_MAX_CHARS = 8000
+WAVE_CHAT_TURN_MAX_CHARS = WAVE_ANSWER_MAX_CHARS
+WAVE_CHAT_HISTORY_MAX_TURNS = 8
+WAVE_CHAT_QUESTION_MAX_CHARS = 1000
 
 
 class WaveChatTurn(BaseModel):
     """A bounded, untrusted turn supplied by the current browser session."""
 
     role: Literal["user", "assistant"]
-    content: str = Field(min_length=1, max_length=1200)
+    content: str = Field(min_length=1, max_length=WAVE_CHAT_TURN_MAX_CHARS)
 
 
 class WaveChatRequest(BaseModel):
     """Read-only Wave request; live context is always captured server-side."""
 
-    question: str = Field(min_length=1, max_length=1000)
+    question: str = Field(min_length=1, max_length=WAVE_CHAT_QUESTION_MAX_CHARS)
     run_id: str = Field(min_length=1, max_length=100)
-    history: list[WaveChatTurn] = Field(default_factory=list, max_length=8)
+    history: list[WaveChatTurn] = Field(
+        default_factory=list, max_length=WAVE_CHAT_HISTORY_MAX_TURNS
+    )
 
 
 class WaveChatResponse(BaseModel):
-    answer: str = Field(min_length=1, max_length=4000)
-    provider: Literal["openai", "groq"] = "openai"
+    answer: str = Field(min_length=1, max_length=WAVE_ANSWER_MAX_CHARS)
+    # "local" is Wave's deterministic snapshot reader: it answers from the run
+    # data and built-in telecom notes whenever no live model can be reached,
+    # so the assistant never goes silent mid-demo.
+    provider: Literal["openai", "groq", "local"] = "openai"
     model: str
     ai_connected: bool
     run_id: str
     tick: int
     sim_time: str
+    # The run restarted (Day-30 rollover) while the question was in flight; the
+    # answer is grounded in the new run instead of being thrown away.
+    run_restarted: bool = False
+
+
+class SessionStartResponse(BaseModel):
+    """Identity of the run this browser now owns (``POST /api/session``)."""
+    run_id: str
+    tick: int = Field(ge=0)
 
 
 class ConfigResponse(BaseModel):

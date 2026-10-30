@@ -8,7 +8,13 @@
     />
     <meta name="theme-color" content="#081426" />
     <title>SuliNOC · Network operations</title>
-    <link rel="preload" as="image" href="/assets/hero-city-sunset.png" />
+    <link
+      rel="preload"
+      as="image"
+      type="image/avif"
+      href="/assets/hero-city-sunset.avif"
+      fetchpriority="high"
+    />
     <link
       rel="preload"
       as="font"
@@ -117,6 +123,11 @@
             rgb(8 20 38 / 14%) 58%,
             transparent 76%
           );
+      }
+      /* The <picture> wrapper exists only to offer AVIF/WebP; `contents` keeps
+         it out of the layout so the absolutely positioned image is unchanged. */
+      .hero-background-frame {
+        display: contents;
       }
       .hero-background {
         position: absolute;
@@ -453,12 +464,22 @@
   </head>
   <body>
     <main id="hero" aria-labelledby="hero-title">
-      <img
-        class="hero-background"
-        src="/assets/hero-city-sunset.png"
-        alt=""
-        fetchpriority="high"
-      />
+      <picture class="hero-background-frame">
+        <source
+          type="image/avif"
+          srcset="/assets/hero-city-sunset.avif"
+        />
+        <source
+          type="image/webp"
+          srcset="/assets/hero-city-sunset.webp"
+        />
+        <img
+          class="hero-background"
+          src="/assets/hero-city-sunset.png"
+          alt=""
+          fetchpriority="high"
+        />
+      </picture>
       <header class="hero-topbar">
         <img
           class="hero-logo"

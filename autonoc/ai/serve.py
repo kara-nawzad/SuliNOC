@@ -186,7 +186,12 @@ class InferenceWorker(threading.Thread):
         self.engine = engine
         self.lock = lock
         self.run_id = run_id
-        self._stop = threading.Event()
+        # Named `_stopped`, not `_stop`: Thread has its own private `_stop()`
+        # method, and shadowing it breaks `join()` on a live worker.
+        self._stopped = threading.Event()
+        # Set when something outside this thread makes a cycle worth running
+        # (AI toggled, engine replaced). See run() for the idle cadence.
+        self._wake = threading.Event()
         self._last_cycle = -1
         self.auto_approve_seconds = float(auto_approve_seconds)
         self._created: dict[int, float] = {}
@@ -201,10 +206,17 @@ class InferenceWorker(threading.Thread):
 
     # ------------------------------------------------------------ lifecycle
     def stop(self) -> None:
-        self._stop.set()
+        self._stopped.set()
+        # The loop waits on `_wake`, so stopping has to wake it too — otherwise
+        # shutdown waits for the idle sweep (up to IDLE_WAIT seconds).
+        self._wake.set()
 
     def set_auto_approve(self, seconds: float) -> None:
         self.auto_approve_seconds = max(0.0, float(seconds))
+
+    def wake(self) -> None:
+        """Ask the loop to look again immediately (AI toggled, run replaced)."""
+        self._wake.set()
 
     def eta_for(self, action_id: int) -> float:
         if self.auto_approve_seconds <= 0:
@@ -226,10 +238,32 @@ class InferenceWorker(threading.Thread):
         self.run_id = run_id
         self._last_cycle = -1
         self._created.clear()
+        self._wake.set()
 
     # ------------------------------------------------------------ main loop
+    # Cadence while the Commander is on: one look every 250 ms, unchanged.
+    POLL_WAIT = 0.25
+    # With the Commander off, nothing in a cycle can produce a verdict: the
+    # engine ignores AI entirely, so the thread has no work until someone
+    # enables AI or replaces the run — both of which set `_wake`. It still
+    # wakes once in a while as a safety net, not four times a second.
+    IDLE_WAIT = 30.0
+
+    def _ai_enabled(self) -> bool:
+        """Lock-free read: a stale answer only costs one wake-up.
+
+        The loop's own `_process_cycle` still takes the lock and re-checks
+        `source.ai_enabled` (publish ownership is unchanged), so this is only
+        used to decide how long to sleep.
+        """
+        return bool(getattr(self.engine, "ai_enabled", False))
+
     def run(self) -> None:
-        while not self._stop.wait(0.25):
+        while not self._stopped.is_set():
+            self._wake.wait(self.POLL_WAIT if self._ai_enabled() else self.IDLE_WAIT)
+            self._wake.clear()
+            if self._stopped.is_set():
+                return
             try:
                 self._process_cycle()
             except Exception:

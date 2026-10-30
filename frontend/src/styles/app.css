@@ -10,6 +10,22 @@
  * (base -> skin -> readable -> desktop type -> components -> phone -> phone layout -> design layer).
  * Edit rules here. Later sections win ties, so keep overrides in the section they belong to. */
 
+/* Screen-reader-only status text (new-alarm announcements). Visually hidden but
+   still in the accessibility tree: the incident list itself is not a live
+   region any more, because it is rebuilt on every tick. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ==================================================================
  * Base console styles (index.css)
  * ================================================================== */
@@ -858,17 +874,37 @@ h1 {
 .crew-wrapper {
   will-change: transform;
 }
+/* The tile fills Leaflet's icon box instead of declaring its own pixel size:
+   iconSize and iconAnchor both come from CREW_MOTION.marker.sizePx, so a tile
+   with a hard-coded width would drift away from the anchor (and therefore away
+   from the crew's real coordinate) the moment either number changed. */
 .crew-marker {
-  height: 27px;
-  width: 27px;
+  position: relative;
+  height: 100%;
+  width: 100%;
   padding: 4px;
+  display: grid;
+  place-items: center;
 }
-.crew-marker svg {
+.crew-marker > svg {
+  grid-area: 1 / 1;
   height: 100%;
   width: 100%;
   /* Inline SVG sits on the text baseline and leaves descender space below,
      nudging the truck off-centre inside its tile. Block layout removes that. */
   display: block;
+}
+/* Repair ring: an overlay pinned to the tile's centre, so it is concentric with
+   the crew's coordinate whatever the tile size is (no -5px arithmetic left to
+   go stale). JS sets --crew-ring-size from CREW_MOTION.repairRing.sizePx. */
+.crew-marker > .crew-repair-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--crew-ring-size, 40px);
+  height: var(--crew-ring-size, 40px);
+  transform: translate(-50%, -50%) rotate(-90deg);
+  pointer-events: none;
 }
 .map-top-overlay {
   position: absolute;
@@ -2553,6 +2589,20 @@ h1 {
 .tab-hidden .cut-pulse,
 .tab-hidden .predictive-pulse,
 .tab-hidden .pulse,
+/* The Wave launcher keeps its own character animations; none of them need to
+   run in a background tab either. */
+.tab-hidden .wave-mascot--idle .wave-figure,
+.tab-hidden .wave-mascot--idle .wave-ring--outer,
+.tab-hidden .wave-mascot--idle .wave-eyes,
+.tab-hidden .wave-mascot--idle .wave-smile,
+.tab-hidden .wave-mascot--idle .wave-antenna-cap,
+.tab-hidden .wave-mascot--idle .wave-arc--outer,
+.tab-hidden .wave-mascot--idle .wave-arc--inner,
+.tab-hidden .wave-mascot--thinking .wave-signal-arcs,
+.tab-hidden .wave-mascot--thinking .wave-eyes,
+.tab-hidden .wave-mascot--thinking .wave-status-light,
+.tab-hidden .wave-mascot--thinking .wave-antenna-cap,
+.tab-hidden .wave-caret,
 .map-interacting .fiber-flow,
 .map-interacting .cut-pulse,
 .map-interacting .predictive-pulse {
@@ -6796,33 +6846,27 @@ dialog.dialog::backdrop,
 
 /* Coverage line: how much of the chosen window has been recorded so far */
 
-/* Larger crew markers on the map (teams) */
+/* Crew marker skin. Size lives in CREW_MOTION.marker.sizePx — the tile fills
+   the Leaflet icon box, so nothing here may set width/height. */
 .app-shell .crew-marker {
-  width: 30px !important;
-  height: 30px !important;
   padding: 4px !important;
   border-radius: var(--radius-md);
 }
-.app-shell .crew-marker svg {
+.app-shell .crew-marker > svg {
   width: 100% !important;
   height: 100% !important;
 }
 /* Segmented repair-progress ring: floats just outside the tile, shown only
    while the crew is REPAIRING. The faint notched track is always drawn; JS
    lights the solid notches one by one as the mission's ETA counts down. */
-.app-shell .crew-marker .crew-repair-ring {
-  position: absolute;
-  top: -5px;
-  left: -5px;
+.app-shell .crew-marker > .crew-repair-ring {
   /* The blanket svg sizing above must not shrink the ring to the tile. */
-  width: 40px !important;
-  height: 40px !important;
-  transform: rotate(-90deg);
-  pointer-events: none;
+  width: var(--crew-ring-size, 40px) !important;
+  height: var(--crew-ring-size, 40px) !important;
   opacity: 0;
   transition: opacity var(--t-fast) var(--ease);
 }
-.app-shell .crew-marker.crew-repairing .crew-repair-ring {
+.app-shell .crew-marker.crew-repairing > .crew-repair-ring {
   opacity: 1;
 }
 .crew-repair-ring .crew-repair-track {
@@ -8254,12 +8298,21 @@ dialog.dialog::backdrop,
     --wave-launcher-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     --wave-launcher-size: 72px;
   }
+  /* Phones: sit beside the launcher, not above it. Above it the bubble
+     floated over the map card and read like a tooltip for the wrong control;
+     stacked high it also covered the towers table. Centred on the launcher's
+     middle now — the same relationship it has on a laptop, just closer. The
+     bubble is a one-line 48 px pill, so half its height is 24 px. */
   .wave-greeting {
-    right: var(--wave-launcher-right);
+    right: calc(var(--wave-launcher-right) + var(--wave-launcher-size) + 8px);
     bottom: calc(
-      var(--wave-launcher-bottom) + var(--wave-launcher-size) + 14px
+      var(--wave-launcher-bottom) + var(--wave-launcher-size) / 2 - 24px
     );
-    max-width: min(280px, calc(100vw - 24px));
+    max-width: min(232px, calc(100vw - var(--wave-launcher-size) - 34px));
+  }
+  /* Its tail follows the bubble's middle, so it still points at Wave. */
+  .wave-greeting::after {
+    bottom: calc(50% - 5.5px);
   }
   .wave-launcher.is-open {
     visibility: hidden;
@@ -8967,5 +9020,176 @@ dialog.dialog::backdrop,
     margin-left: 0;
     flex-basis: 100%;
     text-align: left;
+  }
+}
+
+/* ==================================================================
+ * Phone / touch paint budget
+ * ------------------------------------------------------------------
+ * Everything below is scoped to (max-width: 767px) or (pointer: coarse): the
+ * desktop rendering is byte-for-byte what it was. On a phone the map, the
+ * sticky header and the launcher share one small GPU, so expensive paint is
+ * swapped for cheap equivalents that keep the same palette and personality.
+ * ================================================================== */
+@media (max-width: 767px), (pointer: coarse) {
+  /* 1. Fibre rings: the dash pattern stays (rings still read as fibre), but the
+     stroke-dashoffset animation that re-rasterised 10 SVG polylines is gone. */
+  .app-shell .fiber-flow {
+    animation: none !important;
+  }
+
+  /* 2. No drop-shadow filters on anything that pulses: the pulse itself stays
+     (opacity), the blurred glow around it does not. */
+  .app-shell .cut-segment,
+  .app-shell .cut-pulse,
+  .app-shell .predictive-pulse,
+  .app-shell .core-marker svg {
+    filter: none !important;
+  }
+
+  /* 3. Sticky chrome: same palette, near-opaque instead of blurred. The blur
+     samples the scrolling page behind it on every frame on a phone GPU. */
+  .app-shell .global-header {
+    background: rgba(234, 243, 254, 0.97) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .app-shell .navigation-rail {
+    /* already a solid var(--sn-s1) at this width — only the blur goes */
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .app-shell .inspector {
+    background: #0c1421 !important;      /* #0c1421f7, alpha folded in */
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* 4. Wave launcher: two cheap animations instead of seven (float + outer
+     ring). The blink, breathe and signal-arc loops are decorative only. */
+  .app-shell .wave-mascot--idle .wave-eyes,
+  .app-shell .wave-mascot--idle .wave-smile,
+  .app-shell .wave-mascot--idle .wave-antenna-cap,
+  .app-shell .wave-mascot--idle .wave-arc--outer,
+  .app-shell .wave-mascot--idle .wave-arc--inner {
+    animation: none !important;
+  }
+
+  /* 5. Where an animation only needed to look the same: pulse opacity instead
+     of stroke-width (a stroke-width animation re-strokes the path every frame
+     and re-runs the glyph cache). */
+  .app-shell .wave-mascot--responding .wave-ring--outer {
+    animation: wave-phone-pulse 1.25s ease-out 1;
+  }
+  .app-shell .wave-mascot--alert .wave-ring--outer {
+    animation: wave-phone-pulse 1.25s ease-out 1;
+  }
+}
+
+@keyframes wave-phone-pulse {
+  0% {
+    opacity: 0.82;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.9;
+  }
+}
+
+/* ==================================================================
+ * Phone panels: a peek-sized inspector sheet, a towers list that fits
+ * ==================================================================
+ * Both rules are inside phone-only media queries, so every desktop rule
+ * above is untouched. They exist because two panels were unusable on a
+ * 390 px screen: the site inspector covered almost the whole screen, and the
+ * six-column towers table needed a sideways swipe inside a card narrower than
+ * its own rows — which clipped the site and status columns, wrapped every
+ * cell onto two lines and left the sticky header out of step with the rows.
+ */
+
+@media (max-width: 767px) {
+  /* The sheet used to stop at 82 vh: on a 390 x 720 phone that is nearly the
+     whole screen, with no map visible above it. It is half the screen now —
+     the reading list still scrolls, the map (and the site you tapped) stays in
+     view — and scrolling it does not drag the page behind it. */
+  .app-shell .inspector {
+    max-height: 50vh;
+    max-height: min(50dvh, 480px);
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 600px) {
+  /* No sideways swipe: each row is two lines instead. Line one is the site and
+     its status; line two is the four readings with their column names inline
+     (the header itself is kept for assistive tech but not drawn). */
+  .app-shell .tower-table {
+    position: relative;
+    overflow-x: hidden;
+    max-height: 52vh;
+    max-height: min(52dvh, 420px);
+  }
+  .app-shell .tower-row.tower-head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0 !important;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .app-shell .tower-row {
+    min-width: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    row-gap: 2px;
+    column-gap: var(--space-2);
+    padding: var(--space-2) var(--space-3) !important;
+  }
+  /* line one: site id (left, truncated rather than wrapped) + status */
+  .app-shell .tower-row > span:nth-child(1) {
+    grid-column: 1 / span 2;
+    grid-row: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .app-shell .tower-row > span:nth-child(2) {
+    grid-column: 3 / span 2;
+    grid-row: 1;
+    text-align: right;
+    white-space: nowrap;
+  }
+  /* line two: PRB, CQI, ring, cluster */
+  .app-shell .tower-row > span:nth-child(3),
+  .app-shell .tower-row > span:nth-child(4),
+  .app-shell .tower-row > span:nth-child(5),
+  .app-shell .tower-row > span:nth-child(6) {
+    grid-row: 2;
+    text-align: left;
+    font-size: var(--fs-caption) !important;
+    white-space: nowrap;
+    color: var(--sn-t2);
+  }
+  .app-shell .tower-row > span:nth-child(3) { grid-column: 1; }
+  .app-shell .tower-row > span:nth-child(4) { grid-column: 2; }
+  .app-shell .tower-row > span:nth-child(5) { grid-column: 3; }
+  .app-shell .tower-row > span:nth-child(6) { grid-column: 4; }
+  /* The numbers are bare ("15", "7"), so each carries its column name. */
+  .app-shell .tower-row > span:nth-child(3)::before { content: "PRB "; }
+  .app-shell .tower-row > span:nth-child(4)::before { content: "CQI "; }
+  .app-shell .tower-row > span:nth-child(5)::before { content: "RING "; }
+  .app-shell .tower-row > span:nth-child(3)::before,
+  .app-shell .tower-row > span:nth-child(4)::before,
+  .app-shell .tower-row > span:nth-child(5)::before {
+    font-size: var(--fs-caption);
+    letter-spacing: var(--ls-label);
+    color: var(--sn-t3);
   }
 }

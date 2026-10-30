@@ -4,10 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#081426" />
+    <!-- Warm the hero background while the app bundle loads. The file is the
+         AVIF the <picture> in hero-source.html selects first; browsers without
+         AVIF support ignore this hint (type mismatch) and pick WebP/PNG there,
+         so nothing is downloaded twice. -->
     <link
       rel="preload"
       as="image"
-      href="/assets/hero-city-sunset.jpg"
+      type="image/avif"
+      href="/assets/hero-city-sunset.avif"
       fetchpriority="high"
     />
     <link

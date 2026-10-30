@@ -1,10 +1,15 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { CREW_MOTION } from "../crew-motion.config.js";
 import {
+  crewDivIcon,
+  crewMarkerElement,
   repairRingDasharray,
   updateRepairTrack,
   type RepairTrack,
 } from "./CrewLayer";
+
+const styles = readFileSync("src/styles/app.css", "utf8");
 
 type CrewLike = Parameters<typeof updateRepairTrack>[1];
 
@@ -118,5 +123,86 @@ describe("repair ring dash pattern", () => {
       expect(pattern.every((v) => v >= 0)).toBe(true);
       expect(pattern.reduce((a, b) => a + b, 0)).toBeGreaterThan(circumference);
     }
+  });
+});
+
+const RING = CREW_MOTION.repairRing;
+
+/** One CSS rule block, without its neighbours. */
+const ruleOf = (selector: string): string => {
+  const start = styles.indexOf(`${selector} {`);
+  expect(start).toBeGreaterThan(-1);
+  return styles.slice(start, styles.indexOf("}", start));
+};
+
+/** The truck glyph's ink box, stroke included: the paths span x 3..21, y 6..17
+ * with a 1.7 stroke, and the wheels hang down to y = 20. */
+const TRUCK_INK = { x0: 2.15, x1: 21.85, y0: 5.15, y1: 20.0 };
+
+const viewBox = (svg: Element): number[] =>
+  (svg.getAttribute("viewBox") ?? "").split(/[\s,]+/).map(Number);
+
+describe("crew marker geometry", () => {
+  it("anchors the icon on its centre, not on a corner", () => {
+    const icon = crewDivIcon("#0f8a8a");
+    const size = icon.options.iconSize as [number, number];
+    expect(size).toEqual([
+      CREW_MOTION.marker.sizePx,
+      CREW_MOTION.marker.sizePx,
+    ]);
+    expect(icon.options.iconAnchor).toEqual([size[0] / 2, size[1] / 2]);
+    // A half-pixel anchor would blur the circle and push it off the crew.
+    expect(CREW_MOTION.marker.sizePx % 2).toBe(0);
+  });
+
+  it("lets the tile fill the icon box instead of restating a pixel size", () => {
+    const tile = ruleOf(".crew-marker");
+    expect(tile).toContain("width: 100%");
+    expect(tile).toContain("height: 100%");
+    expect(tile).not.toMatch(/width:\s*\d+px/);
+    expect(tile).not.toMatch(/height:\s*\d+px/);
+    // The skin must not pin the tile back to a hard-coded size either.
+    const skin = ruleOf(".app-shell .crew-marker");
+    expect(skin).not.toMatch(/(width|height):\s*\d+px/);
+  });
+
+  it("centres the truck glyph inside its own viewBox", () => {
+    const truck = crewMarkerElement("#0f8a8a").querySelector("svg")!;
+    const [x, y, w, h] = viewBox(truck);
+    const inkX = (TRUCK_INK.x0 + TRUCK_INK.x1) / 2;
+    const inkY = (TRUCK_INK.y0 + TRUCK_INK.y1) / 2;
+    expect(Math.abs(x + w / 2 - inkX)).toBeLessThan(0.2);
+    expect(Math.abs(y + h / 2 - inkY)).toBeLessThan(0.2);
+  });
+
+  it("sizes the repair ring from the config and draws it about its centre", () => {
+    const tile = crewMarkerElement("#0f8a8a");
+    const ring = tile.querySelector(".crew-repair-ring")!;
+    expect(tile.style.getPropertyValue("--crew-ring-size")).toBe(
+      `${RING.sizePx}px`,
+    );
+    expect(viewBox(ring)).toEqual([0, 0, RING.sizePx, RING.sizePx]);
+    const circle = ring.querySelector("circle")!;
+    expect(Number(circle.getAttribute("cx"))).toBe(RING.sizePx / 2);
+    expect(Number(circle.getAttribute("cy"))).toBe(RING.sizePx / 2);
+    // The stroke stays inside the ring's own box, so nothing is clipped.
+    expect(RING.radiusPx + RING.strokePx / 2).toBeLessThanOrEqual(
+      RING.sizePx / 2,
+    );
+    // ...and the ring floats clear of the tile instead of sitting under it.
+    expect(RING.sizePx).toBeGreaterThan(CREW_MOTION.marker.sizePx);
+  });
+
+  it("keeps the ring concentric with the tile by CSS, not by offsets", () => {
+    const rule = ruleOf(".crew-marker > .crew-repair-ring");
+    expect(rule).toContain("top: 50%");
+    expect(rule).toContain("left: 50%");
+    expect(rule).toContain("translate(-50%, -50%)");
+    expect(rule).toContain("var(--crew-ring-size");
+    expect(rule).not.toMatch(/top:\s*-\d/);
+    expect(rule).not.toMatch(/left:\s*-\d/);
+    const skin = ruleOf(".app-shell .crew-marker > .crew-repair-ring");
+    expect(skin).toContain("var(--crew-ring-size");
+    expect(skin).not.toMatch(/(top|left):\s*-?\d+px/);
   });
 });

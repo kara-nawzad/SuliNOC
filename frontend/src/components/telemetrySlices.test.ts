@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Config, NodeData, Snapshot } from "../types/api";
-import { sameSiteNodes } from "./NetworkMap";
-import { sameTowerRows } from "./TowerList";
+import { sameSiteNodes, siteTooltipHtml } from "./NetworkMap";
+import { sameTowerRow, sameTowerRows } from "./TowerList";
 
 /** Telemetry replaces every node object every second. These tests pin the
  * slice comparators: a field that is rendered but missing from a comparator
@@ -37,18 +37,31 @@ describe("site slice (map canvas layer)", () => {
     expect(sameSiteNodes(before, after)).toBe(true);
   });
 
-  it("re-renders when any marker or tooltip field moves", () => {
+  it("re-renders when everything the dot draws changes", () => {
     for (const changed of [
       { lat: 35.6 },
       { lon: 45.5 },
       { status: 3 },
       { warn: true },
-      { vswr: 2.4 },
-      { prb: 66 },
     ]) {
       const before = [node({ id: "S1" })];
       const after = [node({ id: "S1", ...changed })];
       expect(sameSiteNodes(before, after), JSON.stringify(changed)).toBe(false);
+    }
+  });
+
+  it("ignores tooltip-only values: prb and vswr never redraw a marker", () => {
+    // Real ticks move prb for ~298/300 sites and vswr for ~137/300 — none of
+    // that changes a 12 px dot, so none of it may re-render the 300 markers.
+    const before = [node({ id: "S1", prb: 62.31, vswr: 1.871 })];
+    for (const changed of [
+      { prb: 62.34 },                    // sub-precision
+      { prb: 66 },                       // a whole displayed unit
+      { vswr: 1.879 },
+      { vswr: 2.4 },
+    ]) {
+      const after = [node({ id: "S1", ...changed })];
+      expect(sameSiteNodes(before, after), JSON.stringify(changed)).toBe(true);
     }
   });
 
@@ -68,6 +81,30 @@ describe("tower table slice", () => {
         rowsProps([node({ id: "S1", prb: 51.5, cqi: 9 })], configA),
       ),
     ).toBe(true);
+  });
+
+  it("ignores a PRB change that prints the same number", () => {
+    expect(
+      sameTowerRow(
+        node({ id: "S1", prb: 62.31 }),
+        node({ id: "S1", prb: 62.34 }),
+      ),
+    ).toBe(true);
+    // ...but a change that moves the printed tenth still re-renders.
+    expect(
+      sameTowerRow(node({ id: "S1", prb: 62.31 }), node({ id: "S1", prb: 62.4 })),
+    ).toBe(false);
+  });
+
+  it("keeps sorting correct: a status flip always counts as changed", () => {
+    // Rows read faulty-first, so the row that changes status must re-render —
+    // otherwise it would keep the old position and the old status colour.
+    expect(
+      sameTowerRows(
+        rowsProps([node({ id: "S1", status: 0 })], configA),
+        rowsProps([node({ id: "S1", status: 3 })], configA),
+      ),
+    ).toBe(false);
   });
 
   it("re-renders when a rendered column changes", () => {
@@ -98,5 +135,28 @@ describe("tower table slice", () => {
         rowsProps(nodes, configA, otherSelect),
       ),
     ).toBe(false);
+  });
+});
+
+describe("site tooltip (one shared tooltip for 300 sites)", () => {
+  const config = {
+    status_names: { 0: "Healthy", 3: "Critical fault" },
+    metric_labels: { vswr: "VSWR", prb: "PRB load" },
+  } as unknown as Config;
+
+  it("renders exactly the content the per-marker tooltip used to", () => {
+    const html = siteTooltipHtml(
+      node({ id: "SLY-032", status: 3, vswr: 1.87, prb: 62.35 }),
+      config,
+    );
+    expect(html).toBe(
+      "<strong>SLY-032</strong><br>Critical fault<br>VSWR 1.87 · PRB load 62.4%",
+    );
+  });
+
+  it("escapes site ids instead of injecting markup", () => {
+    expect(siteTooltipHtml(node({ id: "<b>x</b>" }), config)).toContain(
+      "&lt;b&gt;x&lt;/b&gt;",
+    );
   });
 });

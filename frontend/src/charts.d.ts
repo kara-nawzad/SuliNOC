@@ -1,4 +1,8 @@
 // Types for the local charts.js module.
+export function downsample(
+  points: [number, number][],
+  maxPoints?: number,
+): [number, number][];
 export function niceTicks(min: number, max: number, n?: number): number[];
 export function hhmm(minutes: number): string;
 export function xLabel(minutes: number, spanMinutes: number): string;

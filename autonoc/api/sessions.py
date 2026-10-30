@@ -58,12 +58,29 @@ COOKIE_NAME = "autonoc_session"
 # The dashboard's first `/api/*` call creates the session and issues the cookie.
 SESSION_FREE_PATHS: frozenset[str] = frozenset({"/api/health", "/api/wave/status"})
 
+# Read-only reads that are answerable from the shared default engine. A request
+# without a session token is crawler, uptime-probe, link-prefetch or curl
+# traffic: it must see the product, but it must not *build* an engine (~700 ms)
+# nor occupy a browser slot. These are answered from the shared engine instead,
+# which only steps on the server clock, so extra readers can never speed the
+# simulation up. ``POST /api/session`` is the explicit handshake a real
+# dashboard uses to claim its own run before it polls.
+SHARED_READ_PATHS: frozenset[str] = SESSION_FREE_PATHS | frozenset({
+    "/api/config", "/api/data", "/api/delta", "/api/activity",
+    "/api/telemetry/history", "/api/history",
+})
+
 
 def requires_session(path: str) -> bool:
     """True when this request needs (and may create) a per-browser session."""
     if path in SESSION_FREE_PATHS:
         return False
     return path.startswith("/api/")
+
+
+def serves_shared(path: str, method: str) -> bool:
+    """True when a token-less read can be answered without owning a session."""
+    return method.upper() in {"GET", "HEAD"} and path in SHARED_READ_PATHS
 
 
 @dataclass
@@ -124,6 +141,10 @@ class SessionRegistry:
         self._sessions: dict[str, Session] = {}
         self._lock = threading.RLock()
         self._reclaims = 0
+        # Slots reserved by a claim that is still building its world outside the
+        # lock. Counted against the cap so a burst cannot overshoot it, but never
+        # registered (an abandoned build leaves nothing behind).
+        self._pending = 0
 
     # ------------------------------------------------------------ internals
     def _drop(self, token: str, session: Session) -> None:
@@ -165,9 +186,28 @@ class SessionRegistry:
                 return
 
     def _create(self) -> tuple[Session, bool]:
-        token = secrets.token_urlsafe(32)
-        session = self.factory(token)
-        self._sessions[token] = session
+        """Reserve a slot, build the world outside the lock, then register it.
+
+        The factory builds a whole simulation world (~640 ms). Holding
+        ``self._lock`` for that long paused every other lookup — including the
+        token lookups the event loop makes for unrelated requests — so the slot
+        is reserved under the lock and the build happens after it is released.
+        """
+        with self._lock:
+            self._pending += 1
+        return self._build_reserved()
+
+    def _build_reserved(self) -> tuple[Session, bool]:
+        """Build a slot the caller already reserved with ``_pending``."""
+        try:
+            session = self.factory(secrets.token_urlsafe(32))
+        except BaseException:
+            with self._lock:
+                self._pending -= 1
+            raise
+        with self._lock:
+            self._pending -= 1
+            self._sessions[session.token] = session
         return session, True
 
     # ---------------------------------------------------------------- public
@@ -180,7 +220,7 @@ class SessionRegistry:
                 session = self._sessions[token]
                 session.last_seen = now
                 return session, False
-            if len(self._sessions) >= self.max_sessions:
+            if len(self._sessions) + self._pending >= self.max_sessions:
                 victim = (self._oldest(now, token, self.reclaim_grace)
                           if self.reclaim else None)
                 if victim is None:
@@ -190,7 +230,9 @@ class SessionRegistry:
                         retry_after=1.0,
                     )
                 self._reclaim(victim)
-            return self._create()
+            self._pending += 1
+        # Outside the lock: see _create.
+        return self._build_reserved()
 
     def get_or_default(self, token: str | None) -> tuple[Session, bool]:
         """Never raises: capacity pressure degrades to the oldest session.
@@ -199,15 +241,35 @@ class SessionRegistry:
         waiting must not be locked out, so even a busy session is adopted before
         the request is refused.
         """
-        with self._lock:
-            try:
-                return self.get(token)
-            except SessionCapacityError:
+        try:
+            return self.get(token)
+        except SessionCapacityError:
+            # Never raises: take the quietest slot, or create into a drained
+            # registry. The reservation happens under the lock; the build does
+            # not.
+            with self._lock:
                 victim = self._oldest(time.monotonic(), token)
-                if victim is None:
-                    return self._create()   # registry drained; just create
-                self._reclaim(victim)
-                return self._create()
+                if victim is not None:
+                    self._reclaim(victim)
+                self._pending += 1
+            return self._build_reserved()
+
+    def peek(self, token: str | None) -> Session | None:
+        """Return the session this token already owns — never create one.
+
+        Read-only traffic has to ask "do I already have a session?" without the
+        side effect of starting a ~700 ms engine build.
+        """
+        if not token:
+            return None
+        now = time.monotonic()
+        with self._lock:
+            self._purge(now)
+            session = self._sessions.get(token)
+            if session is None:
+                return None
+            session.last_seen = now
+            return session
 
     def holds(self, session: Session) -> bool:
         """True while this object still owns a slot (used by the sim loop)."""

@@ -388,7 +388,7 @@ def test_groq_provider_uses_its_own_key_model_and_compatible_token_field(monkeyp
     assert result["ai_connected"] is True
     assert captured["key"] == key
     assert captured["payload"]["model"] == "openai/gpt-oss-20b"
-    assert captured["payload"]["max_tokens"] == 700
+    assert captured["payload"]["max_tokens"] == 1500
     assert "max_completion_tokens" not in captured["payload"]
     assert key not in json.dumps(captured["payload"])
     assert key not in json.dumps(wave_ai.provider_status())
@@ -510,3 +510,57 @@ def test_global_rate_limit_bounds_public_api_key_usage(monkeypatch):
     assert error.value.code == "wave_global_rate_limited"
     assert calls == 1
     assert wave_ai.provider_status()["status"] == "connected"
+
+
+def test_prompt_keeps_general_telecom_questions_in_scope(monkeypatch):
+    """Wave must not treat "what is O-RAN?" as out of bounds."""
+    prompt = wave_ai._SYSTEM_PROMPT
+    assert "SCOPE & EXPERTISE" in prompt
+    assert "ALWAYS in scope" in prompt
+    assert "Non-RT RIC" in prompt and "VSWR" in prompt
+    assert "never claim to have performed it" in prompt
+
+    monkeypatch.setenv("OPENAI_API_KEY", "unit-test-key-not-a-credential")
+    wave_ai._rate_limiter.clear()
+    context = wave_ai.build_context(snapshot(), "What is O-RAN - Non-RT RIC?")
+    roles = context["network_structure"]["o_ran"]["rapp_roles"]
+    assert roles["doctor"].startswith("RCA rApp")
+    assert roles["commander"].startswith("A1 Policy")
+
+
+def test_a_failed_provider_call_refunds_the_rate_limit_token(monkeypatch):
+    """An outage must not spend a visitor's question budget."""
+    key = "unit-test-refund-key"
+    monkeypatch.setenv("OPENAI_API_KEY", key)
+    monkeypatch.setenv("WAVE_AI_RATE_LIMIT_PER_MINUTE", "1")
+    wave_ai._rate_limiter.clear()
+
+    monkeypatch.setattr(
+        wave_ai, "_provider_http_call", lambda *_a, **_k: (503, {}, {})
+    )
+    with pytest.raises(wave_ai.WaveAIError):
+        asyncio.run(
+            wave_ai.answer_question("first", snapshot(), session_id="refund")
+        )
+
+    def ok_http(_payload, _key, _timeout):
+        return 200, {"choices": [{"message": {"content": "recovered"}}]}, {}
+
+    monkeypatch.setattr(wave_ai, "_provider_http_call", ok_http)
+    assert asyncio.run(
+        wave_ai.answer_question("second", snapshot(), session_id="refund")
+    )["answer"] == "recovered"
+
+    with pytest.raises(wave_ai.WaveAIError) as error:
+        asyncio.run(
+            wave_ai.answer_question("third", snapshot(), session_id="refund")
+        )
+    assert error.value.code == "wave_rate_limited"
+    assert "ask again" in error.value.detail
+
+
+def test_default_limits_allow_a_real_conversation():
+    assert wave_ai.DEFAULT_RATE_LIMIT_PER_MINUTE >= 20
+    assert wave_ai.DEFAULT_GLOBAL_RATE_LIMIT_PER_MINUTE >= 120
+    assert wave_ai._MAX_ANSWER_CHARS >= 8_000
+    assert wave_ai._HISTORY_TURN_CHARS >= 2_000

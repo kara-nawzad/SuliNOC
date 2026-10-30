@@ -311,9 +311,9 @@ API documentation is at <http://127.0.0.1:8000/docs>.
 | `OPENAI_MODEL`                       | `gpt-4.1-mini`              | OpenAI Chat Completions model.                                 |
 | `GROQ_API_KEY`                       | unset                       | Optional Groq credential; read only by the backend.             |
 | `GROQ_MODEL`                         | `openai/gpt-oss-20b`        | Groq model ID enabled in your Groq console.                     |
-| `WAVE_AI_TIMEOUT_SECONDS`            | `12`                        | Maximum provider request time, bounded by the backend.          |
-| `WAVE_AI_RATE_LIMIT_PER_MINUTE`       | `8`                         | Per-browser-session Wave request limit.                         |
-| `WAVE_AI_GLOBAL_RATE_LIMIT_PER_MINUTE` | `60`                        | Per-process request ceiling across sessions.                    |
+| `WAVE_AI_TIMEOUT_SECONDS`            | `15`                        | Maximum provider request time, bounded by the backend.          |
+| `WAVE_AI_RATE_LIMIT_PER_MINUTE`       | `20`                        | Per-browser-session Wave request limit.                         |
+| `WAVE_AI_GLOBAL_RATE_LIMIT_PER_MINUTE` | `180`                       | Per-process request ceiling across sessions.                    |
 
 ### Wave generative assistant
 
@@ -325,9 +325,20 @@ operations. Responses must distinguish simulated telemetry from a live operator 
 from predictions, and missing data from facts. Suggestions are read-only.
 
 `GET /api/wave/status` reports `missing_key`, `not_verified`, `connected`, or `unavailable` without
-returning a credential. A key is **not** treated as a connection: `connected` is reported only after
-a successful Wave request to the selected provider. With no key, the panel displays setup guidance
-and chat returns a clear configuration error instead of a canned local answer.
+returning a credential, plus a `mode` of `live` or `local`. A key is **not** treated as a connection:
+`connected` is reported only after a successful Wave request to the selected provider.
+
+Wave never goes silent. When no key is configured, the key is rejected, the provider is
+rate-limiting or unreachable, or the provider returns nothing usable, the backend degrades to
+`autonoc/api/wave_local.py`: a deterministic reader that answers from the same run snapshot plus a
+short built-in telecom reference (O-RAN, Non-RT RIC, rApps, EPC, PRB, VSWR, ATS, MTTR, rings). Those
+replies are labelled `provider: "local"`, `ai_connected: false`, and open with a "Local mode" note so
+the degradation is never silent. Only genuine abuse controls (our own `429`) and the context-size
+guard (`413`) still fail, because those are requests the demo should not serve.
+
+A Day-30 rollover between the browser's poll and a question is answered from the new run and flagged
+with `run_restarted: true` instead of being refused, and the chat panel now survives the restart
+rather than being remounted.
 
 #### Use your Groq key
 
@@ -361,9 +372,11 @@ To use OpenAI instead, set `WAVE_AI_PROVIDER=openai` and `OPENAI_API_KEY`; `OPEN
 to `gpt-4.1-mini`. Never put either provider key in `fly.toml`, `frontend/.env`, a `VITE_*`
 variable, source code, browser storage, or chat. When enabled, Wave sends the current question, up
 to eight recent chat messages, and the bounded simulation snapshot to the selected provider, so users
-should not enter passwords, API keys, or other secrets. The default limiter allows eight requests per
-browser session and sixty requests per backend process per minute; tune these with
-`WAVE_AI_RATE_LIMIT_PER_MINUTE` and `WAVE_AI_GLOBAL_RATE_LIMIT_PER_MINUTE` if needed.
+should not enter passwords, API keys, or other secrets. The default limiter allows twenty questions
+per browser session and 180 per backend process per minute; a request that the provider itself fails
+is refunded, so an outage does not spend a visitor's budget. Tune the limits with
+`WAVE_AI_RATE_LIMIT_PER_MINUTE` and `WAVE_AI_GLOBAL_RATE_LIMIT_PER_MINUTE`. Answers are generated
+with a 1 500-token budget and clipped to 8 000 characters server-side.
 
 ## Windows demo and diagnostic scripts
 

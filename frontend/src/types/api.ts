@@ -161,7 +161,8 @@ export interface Cut {
 export interface Ring {
   id: number;
   cluster: number;
-  nodes: string[];
+  /** Site count only: the id list is not on the wire (it was never read). */
+  node_count: number;
   path: LatLng[];
   circumference_km: number;
   cut: Cut | null;
@@ -301,6 +302,19 @@ export interface RunSummary {
 export interface RunHistory {
   summaries: RunSummary[];
 }
+/** Reply to the explicit session handshake. */
+export interface SessionInfo {
+  run_id: string;
+  tick: number;
+}
+
+/** Reply from GET /api/activity — the event log, fetched on demand. */
+export interface Activity {
+  run_id: string;
+  tick: number;
+  logs: LogEntry[];
+}
+
 export interface Snapshot {
   run_id: string;
   reset_notice: boolean;

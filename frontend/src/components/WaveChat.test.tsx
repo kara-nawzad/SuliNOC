@@ -81,6 +81,8 @@ function providerStatus(
     configured: status !== "missing_key" && status !== "unavailable",
     verified: status === "connected",
     status,
+    mode:
+      status === "missing_key" || status === "unavailable" ? "local" : "live",
     detail: status,
   };
 }
@@ -101,6 +103,9 @@ function reply(
 
 const refresh = vi.fn();
 
+/** Wave types replies out at reading pace; assertions wait for the tail. */
+const TYPED = { timeout: 6000 } as const;
+
 function openWave() {
   fireEvent.click(screen.getByRole("button", { name: "Open Wave assistant" }));
 }
@@ -110,6 +115,14 @@ function askWave(question: string) {
     target: { value: question },
   });
   fireEvent.click(screen.getByRole("button", { name: "Send message to Wave" }));
+}
+
+/** The newest assistant bubble's rendered text. */
+function typedReply(): HTMLElement | null {
+  const nodes = document.querySelectorAll<HTMLElement>(
+    ".wave-message--assistant .wave-message-content",
+  );
+  return nodes.length ? nodes[nodes.length - 1] : null;
 }
 
 function renderWave(activeIncidents = 0) {
@@ -294,7 +307,9 @@ describe("Wave generative assistant", () => {
     askWave("Give me the snapshot.");
 
     // Wait for the last block (the quote) so the reveal has finished.
-    expect(await screen.findByText("Crews are on site.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Crews are on site.", {}, TYPED),
+    ).toBeInTheDocument();
 
     const heading = screen.getByRole("heading", {
       level: 2,
@@ -327,10 +342,61 @@ describe("Wave generative assistant", () => {
     askWave("How is the network?");
 
     expect(
-      await screen.findByText("Grounded streamed reply."),
+      await screen.findByText("Grounded streamed reply.", {}, TYPED),
     ).toBeInTheDocument();
     expect(api.waveChatStream).toHaveBeenCalledOnce();
     expect(api.waveChat).not.toHaveBeenCalled();
+  });
+
+  it("types a long answer out instead of letting it pop in", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("connected"));
+    const longAnswer = "Radio checks are clean across the ring. "
+      .repeat(14)
+      .trim();
+    vi.mocked(api.waveChat).mockResolvedValue(reply(longAnswer));
+
+    renderWave();
+    openWave();
+    askWave("How is the network?");
+
+    await waitFor(() => expect(typedReply()).not.toBeNull());
+    await waitFor(() =>
+      expect(typedReply()!.textContent!.length).toBeGreaterThan(0),
+    );
+    // The reveal is paced, so long before the end only a prefix is on screen.
+    expect(typedReply()!.textContent!.length).toBeLessThan(
+      longAnswer.length / 2,
+    );
+    await waitFor(
+      () => expect(typedReply()!.textContent).toContain(longAnswer.slice(-24)),
+      TYPED,
+    );
+  });
+
+  it("reveals the whole answer when the typing bubble is tapped", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("connected"));
+    const longAnswer = "Signal integrity is steady on every ring. "
+      .repeat(12)
+      .trim();
+    vi.mocked(api.waveChat).mockResolvedValue(reply(longAnswer));
+
+    renderWave();
+    openWave();
+    askWave("How is the network?");
+
+    await waitFor(() =>
+      expect(typedReply()!.textContent!.length).toBeGreaterThan(0),
+    );
+    const typing = document.querySelector<HTMLElement>(
+      ".wave-message.is-typing",
+    );
+    expect(typing).not.toBeNull();
+    fireEvent.click(typing!);
+
+    await waitFor(
+      () => expect(typedReply()!.textContent).toContain(longAnswer.slice(-24)),
+      { timeout: 1500 },
+    );
   });
 
   it("falls back to the JSON reply when the stream route is missing", async () => {
@@ -340,7 +406,9 @@ describe("Wave generative assistant", () => {
     openWave();
     askWave("Status?");
 
-    expect(await screen.findByText("Fallback answer.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Fallback answer.", {}, TYPED),
+    ).toBeInTheDocument();
     expect(api.waveChatStream).toHaveBeenCalledOnce();
     expect(api.waveChat).toHaveBeenCalledOnce();
   });
@@ -413,66 +481,112 @@ describe("Wave generative assistant", () => {
     ).toBeInTheDocument();
   });
 
-  it("reports missing server configuration and retries the same question", async () => {
-    const missingKey = providerStatus("missing_key");
-    vi.mocked(api.waveStatus)
-      .mockResolvedValueOnce(missingKey)
-      .mockResolvedValue(missingKey);
-    vi.mocked(api.waveChat)
-      .mockRejectedValueOnce(
-        new Error(
-          "Wave’s AI is not configured. Add OPENAI_API_KEY to the backend deployment environment; no key is stored in the browser.",
+  it("trims an oversized earlier answer before resending history", async () => {
+    // Regression: a restored chat can hold a full-length answer (Wave's own
+    // reply). Sending it verbatim tripped the backend's per-turn limit, and
+    // every later question failed with an opaque 422 until the chat was reset.
+    const longAnswer = "Z".repeat(2500);
+    sessionStorage.setItem(
+      "sulinoc-wave-chat:wave-test-run",
+      JSON.stringify([
+        { id: "prior-question", role: "user", content: "How is site power?" },
+        { id: "prior-answer", role: "assistant", content: longAnswer },
+      ]),
+    );
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    vi.mocked(api.waveChat).mockResolvedValue(reply("Short answer."));
+
+    renderWave();
+    openWave();
+    askWave("what is O-RAN - Non-RT RIC?");
+
+    await waitFor(() => expect(api.waveChat).toHaveBeenCalledOnce());
+    const history = vi.mocked(api.waveChat).mock.calls[0][2];
+    expect(history.map((turn) => turn.role)).toEqual(["user", "assistant"]);
+    expect(history[1].content).toHaveLength(2000);
+    expect(longAnswer.startsWith(history[1].content)).toBe(true);
+  });
+
+  it("answers in local mode when the deployment has no provider key", async () => {
+    // The server degrades to its deterministic snapshot reader instead of
+    // 503-ing, so the chat keeps working and never looks "offline".
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("missing_key"));
+    vi.mocked(api.waveChat).mockResolvedValue({
+      ...reply(
+        "*(Local mode — no provider API key is configured on the server. Answering from this run's snapshot and my built-in notes.)*\n\n**Right now** — 99.50 % availability.",
+      ),
+      provider: "local",
+      model: "wave-local-fallback",
+      ai_connected: false,
+    });
+
+    renderWave();
+    openWave();
+    askWave("How is the network?");
+
+    expect(await screen.findByText(/Local mode/)).toBeInTheDocument();
+    // The reveal is paced, so wait for the tail of the answer to land.
+    await waitFor(
+      () =>
+        expect(screen.getByRole("dialog").textContent).toContain(
+          "99.50 % availability",
         ),
-      )
-      .mockResolvedValue(reply("OpenAI answered after configuration."));
+      TYPED,
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: "Wave, offline state" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: "Message Wave" }),
+    ).toHaveAttribute(
+      "placeholder",
+      "Ask anything — local mode, live model offline…",
+    );
+  });
+
+  it("keeps the answer and flags it when the run restarts mid-question", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    vi.mocked(api.waveChat).mockResolvedValue({
+      ...reply("Restarted, but still grounded."),
+      run_id: "next-run",
+      run_restarted: true,
+    });
+
+    renderWave();
+    openWave();
+    askWave("How is the network?");
+
+    expect(
+      await screen.findByText("Restarted, but still grounded.", {}, TYPED),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /The simulation restarted while I was answering, so this comes from the new run/,
+        {},
+        TYPED,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("shows a rate-limit refusal with the retry affordances", async () => {
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("connected"));
+    vi.mocked(api.waveChat).mockRejectedValue(
+      new Error(
+        "Wave is taking a short breath — 12s, then ask again. (That's the per-dashboard limit keeping the shared key healthy.)",
+      ),
+    );
 
     renderWave();
     openWave();
     askWave("List incidents");
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Add OPENAI_API_KEY to the backend deployment environment",
+      "taking a short breath",
     );
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("img", { name: "Wave, offline state" }),
-    ).toHaveLength(2);
-
-    fireEvent.click(screen.getByRole("button", { name: "Refresh telemetry" }));
-    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-
-    expect(
-      await screen.findByText("OpenAI answered after configuration."),
-    ).toBeInTheDocument();
-    expect(api.waveChat).toHaveBeenCalledTimes(2);
-    expect(api.waveChat).toHaveBeenLastCalledWith(
-      "List incidents",
-      "wave-test-run",
-      [],
-    );
-    expect(screen.getAllByText("List incidents")).toHaveLength(1);
-  });
-
-  it("shows the missing Groq key setup when Groq is selected", async () => {
-    vi.mocked(api.waveStatus).mockResolvedValue({
-      provider: "groq",
-      model: "openai/gpt-oss-20b",
-      configured: false,
-      verified: false,
-      status: "missing_key",
-      detail: "Set GROQ_API_KEY in the server environment.",
-    });
-    vi.mocked(api.waveChat).mockRejectedValue(
-      new Error(
-        "Wave’s AI is not configured. Select WAVE_AI_PROVIDER=groq and set GROQ_API_KEY in the backend environment.",
-      ),
-    );
-
-    renderWave();
-    openWave();
-    askWave("Summarize the simulation.");
-    expect(await screen.findByRole("alert")).toHaveTextContent("GROQ_API_KEY");
+    expect(api.waveChat).toHaveBeenCalledOnce();
   });
 
   it("shows a successful answer from Groq without adding provider status to the header", async () => {
@@ -494,7 +608,7 @@ describe("Wave generative assistant", () => {
     askWave("What is happening?");
 
     expect(
-      await screen.findByText("Grounded answer from Groq."),
+      await screen.findByText("Grounded answer from Groq.", {}, TYPED),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Groq connected/)).not.toBeInTheDocument();
   });
@@ -511,7 +625,7 @@ describe("Wave generative assistant", () => {
     openWave();
     askWave("How many incidents?");
     expect(
-      await screen.findByText("One active simulated incident."),
+      await screen.findByText("One active simulated incident.", {}, TYPED),
     ).toBeInTheDocument();
 
     askWave("Tell me more about it.");

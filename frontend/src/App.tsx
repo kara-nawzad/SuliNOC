@@ -70,7 +70,8 @@ function Console({
   heroOpen: boolean;
   setHeroOpen: (open: boolean) => void;
 }) {
-  const { config, data, status, error, refresh } = useTelemetry();
+  const { config, data, status, error, warming, lastUpdateAt, retryDelay, refresh } =
+    useTelemetry();
   const activeRunId = useRef<string | null>(null);
   const observedRunId = useRef<string | null>(null);
   if (data?.run_id) activeRunId.current = data.run_id;
@@ -118,10 +119,12 @@ function Console({
     setSection("overview");
     busyRef.current = false;
     setBusy(false);
+    // A new run id that is not our own reset means the server replaced this
+    // tab's world (restart, eviction, capacity): say so, the numbers changed.
     setToast(
       data.reset_notice
         ? { text: "Demo restarted · Day 1", error: false }
-        : null,
+        : { text: "Your simulation was restarted", error: false },
     );
   }, [data]);
   useEffect(() => {
@@ -142,6 +145,19 @@ function Console({
       return () => clearTimeout(timer);
     }
   }, [toast]);
+  // "Last update N s ago" has to keep counting while the link is down, but the
+  // shell must not re-render once a second while everything is fine.
+  const [ageNow, setAgeNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (status === "live") return;
+    setAgeNow(Date.now());
+    const timer = setInterval(() => setAgeNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [status]);
+  const staleSeconds =
+    lastUpdateAt === null
+      ? null
+      : Math.max(0, Math.round((ageNow - lastUpdateAt) / 1000));
   const execute: Execute = useCallback(
     async (command, label, commandRunId) => {
       if (
@@ -297,7 +313,12 @@ function Console({
           SuliNOC<span> / NETWORK COMMAND</span>
         </h1>
         <Loader2 className="spin" size={22} />
-        <p>{error ?? "Establishing telemetry uplink…"}</p>
+        <p>
+          {error ??
+            (warming
+              ? "Warming up your simulation…"
+              : "Establishing telemetry uplink…")}
+        </p>
         {error && (
           <button className="button secondary" onClick={refresh}>
             Retry connection
@@ -308,16 +329,28 @@ function Console({
     );
   }
   const p = config.presentation.palette;
-  const theme = Object.fromEntries(
-    Object.entries(p).map(([key, val]) => [`--${key}`, val]),
-  ) as CSSProperties;
-  const matched = data.nodes
-    .filter((n) =>
-      `${n.id} ${config.agg_sites.find((a) => a.id === n.agg)?.name}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-    )
-    .slice(0, 12);
+  // The palette only changes when the backend sends a new one; rebuilding this
+  // object every tick re-created the shell's style prop 60 times a minute.
+  const theme = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(p).map(([key, val]) => [`--${key}`, val]),
+      ) as CSSProperties,
+    [p],
+  );
+  // Full-text search over 300 sites: computed only while the search dialog is
+  // open, and only when the query or the site list actually changed.
+  const matched = useMemo(() => {
+    if (dialog !== "search") return [];
+    const needle = query.trim().toLowerCase();
+    return data.nodes
+      .filter((n) =>
+        `${n.id} ${config.agg_sites.find((a) => a.id === n.agg)?.name}`
+          .toLowerCase()
+          .includes(needle),
+      )
+      .slice(0, 12);
+  }, [dialog, query, data.nodes, config.agg_sites]);
   // Greeting follows the simulation clock (the hour of the sim time shown on the dashboard).
   const simMinutes = simTimeToMinutes(data.kpis.sim_time);
   const greetingText = greetingFor(
@@ -515,6 +548,14 @@ function Console({
                   Telemetry connection interrupted. Showing the last received
                   state. {error}
                 </span>
+                {staleSeconds !== null && (
+                  <span className="mono">
+                    Last update {staleSeconds} s ago
+                    {retryDelay > 1000
+                      ? ` · retrying every ${Math.round(retryDelay / 1000)} s`
+                      : ""}
+                  </span>
+                )}
                 <button onClick={refresh}>Reconnect</button>
               </div>
             )}
@@ -888,12 +929,10 @@ function Console({
             </motion.div>
           )}
         </AnimatePresence>
-        <WaveChat
-          key={data.run_id}
-          data={data}
-          connection={status}
-          refresh={refresh}
-        />
+        {/* No key on the run id: a Day-30 rollover used to remount Wave and
+            throw the conversation away mid-question. The chat now survives the
+            restart, and the backend grounds late replies in the new run. */}
+        <WaveChat data={data} connection={status} refresh={refresh} />
       </div>
     </MotionConfig>
   );

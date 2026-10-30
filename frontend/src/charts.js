@@ -21,6 +21,35 @@ export function xLabel(m, spanMin) {
       : ""
     : hhmm(m);
 }
+/** At most `maxPoints` samples, keeping the peaks.
+ *
+ * Long windows (7 d) hold ~2 000 samples — far more than the ~600 px the chart
+ * has. Each bucket contributes its lowest and highest sample, in x order, so the
+ * envelope (and every visible spike) survives while the path gets ~10x shorter.
+ * The untouched array stays for the tooltip, so hovered values remain exact.
+ */
+export function downsample(points, maxPoints = 300) {
+  if (points.length <= maxPoints) return points;
+  const buckets = Math.max(1, Math.floor(maxPoints / 2));
+  const size = points.length / buckets;
+  const out = [];
+  for (let b = 0; b < buckets; b += 1) {
+    const chunk = points.slice(Math.floor(b * size), Math.floor((b + 1) * size));
+    if (!chunk.length) continue;
+    let lo = chunk[0],
+      hi = chunk[0];
+    for (const p of chunk) {
+      if (p[1] < lo[1]) lo = p;
+      if (p[1] > hi[1]) hi = p;
+    }
+    if (lo[0] <= hi[0]) out.push(lo, hi);
+    else out.push(hi, lo);
+  }
+  // Buckets can overlap at the seam; keep the sequence monotonic in x.
+  const seen = new Set();
+  return out.filter((p) => (seen.has(p[0]) ? false : (seen.add(p[0]), true)));
+}
+
 export function lineChart(
   host,
   {
@@ -51,7 +80,8 @@ export function lineChart(
     sy,
     raf = 0,
     dom = null,
-    winMin = 0;
+    winMin = 0,
+    axisKey = "";
   const fit = () => {
     const w = Math.round(host.clientWidth);
     if (w >= 200 && w !== W) {
@@ -94,8 +124,26 @@ export function lineChart(
     sx = (x) => L + ((x - x0) / span) * (W - L - R);
     sy = (v) => T + (1 - (v - y0) / (y1 - y0 || 1)) * (H - T - B);
     let s = "";
-    for (const v of ticks)
+    // Specs for the same markup, so an unchanged axis can be skipped and a
+    // changed one updated node by node instead of re-parsed.
+    const specs = [];
+    for (const v of ticks) {
       s += `<line class="gl" x1="${L}" x2="${W - R}" y1="${sy(v)}" y2="${sy(v)}"/><text class="ay" x="${L - 8}" y="${sy(v) + 4}" text-anchor="end">${fixed(v)}</text>`;
+      specs.push({
+        tag: "line",
+        attrs: { class: "gl", x1: L, x2: W - R, y1: sy(v), y2: sy(v) },
+      });
+      specs.push({
+        tag: "text",
+        attrs: {
+          class: "ay",
+          x: L - 8,
+          y: sy(v) + 4,
+          "text-anchor": "end",
+        },
+        text: fixed(v),
+      });
+    }
     const xLabels = [];
     const addXLabel = (x, text, anchor) => {
       const width = text.length * 7;
@@ -129,12 +177,49 @@ export function lineChart(
           addXLabel(sx(x), lab, i === 0 ? "start" : i === 4 ? "end" : "middle");
       }
     }
-    for (const label of xLabels.sort((a, b) => a.x - b.x))
+    for (const label of xLabels.sort((a, b) => a.x - b.x)) {
       s += `<text class="ax" x="${label.x}" y="${H - 8}" text-anchor="${label.anchor}">${label.text}</text>`;
-    g.innerHTML = s;
+      specs.push({
+        tag: "text",
+        attrs: {
+          class: "ax",
+          x: label.x,
+          y: H - 8,
+          "text-anchor": label.anchor,
+        },
+        text: label.text,
+      });
+    }
+    // The axis is only touched when its content actually changed: replacing the
+    // group with innerHTML re-parses every grid line and label, and for a
+    // fixed-domain chart that was the same 13 nodes every second. When only the
+    // numbers moved (a window that slides), the existing nodes are updated in
+    // place instead — same markup, no parse, no node churn.
+    if (s !== axisKey) {
+      const same = axisKey !== "" && g.children.length === specs.length;
+      axisKey = s;
+      if (!same) {
+        g.innerHTML = s;
+      } else {
+        for (let i = 0; i < specs.length; i += 1) {
+          const el = g.children[i],
+            spec = specs[i];
+          if (el.tagName !== spec.tag) {
+            g.innerHTML = s;
+            break;
+          }
+          for (const name in spec.attrs) {
+            const value = String(spec.attrs[name]);
+            if (el.getAttribute(name) !== value) el.setAttribute(name, value);
+          }
+          if (spec.text != null && el.textContent !== spec.text)
+            el.textContent = spec.text;
+        }
+      }
+    }
     ln.setAttribute(
       "d",
-      pts
+      downsample(pts)
         .filter((p) => p[0] >= x0)
         .map(
           (p, i) =>
@@ -150,10 +235,13 @@ export function lineChart(
         : "",
     );
   };
-  svg.addEventListener("pointermove", (e) => {
+  // One readout for a mouse and for a finger: pointer events already cover
+  // both, so a tap (pointerdown) opens it and a touch-drag (pointermove while
+  // pressed) tracks it.
+  const showAt = (clientX) => {
     if (!pts.length) return;
     const r = svg.getBoundingClientRect(),
-      x = ((e.clientX - r.left) / r.width) * W;
+      x = ((clientX - r.left) / r.width) * W;
     let best = pts[0];
     for (const p of pts)
       if (Math.abs(sx(p[0]) - x) < Math.abs(sx(best[0]) - x)) best = p;
@@ -164,7 +252,19 @@ export function lineChart(
     tip.textContent = `${hhmm(best[0])}  ${best[1].toFixed(decimals)} ${unit}`;
     tip.style.left =
       Math.min(r.width - 120, (sx(best[0]) / W) * r.width + 8) + "px";
+  };
+  svg.addEventListener("pointerdown", (e) => {
+    showAt(e.clientX);
+    // A finger drag belongs to the chart while it is pressed, not to the page.
+    if (e.pointerType !== "mouse") {
+      try {
+        svg.setPointerCapture(e.pointerId);
+      } catch {
+        /* capture is best-effort */
+      }
+    }
   });
+  svg.addEventListener("pointermove", (e) => showAt(e.clientX));
   svg.addEventListener("pointerleave", () => {
     cr.style.opacity = 0;
     tip.hidden = true;
@@ -182,16 +282,30 @@ export function lineChart(
       if (!raf) raf = requestAnimationFrame(draw);
     },
     setWindow(minutes) {
-      winMin = minutes || 0;
+      const next = minutes || 0;
+      // Same window, same picture: no new frame.
+      if (next === winMin) return;
+      winMin = next;
       if (!raf) raf = requestAnimationFrame(draw);
     },
     /** Fix the y-axis to [min, max]; pass null to return to automatic. */
     setDomain(min, max) {
-      dom = min == null ? null : [min, max];
+      const next = min == null ? null : [min, max];
+      if (next === dom || (next && dom && next[0] === dom[0] && next[1] === dom[1]))
+        return;
+      dom = next;
       if (!raf) raf = requestAnimationFrame(draw);
     },
     append(p) {
       pts.push(p);
+      // Appending into a fixed window drops what has scrolled off it, so the
+      // chart keeps exactly the same points a full setData would have drawn.
+      if (winMin && pts.length > 1) {
+        const cutoff = pts[pts.length - 1][0] - winMin;
+        let drop = 0;
+        while (drop < pts.length - 1 && pts[drop][0] < cutoff) drop += 1;
+        if (drop) pts.splice(0, drop);
+      }
       if (!raf) raf = requestAnimationFrame(draw);
     },
     destroy() {

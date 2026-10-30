@@ -5,7 +5,6 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { motion } from "framer-motion";
 import { X, ArrowUpRight, MoreHorizontal } from "lucide-react";
 import type { Config, Severity } from "../types/api";
 
@@ -129,20 +128,12 @@ export function Sparkline({
           <stop offset="1" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      {values.length > 1 && (
-        <motion.path
-          initial={false}
-          d={`${d} L110,34 L0,34 Z`}
-          animate={{ d: `${d} L110,34 L0,34 Z` }}
-          transition={{ duration: 0.6 }}
-          fill={`url(#${id})`}
-        />
-      )}
-      <motion.path
-        initial={false}
+      {/* The path is drawn, not morphed: framer's `d` interpolation ran a rAF
+          loop for 0.6 s on every tick to animate a 34 px sparkline. The static
+          result is the same shape, and the numbers above it still tween. */}
+      {values.length > 1 && <path d={`${d} L110,34 L0,34 Z`} fill={`url(#${id})`} />}
+      <path
         d={d}
-        animate={{ d }}
-        transition={{ duration: 0.6 }}
         stroke={color}
         strokeWidth="1.7"
         fill="none"

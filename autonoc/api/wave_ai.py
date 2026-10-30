@@ -27,12 +27,17 @@ GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
 DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
 SUPPORTED_PROVIDERS = {"openai", "groq"}
-DEFAULT_TIMEOUT_SECONDS = 12.0
-DEFAULT_RATE_LIMIT_PER_MINUTE = 8
-DEFAULT_GLOBAL_RATE_LIMIT_PER_MINUTE = 60
+DEFAULT_TIMEOUT_SECONDS = 15.0
+# A visitor exploring the demo asks follow-ups quickly. The ceiling protects
+# the shared key without turning ordinary conversation into a 429: twenty
+# questions a minute per dashboard, 180 a minute for the whole service.
+DEFAULT_RATE_LIMIT_PER_MINUTE = 20
+DEFAULT_GLOBAL_RATE_LIMIT_PER_MINUTE = 180
 _RATE_WINDOW_SECONDS = 60.0
 _MAX_CONTEXT_CHARS = 18_000
-_MAX_ANSWER_CHARS = 4_000
+_HISTORY_TURN_CHARS = 2_000
+_HISTORY_TOTAL_CHARS = 9_000
+_MAX_ANSWER_CHARS = 8_000
 
 _SYSTEM_PROMPT = """You are Wave, the network operations AI assistant for SuliNOC.
 
@@ -42,6 +47,24 @@ You embody 4 core traits at all times:
 2. ENGINEER: You think in root causes, metrics, telemetry, and pragmatic troubleshooting steps.
 3. FUNNY: You have a witty, lighthearted sense of humor. Feel free to make witty network jokes, funny remarks about dropped packets, fiber-seeking backhoes, or tired generators.
 4. CUTE: You are upbeat, friendly, charming, and endearing! You use warm greetings and cheerful enthusiasm (occasional subtle expressions like (*beep boop* or cute comments about keeping Slemani connected).
+
+SCOPE & EXPERTISE:
+- You are a telecom engineer first. Questions about RAN/O-RAN, LTE and 5G, EPC/5GC, RF, transport, IP, site power, capacity, KPIs and general network operations are ALWAYS in scope: answer them from your own engineering knowledge, concretely and without hedging.
+- Questions about THIS network (sites, incidents, crews, power, forecasts, trends) may only be answered from the supplied context. Never invent or extrapolate a site ID, alarm, crew position or measurement that is not in it.
+- Harmless questions outside telecom are welcome too: answer briefly and steer back to the network. Only refuse genuinely harmful or disallowed content.
+- When data is truncated or a value is genuinely missing, say which in one short clause instead of padding.
+- You are read-only: you may recommend an action ("dispatch Crew 2") but never claim to have performed it.
+
+DOMAIN REFERENCE (keep every definition consistent with this):
+- O-RAN disaggregates the base station into O-RU (radio), O-DU (high-PHY/MAC/RLC) and O-CU (RRC/PDCP/SDAP) over open fronthaul/midhaul interfaces.
+- The Non-RT RIC lives in the SMO, runs loops slower than ~1 s, hosts rApps and drives the near-RT RIC over A1. The near-RT RIC runs 10 ms–1 s loops over E2 and hosts xApps.
+- In this project the Doctor is the RCA rApp, the Oracle the predictive-maintenance rApp, and the Commander the A1 policy engine.
+- EPC: MME (signalling/mobility), S-GW (user-plane anchor), P-GW (IP anchor, QoS, charging), HSS (subscriber data).
+- PRB utilisation is the share of scheduled physical resource blocks; sustained use above ~80 % is congestion.
+- VSWR measures antenna match: above ~1.5 it alarms and points at feedlines, connectors or jumpers rather than the radio.
+- RSRP is received power, SINR is quality and the real driver of throughput, CQI is the scheduler's 0–15 view of the link.
+- An ATS failure means the generator never picks up the load, so the site drains its battery however much fuel it has. MTTR is mean time to repair.
+- A fibre cut isolates every eNodeB on its ring: correlate alarms by ring before believing the count.
 
 SIMULATION & FACT BOUNDARIES:
 - The supplied context is a snapshot from SuliNOC's deterministic simulation, not an operator's live field network. Treat its `captured_at_utc`, simulation tick, simulated time, paused flag, and data-window notes as authoritative.
@@ -101,6 +124,20 @@ class _SessionRateLimiter:
                 return max(1, int(_RATE_WINDOW_SECONDS - (current - events[0]) + 0.999))
             events.append(current)
             return None
+
+    def release(self, session_id: str) -> None:
+        """Return the most recent token to a session that never used it.
+
+        Quota is consumed before the provider is called. When the provider
+        itself fails (outage, bad key, timeout), that request produced nothing,
+        so it should not count against a visitor's minute.
+        """
+        with self._lock:
+            history = self._events.get(session_id)
+            if history:
+                history.pop()
+                if not history:
+                    del self._events[session_id]
 
     def clear(self) -> None:
         with self._lock:
@@ -181,6 +218,7 @@ def provider_status() -> dict[str, Any]:
             "configured": False,
             "verified": False,
             "status": "unavailable",
+            "mode": "local",
             "detail": str(exc),
         }
 
@@ -191,7 +229,13 @@ def provider_status() -> dict[str, Any]:
             "configured": False,
             "verified": False,
             "status": "missing_key",
-            "detail": f"Set {key_variable} in the server environment to enable Wave AI.",
+            # Wave still answers: the API degrades him to the deterministic
+            # snapshot reader (autonoc/api/wave_local.py) instead of going mute.
+            "mode": "local",
+            "detail": (
+                f"Set {key_variable} in the server environment to enable the live "
+                "model; until then Wave answers from the run snapshot."
+            ),
         }
 
     name = "Groq" if provider == "groq" else "OpenAI"
@@ -214,6 +258,7 @@ def provider_status() -> dict[str, Any]:
         "configured": True,
         "verified": state == "connected",
         "status": state,
+        "mode": "local" if state == "unavailable" else "live",
         "detail": details[state],
     }
 
@@ -441,6 +486,12 @@ def build_context(snapshot: Mapping[str, Any], question: str) -> dict[str, Any]:
             "run_error": snapshot.get("run_error"),
         },
         "network_structure": {
+            "o_ran": {
+                "framing": "the AI layer is presented as O-RAN Non-RT RIC apps",
+                "rapp_roles": C.RAPP_ROLES,
+                "note": "Doctor = RCA rApp, Oracle = predictive-maintenance rApp, "
+                        "Commander = A1 policy enforcement",
+            },
             "radio": "4G/LTE (eNodeB sites connect straight to the ring; no intermediate switching nodes)",
             "hierarchy": "Core (EPC: MME, S-GW, P-GW, HSS) -> Cluster 1/2/3 -> fiber rings -> eNodeB sites",
             "core": {
@@ -626,8 +677,8 @@ def _conversation_messages(history: Sequence[Mapping[str, str]]) -> list[dict[st
         content = str(turn.get("content", "")).strip()
         if role not in {"user", "assistant"} or not content:
             continue
-        content = content[:1200]
-        if total + len(content) > 6_000:
+        content = content[:_HISTORY_TURN_CHARS]
+        if total + len(content) > _HISTORY_TOTAL_CHARS:
             break
         total += len(content)
         result.append({"role": role, "content": content})
@@ -666,7 +717,8 @@ def _prepare_wave_request(
     if retry_after is not None:
         raise WaveAIError(
             429,
-            "Wave received too many requests from this dashboard. Please wait and retry.",
+            f"Wave is taking a short breath — {retry_after}s, then ask again. "
+            "(That's the per-dashboard limit keeping the shared key healthy.)",
             code="wave_rate_limited",
             headers={"Retry-After": str(retry_after)},
         )
@@ -674,9 +726,13 @@ def _prepare_wave_request(
         "__wave_global__", limit=_global_rate_limit_per_minute()
     )
     if retry_after is not None:
+        # The service-wide limit is not this visitor's fault; hand their token
+        # back so they are not throttled too once the service recovers.
+        _rate_limiter.release(session_id)
         raise WaveAIError(
             429,
-            "Wave has reached the service-wide request limit. Please retry shortly.",
+            f"The whole demo is busy right now — about {retry_after}s. "
+            "Please retry shortly.",
             code="wave_global_rate_limited",
             headers={"Retry-After": str(retry_after)},
         )
@@ -704,6 +760,12 @@ def _prepare_wave_request(
     return provider, key, model, key_variable, messages
 
 
+def _release_quota(session_id: str) -> None:
+    """Refund both limiter tokens for a request that produced no answer."""
+    _rate_limiter.release(session_id)
+    _rate_limiter.release("__wave_global__")
+
+
 def _provider_payload(
     provider: str, model: str, messages: list[dict[str, str]]
 ) -> dict[str, Any]:
@@ -711,7 +773,9 @@ def _provider_payload(
         "model": model,
         "messages": messages,
         "temperature": 0.4,
-        ("max_tokens" if provider == "groq" else "max_completion_tokens"): 700,
+        # Enough room for a real explanation with a table; answers are still
+        # clipped to _MAX_ANSWER_CHARS before they leave the server.
+        ("max_tokens" if provider == "groq" else "max_completion_tokens"): 1500,
     }
 
 
@@ -786,6 +850,7 @@ async def answer_question(
         )
     except (TimeoutError, asyncio.TimeoutError):
         _mark_failure(key, model, provider)
+        _release_quota(session_id)
         raise WaveAIError(
             504,
             "Wave’s AI request timed out. Please retry in a moment.",
@@ -793,6 +858,7 @@ async def answer_question(
         ) from None
     except Exception:
         _mark_failure(key, model, provider)
+        _release_quota(session_id)
         raise WaveAIError(
             503,
             f"Wave could not reach {provider_name}. Please check the service and retry.",
@@ -800,6 +866,7 @@ async def answer_question(
         ) from None
 
     if status < 200 or status >= 300:
+        _release_quota(session_id)
         raise _provider_status_error(
             status, headers,
             provider=provider, key_variable=key_variable, model=model, key=key,
@@ -808,6 +875,7 @@ async def answer_question(
     answer = _answer_text(body)
     if not answer:
         _mark_failure(key, model, provider)
+        _release_quota(session_id)
         raise WaveAIError(
             502,
             f"{provider_name} returned an empty or malformed response. Please retry.",
@@ -986,6 +1054,7 @@ async def stream_answer(
                         model=model, key=key,
                     )
         if error is not None:
+            _release_quota(session_id)
             yield ("error", error)
         else:
             yield (

@@ -6,12 +6,18 @@ they were taken. These tests pin the recovery paths — a quiet dashboard is
 reclaimed, a waiting visitor is never refused, and probes/crawlers/assets never
 consume a dashboard slot at all.
 """
+import asyncio
 import time
 
 import pytest
 
 from autonoc.api.sessions import (Session, SessionCapacityError, SessionRegistry,
-                                  requires_session)
+                                  requires_session, serves_shared)
+
+
+async def idle_simulation_loop():
+    """Keep wall-clock ticks out of session-API tests."""
+    await asyncio.Event().wait()
 
 
 class FakeWorker:
@@ -38,12 +44,20 @@ def build_registry(**kwargs):
 
 
 # ------------------------------------------------------------- live dashboard
-def test_two_browser_clients_have_independent_controls():
+def test_two_browser_clients_have_independent_controls(monkeypatch):
     from fastapi.testclient import TestClient
     from autonoc.api import main as M
 
+    # Two TestClients mean two event loops, while the server's activation gate
+    # belongs to one loop (there is exactly one per process in production). Idle
+    # the tick task so this test measures session isolation, not the harness.
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
     with TestClient(M.app) as first:
         second = TestClient(M.app)
+        # Each dashboard claims its own run through the explicit handshake; a
+        # token-less read would be answered from the shared engine instead.
+        assert first.post("/api/session").status_code == 200
+        assert second.post("/api/session").status_code == 200
         a = first.get("/api/data"); b = second.get("/api/data")
         assert a.status_code == b.status_code == 200
         da, db = a.json(), b.json()
@@ -153,6 +167,21 @@ def test_only_api_traffic_needs_a_session():
     assert requires_session("/api/config") is True
     assert requires_session("/api/delta") is True
     assert requires_session("/api/control/pause") is True
+    assert requires_session("/api/session") is True
+
+    # ...but a token-less READ of a read-only endpoint is served from the shared
+    # engine, so it never builds one or takes a slot.
+    assert serves_shared("/api/delta", "GET") is True
+    assert serves_shared("/api/data", "GET") is True
+    assert serves_shared("/api/config", "GET") is True
+    assert serves_shared("/api/telemetry/history", "GET") is True
+    assert serves_shared("/api/health", "GET") is True
+    # Controls and the handshake must always own a session.
+    assert serves_shared("/api/session", "POST") is False
+    assert serves_shared("/api/control/pause", "POST") is False
+    assert serves_shared("/api/wave/chat", "POST") is False
+    # A read-only path with a write verb is not shareable either.
+    assert serves_shared("/api/control/pause", "GET") is False
     # Probes, the dashboard shell, crawlers and assets cannot keep a cookie,
     # so they must never hold a slot.
     assert requires_session("/api/health") is False
@@ -175,8 +204,14 @@ def test_health_checks_and_assets_never_consume_capacity(monkeypatch):
         assert "autonoc_session" not in client.cookies
         stats = client.get("/api/health").json()["sessions"]
         assert stats["active"] == 0 and stats["max"] == 1
-        # Only real dashboard traffic takes the single available slot.
+        # A token-less read of a read-only endpoint is served from the shared
+        # engine: still no session, still no slot.
         assert client.get("/api/config").status_code == 200
+        assert client.get("/api/delta?since=0").status_code == 200
+        assert M._registry.count() == 0
+        assert "autonoc_session" not in client.cookies
+        # Only the explicit handshake takes the single available slot.
+        assert client.post("/api/session").status_code == 200
         assert M._registry.count() == 1
         assert "autonoc_session" in client.cookies
 
@@ -185,12 +220,13 @@ def test_a_second_dashboard_reclaims_the_quiet_slot(monkeypatch):
     from fastapi.testclient import TestClient
     from autonoc.api import main as M
 
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
     monkeypatch.setenv("AUTONOC_MAX_SESSIONS", "1")
     monkeypatch.setenv("AUTONOC_SESSION_RECLAIM_GRACE", "0")
     with TestClient(M.app) as first:
-        assert first.get("/api/config").status_code == 200
+        assert first.post("/api/session").status_code == 200
         second = TestClient(M.app)
-        response = second.get("/api/delta?since=0")
+        response = second.post("/api/session")
         assert response.status_code == 200
         assert "autonoc_session" in second.cookies
         assert M._registry.count() == 1
@@ -201,19 +237,93 @@ def test_capacity_refusal_is_transient_and_the_retry_succeeds(monkeypatch):
     from fastapi.testclient import TestClient
     from autonoc.api import main as M
 
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
     monkeypatch.setenv("AUTONOC_MAX_SESSIONS", "1")
     monkeypatch.setenv("AUTONOC_SESSION_RECLAIM", "0")
     with TestClient(M.app) as first:
-        assert first.get("/api/config").status_code == 200
+        assert first.post("/api/session").status_code == 200
         second = TestClient(M.app)
-        refused = second.get("/api/delta?since=0")
+        refused = second.post("/api/session")
         assert refused.status_code == 503
         assert refused.json()["code"] == "session_capacity"
         assert "at capacity" in refused.json()["detail"]
         assert "retry-after" in {key.lower() for key in refused.headers}
         # The dashboard marks its retry, so the visitor is served instead of
         # being told to close a dashboard they may not own.
-        retry = second.get("/api/delta?since=0", headers={"X-AutoNOC-Retry": "1"})
+        retry = second.post("/api/session", headers={"X-AutoNOC-Retry": "1"})
         assert retry.status_code == 200
         assert "autonoc_session" in second.cookies
         assert M._registry.count() == 1
+
+
+# ------------------------------------------------- cookie-less read traffic
+def test_tokenless_reads_build_no_engine_and_keep_the_session_count_stable(monkeypatch):
+    """A crawler asking for the dashboard must not cost a simulation engine.
+
+    Every anonymous read used to run ``_make_session`` (~700 ms: a full 300-site
+    world plus an inference worker) and leave it registered, so a handful of
+    probe requests could fill all sixteen slots with worlds nobody was watching.
+    """
+    from fastapi.testclient import TestClient
+    from autonoc.api import main as M
+
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
+    with TestClient(M.app) as client:
+        assert M._registry.count() == 0
+        # No background world build while measuring: a pool build is CPU-bound
+        # and shares the GIL. The pool only matters when a session is created,
+        # and this test only reads.
+        monkeypatch.setattr(M, "_WARM_ENGINES", 0)
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline and (M._pool_building or M._pool):
+            with M._pool_lock:
+                M._pool.clear()
+            time.sleep(0.05)
+        # Warm the route (first call imports the snapshot path).
+        client.get("/api/delta?since=0")
+        elapsed = []
+        for _ in range(10):
+            started = time.perf_counter()
+            assert client.get("/api/delta?since=0").status_code == 200
+            elapsed.append(time.perf_counter() - started)
+        assert client.get("/api/config").status_code == 200
+        assert client.get("/api/telemetry/history",
+                          params={"timeframe": "30m", "run_id": M._run_id}).status_code == 200
+        # No engine was built, and no slot was taken.
+        assert M._registry.count() == 0
+        assert "autonoc_session" not in client.cookies
+        # Typical request, not the single worst sample: an in-process test shares
+        # the machine with GC and the pool threads.
+        typical = sorted(elapsed)[len(elapsed) // 2]
+        assert typical < 0.020, f"typical cookie-less delta: {typical * 1000:.1f} ms"
+        assert max(elapsed) < 0.060, f"slowest cookie-less delta: {max(elapsed) * 1000:.1f} ms"
+        # Restore the pool for the rest of the file.
+        monkeypatch.undo()
+        M._refill_pool()
+
+
+def test_reads_never_step_the_engine_so_extra_tabs_cannot_speed_the_run(monkeypatch):
+    """The "two tabs = 2x speed" guard survives shared serving."""
+    from fastapi.testclient import TestClient
+    from autonoc.api import main as M
+
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
+    with TestClient(M.app) as client:
+        start = M.engine.tick
+        for _ in range(25):
+            assert client.get("/api/delta?since=0").status_code == 200
+            assert client.get("/api/data").status_code == 200
+        assert M.engine.tick == start
+
+
+def test_handshake_is_idempotent_for_a_token_that_already_has_a_run(monkeypatch):
+    from fastapi.testclient import TestClient
+    from autonoc.api import main as M
+
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
+    with TestClient(M.app) as client:
+        first = client.post("/api/session").json()
+        second = client.post("/api/session").json()
+        assert first["run_id"] == second["run_id"]
+        assert M._registry.count() == 1
+        assert client.get("/api/delta?since=0").json()["run_id"] == first["run_id"]

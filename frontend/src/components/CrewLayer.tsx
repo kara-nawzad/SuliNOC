@@ -11,8 +11,9 @@ const projectLatLng = (lat: number, lon: number): [number, number] => {
   return [p.x, p.y];
 };
 
-// Repair-ring geometry, derived once from the config's tunables.
+// Repair-ring and tile geometry, derived once from the config's tunables.
 const RING = CREW_MOTION.repairRing;
+const MARKER = CREW_MOTION.marker;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING.radiusPx;
 const RING_STEP = RING_CIRCUMFERENCE / RING.segments;
 const RING_DASH = RING_STEP * 0.7;
@@ -56,6 +57,43 @@ export function repairRingDasharray(lit: number): string {
   // Trailing 0-dash + full-circumference gap: nothing else may light up, and
   // the pattern total must exceed the circumference so it never repeats.
   return `${pairs.join(" ")} 0 ${RING_CIRCUMFERENCE.toFixed(2)}`.trim();
+}
+
+/** Builds a crew tile: the truck glyph plus the (hidden) repair ring.
+ *
+ * Everything about the tile is centred by construction:
+ * - the truck `viewBox` is symmetric about the glyph's ink, so the glyph fills
+ *   the tile evenly instead of sitting high in it;
+ * - the repair ring is an absolutely positioned overlay pinned to the tile's
+ *   centre and sized from `CREW_MOTION.repairRing.sizePx`, so it stays
+ *   concentric with the tile instead of relying on hard-coded -5px offsets.
+ *
+ * Static SVG only; server-provided names are always written with textContent.
+ * Exported so the geometry can be unit-tested without a live map. */
+export function crewMarkerElement(color: string): HTMLDivElement {
+  const vehicle = document.createElement("div");
+  vehicle.className = "crew-marker";
+  vehicle.style.color = color;
+  vehicle.style.setProperty("--crew-ring-size", `${RING.sizePx}px`);
+  // Truck ink (stroke included) spans x 2.15–21.85, y 5.15–20.0 → the box
+  // below is centred on it, so `xMidYMid meet` leaves equal margins all round.
+  const ringCentre = RING.sizePx / 2;
+  vehicle.innerHTML =
+    '<svg viewBox="2 5 20 15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h11v11H3zM14 10h4l3 4v3h-7"/><circle cx="7" cy="18" r="2" fill="currentColor"/><circle cx="18" cy="18" r="2" fill="currentColor"/></svg>' +
+    `<svg class="crew-repair-ring" viewBox="0 0 ${RING.sizePx} ${RING.sizePx}" aria-hidden="true"><circle class="crew-repair-track" cx="${ringCentre}" cy="${ringCentre}" r="${RING.radiusPx}" fill="none" stroke="currentColor" stroke-width="${RING.strokePx}" stroke-dasharray="${RING_DASH.toFixed(2)} ${RING_GAP.toFixed(2)}"/><circle class="crew-repair-fill" cx="${ringCentre}" cy="${ringCentre}" r="${RING.radiusPx}" fill="none" stroke="currentColor" stroke-width="${RING.strokePx}" stroke-dasharray="0 ${RING_CIRCUMFERENCE.toFixed(2)}"/></svg>`;
+  return vehicle;
+}
+
+/** Leaflet icon for a crew tile. Icon size and anchor both come from
+ * `CREW_MOTION.marker.sizePx`, with the anchor at the tile's centre — the one
+ * thing that decides whether the circle lands on the crew's real position. */
+export function crewDivIcon(color: string): L.DivIcon {
+  return L.divIcon({
+    className: "crew-wrapper",
+    html: crewMarkerElement(color),
+    iconSize: [MARKER.sizePx, MARKER.sizePx],
+    iconAnchor: [MARKER.sizePx / 2, MARKER.sizePx / 2],
+  });
 }
 
 /** Leaflet rounds latLngToLayerPoint to integer pixels. Keep its normal marker
@@ -189,25 +227,12 @@ export function CrewLayer({
       }
       let marker = markers.current.get(team.id);
       if (!marker) {
-        const vehicle = document.createElement("div");
-        vehicle.className = "crew-marker";
-        vehicle.style.color = config.presentation.palette.crew;
-        // Static SVG only; server-provided names below always use textContent.
-        // The truck viewBox tightly frames the glyph (incl. its stroke), so the
-        // icon sits dead-centre in the tile at any size. The repair ring is a
-        // segmented circle just outside the tile; CSS shows it only while the
-        // crew is REPAIRING and JS lights its notches as the ETA counts down.
-        const ringCentre = RING.sizePx / 2;
-        vehicle.innerHTML =
-          '<svg viewBox="2 5 20 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h11v11H3zM14 10h4l3 4v3h-7"/><circle cx="7" cy="18" r="2" fill="currentColor"/><circle cx="18" cy="18" r="2" fill="currentColor"/></svg>' +
-          `<svg class="crew-repair-ring" viewBox="0 0 ${RING.sizePx} ${RING.sizePx}" aria-hidden="true"><circle class="crew-repair-track" cx="${ringCentre}" cy="${ringCentre}" r="${RING.radiusPx}" fill="none" stroke="currentColor" stroke-width="${RING.strokePx}" stroke-dasharray="${RING_DASH.toFixed(2)} ${RING_GAP.toFixed(2)}"/><circle class="crew-repair-fill" cx="${ringCentre}" cy="${ringCentre}" r="${RING.radiusPx}" fill="none" stroke="currentColor" stroke-width="${RING.strokePx}" stroke-dasharray="0 ${RING_CIRCUMFERENCE.toFixed(2)}"/></svg>`;
+        // The tile, its icon size and its anchor all come from one helper, so
+        // the marker's centre is the crew's coordinate at any screen size. The
+        // repair ring is shown only while the crew is REPAIRING; JS lights its
+        // notches as the ETA counts down.
         marker = new SubpixelCrewMarker(L.latLng(team.lat, team.lon), {
-          icon: L.divIcon({
-            className: "crew-wrapper",
-            html: vehicle,
-            iconSize: [30, 30],
-            iconAnchor: [15, 15],
-          }),
+          icon: crewDivIcon(config.presentation.palette.crew),
           zIndexOffset: 800,
         }).addTo(map);
         marker.bindTooltip("", { className: "network-tooltip" });

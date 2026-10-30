@@ -32,6 +32,12 @@ it("keeps the hero copy, capability row, and Enter action in the intro", () => {
   expect(html).toContain('type: "sulinoc:enter"');
   expect(html).toContain("window.location.origin");
   expect(html).toContain("/assets/hero-city-sunset.png");
+  expect(html).toContain('type="image/avif"');
+  expect(html).toContain('srcset="/assets/hero-city-sunset.avif"');
+  expect(html).toContain('type="image/webp"');
+  expect(html).toContain('srcset="/assets/hero-city-sunset.webp"');
+  // The picture wrapper must not create a box around the full-bleed image.
+  expect(html).toContain(".hero-background-frame {\n        display: contents;");
   expect(html).toContain('class="hero-logo"');
   expect(html).toContain('src="/assets/suli-noc-logo-dark.png"');
   expect(html).toContain("filter: brightness(0) invert(1)");
@@ -67,4 +73,20 @@ it("keeps the welcome frame hidden until its document is ready", async () => {
   await waitFor(() =>
     expect(frame).toHaveStyle({ visibility: "visible", pointerEvents: "auto" }),
   );
+});
+
+it("releases the welcome document once the console is entered", () => {
+  vi.stubGlobal("__BUILD_STAMP__", { sha: "test", built: "test" });
+  const { container, rerender } = render(<HeroFrame open onEnter={vi.fn()} />);
+  expect(container.querySelector("iframe")).not.toBeNull();
+
+  // Enter: the parent closes the hero, so the frame (and its bitmap) goes away.
+  rerender(<HeroFrame open={false} onEnter={vi.fn()} />);
+  expect(container.querySelector("iframe")).toBeNull();
+
+  // Returning to the hero mounts a fresh, hidden-until-ready frame.
+  rerender(<HeroFrame open onEnter={vi.fn()} />);
+  const frame = container.querySelector("iframe");
+  expect(frame).not.toBeNull();
+  expect(frame).toHaveStyle({ visibility: "hidden" });
 });

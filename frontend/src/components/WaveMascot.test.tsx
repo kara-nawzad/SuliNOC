@@ -108,8 +108,12 @@ describe("Wave mascot states", () => {
     expect(styles).toMatch(
       /@media \(max-width: 767px\)[\s\S]*?--wave-launcher-size:\s*72px/,
     );
+    // On phones the greeting sits beside the launcher, not stacked above it.
     expect(styles).toMatch(
-      /@media \(max-width: 767px\)[\s\S]*?\.wave-greeting\s*\{[\s\S]*?width:\s*min\(280px,/,
+      /@media \(max-width: 767px\)[\s\S]*?\.wave-greeting\s*\{[\s\S]*?right:\s*calc\(var\(--wave-launcher-right\)\s*\+\s*var\(--wave-launcher-size\)/,
+    );
+    expect(styles).toMatch(
+      /@media \(max-width: 767px\)[\s\S]*?\.wave-greeting\s*\{[\s\S]*?max-width:\s*min\(232px,/,
     );
     expect(styles).toMatch(
       /@media \(max-width: 767px\)[\s\S]*?\.wave-panel\s*\{[\s\S]*?width:\s*min\(400px,/,

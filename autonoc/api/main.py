@@ -43,14 +43,16 @@ from autonoc.engine.engine import NOCEngine
 from . import presentation as P
 from . import schemas as S
 from .run_history import RunSummaryStore
+from . import wave_local
 from .wave_ai import (
     WaveAIError,
     answer_question as answer_wave_question,
+    build_context as build_wave_context,
     stream_answer as stream_wave_answer,
 )
 from .wave_ai import provider_status as wave_provider_status
 from .sessions import (Session, SessionRegistry, SessionCapacityError,
-                       COOKIE_NAME, requires_session)
+                       COOKIE_NAME, requires_session, serves_shared)
 
 BASE_TICK_SECONDS = 1.0
 RUN_DAYS = 30
@@ -123,6 +125,11 @@ _dispatch_lock = threading.RLock()
 # Serialises every activation of a session. A threading lock is re-entrant on the
 # event-loop thread, so two tasks could interleave across awaits and read or step
 # each other's engine. This asyncio lock is held across the awaits instead.
+#
+# An asyncio.Lock binds itself to the loop that first has to wait on it. One
+# server process has exactly one loop, so the gate is (re)created in lifespan —
+# a lock inherited from a finished loop (the next test client, an embedded
+# runner) can then never be handed to a new one.
 _gate = asyncio.Lock()
 # A simulation step takes ~2 ms. If one ever stalls, release the shared gate after this
 # long so every other request is not held behind it.
@@ -130,8 +137,90 @@ STEP_TIMEOUT_S = 30.0
 _registry: SessionRegistry | None = None
 _shared_bundle = None
 
+# ------------------------------------------------------- warm engine pool
+# ``NOCEngine()`` costs ~640 ms of pure CPU (300 sites, 30 days of timelines) and
+# holds ~10 MB. Building it inside a request blocked the event loop, so a single
+# new visitor stalled every other dashboard — health probes included — and three
+# new visitors served one at a time. Worlds are therefore built ahead of time by
+# a background thread and handed over at tick 0. A pooled world is identical to a
+# fresh one: same seed, never stepped, never registered, never owned by anyone.
+_WARM_ENGINES = _env_int("AUTONOC_WARM_ENGINES", 3)
+_pool: list = []
+_pool_lock = threading.Lock()
+_pool_building = False
+# Visitors that had to build their own world because the pool was empty. The
+# refill thread yields to them: a visitor's first page load matters more than a
+# spare engine.
+_cold_claims = 0
+_cold_lock = threading.Lock()
+
+
+def _build_engine():
+    """One deterministic tick-0 world, identical for every visitor."""
+    return NOCEngine(seed=_DEFAULT_SEED, ai_enabled=_DEFAULT_AI, horizon=RUN_TICKS)
+
+
+def _take_warm_engine():
+    """Hand out a pre-built world (or None) and top the pool back up."""
+    with _pool_lock:
+        warm = _pool.pop() if _pool else None
+    _refill_pool()
+    return warm
+
+
+def _refill_pool() -> None:
+    """Build toward ``_WARM_ENGINES`` in one background thread.
+
+    Never called from a request path and never blocks: a burst that empties the
+    pool waits for the old cold build, not for the refill.
+    """
+    global _pool_building
+    with _pool_lock:
+        if _pool_building or len(_pool) >= _WARM_ENGINES:
+            return
+        _pool_building = True
+
+    def build():
+        global _pool_building
+        try:
+            while True:
+                with _pool_lock:
+                    if len(_pool) >= _WARM_ENGINES:
+                        return
+                with _cold_lock:
+                    busy = _cold_claims > 0
+                if busy:
+                    # A visitor is building right now; one world at a time on one
+                    # vCPU, and the visitor goes first.
+                    time.sleep(0.05)
+                    continue
+                fresh = _build_engine()
+                with _pool_lock:
+                    if len(_pool) >= _WARM_ENGINES:
+                        return
+                    _pool.append(fresh)
+                # Give the loop and any visitor a turn before the next build.
+                time.sleep(0.25)
+        finally:
+            with _pool_lock:
+                _pool_building = False
+
+    threading.Thread(target=build, name="warm-engine", daemon=True).start()
+
+
 def _make_session(token: str) -> Session:
-    e = NOCEngine(seed=_DEFAULT_SEED, ai_enabled=_DEFAULT_AI, horizon=RUN_TICKS)
+    global _cold_claims
+    e = _take_warm_engine()
+    if e is None:
+        # Pool empty (a burst): build this visitor's world here. The refill thread
+        # backs off while this is happening.
+        with _cold_lock:
+            _cold_claims += 1
+        try:
+            e = _build_engine()
+        finally:
+            with _cold_lock:
+                _cold_claims -= 1
     h = P.History(); h.reset(e)
     # Completed summaries remain durable, but each cookie gets its own small
     # SQLite namespace; live engine state is never checkpointed or restored.
@@ -145,6 +234,18 @@ def _make_session(token: str) -> Session:
         run_id=session.run_id, bundle=_shared_bundle)
     session.worker.start()
     return session
+
+
+def _claim_session(token: str | None, retrying: bool) -> tuple[Session, bool]:
+    """Resolve (or create) this request's session — always off the event loop.
+
+    A cold claim builds a whole world. Running that on the loop made every other
+    request wait behind it, so a burst of new visitors looked like a dashboard
+    stall. The registry itself is thread-safe, so the claim runs in a worker
+    thread while the loop keeps answering.
+    """
+    return (_registry.get_or_default(token) if retrying
+            else _registry.get(token))
 
 
 def _drop_session_assets(session: Session) -> None:
@@ -172,6 +273,22 @@ def _shared_session() -> Session:
             run_error=_run_error, worker=worker, summary_store=_summary_store,
             slow_ticks=_slow_ticks,
         )
+
+
+async def _serve_shared(request: Request, call_next):
+    """Answer this request from the shared default engine, in no session.
+
+    Used for traffic that cannot hold a cookie (probes, crawlers, assets) and for
+    token-less read-only API reads. Nothing here is registered, so such a request
+    can never occupy, leak or exhaust a browser slot — and never builds an engine.
+    """
+    async with _gate:         # one session active at a time
+        session = _shared_session()
+        _activate(session)
+        try:
+            return await call_next(request)
+        finally:
+            _deactivate(session)
 
 
 def _cookie_secure(request: Request) -> bool:
@@ -403,7 +520,8 @@ async def simulation_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global worker, _registry, _shared_bundle
+    global worker, _registry, _shared_bundle, _gate
+    _gate = asyncio.Lock()          # belongs to this loop (see _gate above)
     from autonoc.ai.serve import ModelBundle
     # Models load in the background so the port opens at once. Sessions created
     # before they finish share this object and pick the models up as they arrive.
@@ -419,6 +537,9 @@ async def lifespan(app: FastAPI):
         reclaim=os.environ.get("AUTONOC_SESSION_RECLAIM", "1").strip().lower()
         not in {"0", "false", "no", "off"},
         on_drop=_drop_session_assets)
+    # Build the first spare worlds while the machine has nothing else to do, so
+    # the first visitors after a deploy are not the cold ones.
+    _refill_pool()
     task = asyncio.create_task(simulation_loop())
     yield
     _registry.clear()
@@ -494,13 +615,7 @@ async def browser_session(request: Request, call_next):
         return await call_next(request)
 
     if not requires_session(request.url.path):
-        async with _gate:                       # one session active at a time
-            session = _shared_session()
-            _activate(session)
-            try:
-                return await call_next(request)
-            finally:
-                _deactivate(session)
+        return await _serve_shared(request, call_next)
 
     # Prefer the cookie; fall back to the session header that the console keeps
     # in sessionStorage. Some embedded previews drop cross-site cookies even with
@@ -508,12 +623,23 @@ async def browser_session(request: Request, call_next):
     token = request.cookies.get(COOKIE_NAME) or request.headers.get(SESSION_HEADER)
     retrying = request.headers.get(RETRY_HEADER, "").strip().lower() in {
         "1", "true", "yes", "on"}
+
+    # Look the token up without creating anything. A crawler, an uptime probe or
+    # a reader with a stale token asks for a read-only endpoint: answering that
+    # from the shared engine costs milliseconds instead of building a private
+    # engine (~700 ms) that is abandoned on the next request. The dashboard claims
+    # its own run through POST /api/session before it polls.
+    session = _registry.peek(token)
+    created = False
+    if session is None and serves_shared(request.url.path, request.method):
+        return await _serve_shared(request, call_next)
+
     try:
         # A retrying dashboard is a visitor who is demonstrably waiting, so it
         # may adopt the oldest session; a first-time request only takes a slot
         # that has been idle past the grace window.
-        session, created = (_registry.get_or_default(token) if retrying
-                            else _registry.get(token))
+        if session is None:
+            session, created = await asyncio.to_thread(_claim_session, token, retrying)
     except SessionCapacityError as exc:
         # Only reachable when every slot is genuinely in use and reclaiming is
         # disabled. Retry-After tells clients (and the dashboard) to back off
@@ -555,83 +681,53 @@ async def browser_session(request: Request, call_next):
             _deactivate(session)
 
 # ------------------------------------------------------------------ Wave AI
-@app.get("/api/wave/status")
-async def wave_status():
-    """Expose safe setup/verification state, never a provider credential."""
-    return wave_provider_status()
+def _wave_local_result(
+    error: WaveAIError,
+    question: str,
+    snapshot: dict,
+    *,
+    run_restarted: bool = False,
+) -> dict | None:
+    """Degrade to Wave's deterministic snapshot reader, or None to fail hard.
 
-
-@app.post("/api/wave/chat", response_model=S.WaveChatResponse)
-async def wave_chat(payload: S.WaveChatRequest, request: Request):
-    """Read-only generative chat grounded in this browser's current run.
-
-    The session middleware snapshots the selected session under its gate, then
-    releases it before this handler makes any provider request. The assistant
-    never receives engine objects or control tools.
+    A missing key, a rejected key, a provider timeout or a rate-limited demo
+    are conditions no visitor can fix. Wave answers those from the captured
+    snapshot instead of going silent; genuine abuse controls (429) and the
+    context-size guard still fail with their proper status.
     """
+    if error.code not in wave_local.RECOVERABLE_CODES:
+        return None
+    answer = wave_local.answer(
+        question, build_wave_context(snapshot, question), code=error.code
+    )
+    return {
+        "answer": answer[: S.WAVE_ANSWER_MAX_CHARS],
+        "provider": "local",
+        "model": "wave-local-fallback",
+        "ai_connected": False,
+        "tick": snapshot.get("tick"),
+        "sim_time": (snapshot.get("kpis") or {}).get("sim_time"),
+        "run_id": snapshot.get("run_id"),
+        "run_restarted": run_restarted,
+    }
+
+
+def _request_snapshot(request: Request) -> dict:
     snapshot = getattr(request.state, "wave_snapshot", None)
     if snapshot is None:
         # Useful for direct unit tests and deployments that call the route
         # without the lifespan registry; normal dashboard traffic takes the
-        # session-aware middleware branch above.
+        # session-aware middleware branch.
         with _lock:
             snapshot = copy.deepcopy(_snapshot(resync=True))
-    if payload.run_id != snapshot.get("run_id"):
-        raise HTTPException(
-            status_code=409,
-            detail="The simulation run changed before Wave could answer. Refresh and ask again.",
-        )
-
-    try:
-        result = await answer_wave_question(
-            payload.question,
-            snapshot,
-            session_id=getattr(request.state, "session_token", "__shared__"),
-            history=[{"role": turn.role, "content": turn.content} for turn in payload.history],
-        )
-    except WaveAIError as exc:
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"code": exc.code, "detail": exc.detail},
-            headers=exc.headers,
-        )
-    return S.WaveChatResponse(**result)
+    return snapshot
 
 
-@app.post("/api/wave/chat/stream")
-async def wave_chat_stream(payload: S.WaveChatRequest, request: Request):
-    """Server-sent-events variant of /api/wave/chat: the provider's answer
-    streams to the browser as `delta` events, ending with one `done` event
-    carrying the same metadata as the JSON reply.
+def _wave_history(payload: S.WaveChatRequest) -> list[dict[str, str]]:
+    return [{"role": turn.role, "content": turn.content} for turn in payload.history]
 
-    Pre-flight failures (missing key, rate limits, changed run) raise before
-    the stream starts, so they keep their proper HTTP status and body. A
-    failure after the stream has started becomes an in-stream `error` event.
-    """
-    snapshot = getattr(request.state, "wave_snapshot", None)
-    if snapshot is None:
-        with _lock:
-            snapshot = copy.deepcopy(_snapshot(resync=True))
-    if payload.run_id != snapshot.get("run_id"):
-        raise HTTPException(
-            status_code=409,
-            detail="The simulation run changed before Wave could answer. Refresh and ask again.",
-        )
 
-    try:
-        events = await stream_wave_answer(
-            payload.question,
-            snapshot,
-            session_id=getattr(request.state, "session_token", "__shared__"),
-            history=[{"role": turn.role, "content": turn.content} for turn in payload.history],
-        )
-    except WaveAIError as exc:
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"code": exc.code, "detail": exc.detail},
-            headers=exc.headers,
-        )
-
+def _sse_response(events) -> StreamingResponse:
     async def sse():
         async for kind, value in events:
             if kind == "delta":
@@ -650,6 +746,129 @@ async def wave_chat_stream(payload: S.WaveChatRequest, request: Request):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )
+
+
+@app.get("/api/wave/status")
+async def wave_status():
+    """Expose safe setup/verification state, never a provider credential."""
+    return wave_provider_status()
+
+
+@app.post("/api/wave/chat", response_model=S.WaveChatResponse)
+async def wave_chat(payload: S.WaveChatRequest, request: Request):
+    """Read-only generative chat grounded in this browser's current run.
+
+    The session middleware snapshots the selected session under its gate, then
+    releases it before this handler makes any provider request. The assistant
+    never receives engine objects or control tools.
+    """
+    snapshot = _request_snapshot(request)
+    # A Day-30 rollover between the browser's poll and this question is not an
+    # error worth losing the answer over: answer from the live run and tell the
+    # browser the world moved underneath it.
+    run_restarted = payload.run_id != snapshot.get("run_id")
+
+    try:
+        result = await answer_wave_question(
+            payload.question,
+            snapshot,
+            session_id=getattr(request.state, "session_token", "__shared__"),
+            history=_wave_history(payload),
+        )
+    except WaveAIError as exc:
+        result = _wave_local_result(
+            exc, payload.question, snapshot, run_restarted=run_restarted
+        )
+        if result is None:
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"code": exc.code, "detail": exc.detail},
+                headers=exc.headers,
+            )
+    return S.WaveChatResponse(**{**result, "run_restarted": run_restarted})
+
+
+@app.post("/api/wave/chat/stream")
+async def wave_chat_stream(payload: S.WaveChatRequest, request: Request):
+    """Server-sent-events variant of /api/wave/chat: the provider's answer
+    streams to the browser as `delta` events, ending with one `done` event
+    carrying the same metadata as the JSON reply.
+
+    Pre-flight failures that Wave can absorb (missing key, provider outage)
+    become a local answer streamed the same way. Anything it cannot absorb —
+    our own rate limits, an oversized context — keeps its proper HTTP status
+    before the stream starts, and a failure after the stream has started
+    becomes an in-stream `error` event.
+    """
+    snapshot = _request_snapshot(request)
+    run_restarted = payload.run_id != snapshot.get("run_id")
+
+    try:
+        events = await stream_wave_answer(
+            payload.question,
+            snapshot,
+            session_id=getattr(request.state, "session_token", "__shared__"),
+            history=_wave_history(payload),
+        )
+    except WaveAIError as exc:
+        fallback = _wave_local_result(
+            exc, payload.question, snapshot, run_restarted=run_restarted
+        )
+        if fallback is None:
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"code": exc.code, "detail": exc.detail},
+                headers=exc.headers,
+            )
+
+        async def local_events():
+            yield ("delta", fallback["answer"])
+            yield ("done", fallback)
+
+        return _sse_response(local_events())
+
+    async def absorbed_events():
+        """Relay provider events, absorbing a mid-answer provider failure."""
+        answer_chars = 0
+        async for kind, value in events:
+            if kind == "delta":
+                answer_chars += len(value)
+                yield (kind, value)
+            elif kind == "error":
+                fallback = (
+                    _wave_local_result(
+                        value,
+                        payload.question,
+                        snapshot,
+                        run_restarted=run_restarted,
+                    )
+                    if answer_chars == 0
+                    else None
+                )
+                if fallback is None:
+                    yield (kind, value)
+                    return
+                yield ("delta", fallback["answer"])
+                yield ("done", fallback)
+                return
+            else:
+                yield (kind, {**value, "run_restarted": run_restarted})
+
+    return _sse_response(absorbed_events())
+
+
+# ----------------------------------------------------------------- session
+@app.post("/api/session", response_model=S.SessionStartResponse)
+async def start_session():
+    """Explicit handshake: bind this browser tab to its own simulation run.
+
+    Read-only GETs without a session are answered from the shared engine, so a
+    dashboard announces itself once per page load before polling. The middleware
+    has already created (or reused) this request's session and attached both the
+    cookie and the ``x-autonoc-session`` header, so the body only names the run.
+    """
+    with _lock:
+        return S.SessionStartResponse(run_id=_run_id, tick=engine.tick)
 
 
 # ------------------------------------------------------------------ config
@@ -759,7 +978,7 @@ def _ring_payload() -> list[dict]:
             cut = {"lat": c.lat, "lon": c.lon, "seg": c.segment.seg_id,
                    "cause": c.cause}
         out.append({"id": ring.ring_id, "cluster": ring.cluster,
-                    "nodes": ring.node_ids, "path": path,
+                    "node_count": len(ring.node_ids), "path": path,
                     "circumference_km": round(ring.circumference_km, 2),
                     "cut": cut, "isolated": ring.is_isolated,
                     "cuts": [{"lat": c.lat, "lon": c.lon,
@@ -779,18 +998,39 @@ def _ai_payload() -> dict:
     return p
 
 
+def _dashboard_payload() -> dict:
+    """Dashboard block with only the newest history sample on the wire.
+
+    The sample rows are ~0.18 KB each and the client already receives one every
+    second, so it keeps its own rolling window (30 samples, same length as
+    before) and appends locally. Nothing is approximated: every row is a real
+    engine sample that arrived in an earlier frame.
+    """
+    payload = P.dashboard(engine, _history)
+    payload["history"] = payload["history"][-1:]
+    return payload
+
+
 def _snapshot(resync: bool) -> dict:
+    """The 1 Hz wire frame.
+
+    WIRE CHANGE (2026-10-30, same numbers everywhere else): this frame no longer
+    carries ``logs`` (GET /api/activity, fetched when the Activity dialog opens),
+    each ring's ``nodes`` id list (only its length was read → ``node_count``), or
+    more than the newest ``dashboard.history`` sample (the dashboard appends its
+    own rolling window). A 300-site frame is ~30 % smaller and the client parses
+    noticeably smaller arrays every second; no value the UI shows changed.
+    """
     return {
         "tick": engine.tick, "resync": resync, "kpis": engine.kpis(),
         "run_id": _run_id, "reset_notice": _reset_notice,
         "run_error": _run_error,
         "control": {"paused": engine.paused, "speed": _speed, "seed": engine.seed,
                     "auto_approve_seconds": worker.auto_approve_seconds if worker else 0},
-        "dashboard": P.dashboard(engine, _history),
+        "dashboard": _dashboard_payload(),
         "agg": _agg_payload(),
         "nodes": _node_dicts(),
         "teams": [t.to_dict() for t in engine.teams],
-        "logs": list(engine.logs)[-60:],
         "rings": _ring_payload(),
         "ai": _ai_payload(),
     }
@@ -815,10 +1055,57 @@ async def get_delta(since: int = Query(0, ge=0)):
         return _snapshot(resync=True)
 
 
+@app.get("/api/activity", response_model=S.ActivityResponse)
+async def activity_log():
+    """Recent engine events, fetched only while the Activity dialog is open.
+
+    Session-aware like every other read: a dashboard with a session sees its own
+    run's log; anonymous traffic sees the shared world's (read-only, no engine
+    is built for it).
+    """
+    with _lock:
+        return S.ActivityResponse(run_id=_run_id, tick=engine.tick,
+                                  logs=list(engine.logs)[-60:])
+
+
+def _downsample_samples(samples: list[dict], max_points: int) -> list[dict]:
+    """Thin a long history to ~``max_points`` rows without losing a peak.
+
+    A 7-day window is 2 017 five-minute samples (~480 KB of JSON) drawn on a
+    chart that is ~600 px wide, so most of them can never be seen. Each bucket
+    contributes its lowest and highest traffic sample and its lowest and highest
+    drop-rate sample (deduplicated), which preserves the envelope: spikes and
+    troughs survive, the flat parts collapse, and the rows stay in tick order.
+    """
+    if len(samples) <= max_points:
+        return samples
+    buckets = max(1, max_points // 2)
+    size = len(samples) / buckets
+    out: list[dict] = []
+    seen: set[int] = set()
+    for b in range(buckets):
+        chunk = samples[int(b * size):int((b + 1) * size)]
+        if not chunk:
+            continue
+        picks = [
+            min(chunk, key=lambda r: r["throughput_gbps"]),
+            max(chunk, key=lambda r: r["throughput_gbps"]),
+            min(chunk, key=lambda r: r["drop_rate"]),
+            max(chunk, key=lambda r: r["drop_rate"]),
+        ]
+        for row in sorted(picks, key=lambda r: r["tick"]):
+            if row["tick"] in seen:
+                continue
+            seen.add(row["tick"])
+            out.append(row)
+    return out
+
+
 @app.get("/api/telemetry/history", response_model=S.TelemetryHistoryResponse)
 async def telemetry_history(
     timeframe: Literal["30m", "24h", "7d"] = Query("30m"),
     run_id: str = Query(..., min_length=1),
+    max_points: int = Query(300, ge=50, le=2500),
 ):
     """Read actual samples from the current simulation run, never a forecast.
 
@@ -831,11 +1118,14 @@ async def telemetry_history(
     with _lock:
         _assert_current_run(run_id)
         current = P.sample(engine)
+        rows = _history.read_window(engine, current, sample_count)
         return {
             "run_id": _run_id,
             "timeframe": timeframe,
             "tick_minutes": C.TICK_MINUTES,
-            "samples": _history.read_window(engine, current, sample_count),
+            # Long windows arrive thinned (see _downsample_samples); short ones
+            # are sent exactly as recorded.
+            "samples": _downsample_samples(rows, max_points),
         }
 
 
@@ -954,6 +1244,9 @@ async def set_ai(
             engine.ai_mode = "off"
         if worker is not None:
             worker.set_auto_approve(auto_approve_seconds)
+            # The worker sleeps while the Commander is off: this is the nudge
+            # that makes the new state take effect now, not on the next sweep.
+            worker.wake()
     return {"ai_enabled": enabled, "auto_approve_seconds": auto_approve_seconds}
 
 

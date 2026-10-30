@@ -45,6 +45,27 @@ describe("typed API transport", () => {
       "already faulty",
     );
   });
+  it("names the rejected field instead of a bare status for schema errors", async () => {
+    // FastAPI's 422 body carries a list of issues; reading only a string
+    // detail reduced it to "Request failed (422)" and hid the real cause.
+    respond(
+      {
+        detail: [
+          {
+            loc: ["body", "history", 1, "content"],
+            msg: "String should have at most 4000 characters",
+            type: "string_too_long",
+          },
+        ],
+      },
+      422,
+    );
+    await expect(
+      api.waveChat("How is the network?", "run-token", []),
+    ).rejects.toThrow(
+      "The server rejected this request (422) — history.1.content: String should have at most 4000 characters",
+    );
+  });
   it("requests a same-run telemetry window without absolute URLs", async () => {
     const fetcher = respond({
       run_id: "run / token",
@@ -96,7 +117,8 @@ describe("typed API transport", () => {
     const fetcher = respond({
       tick: 42,
       run_id: "run-token",
-      dashboard: {},
+      // The wire carries one dashboard sample; the client appends its window.
+      dashboard: { history: [{ tick: 42 }] },
       control: {},
       nodes: [],
     });

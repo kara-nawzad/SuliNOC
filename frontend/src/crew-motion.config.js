@@ -27,9 +27,16 @@ export const CREW_MOTION = {
     radiusPx: 20,
     angleDeg: 137.508,
   },
+  // Crew tile on the map. Leaflet's icon size *and* anchor are both derived
+  // from this one number (anchor = size / 2), and the tile fills the icon box
+  // instead of declaring its own pixels — that is what keeps the white circle
+  // centred on the crew's real coordinate on every screen size.
+  marker: {
+    sizePx: 30,
+  },
   // Segmented repair-progress ring drawn just outside a crew's tile while it
   // repairs: `segments` notches light up one by one as the ETA counts down.
-  // sizePx is the SVG box; it floats clear of the 30 px marker tile.
+  // sizePx is the SVG box; it floats clear of the marker tile.
   repairRing: {
     segments: 8,
     sizePx: 40,

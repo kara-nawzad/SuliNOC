@@ -9,6 +9,7 @@ export interface CrewMotionConfig {
   bands: CrewBand[];
   ease: { ramp: number };
   spread: { minSeparationPx: number; radiusPx: number; angleDeg: number };
+  marker: { sizePx: number };
   repairRing: {
     segments: number;
     sizePx: number;

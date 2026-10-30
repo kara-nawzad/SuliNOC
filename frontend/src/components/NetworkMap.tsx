@@ -132,28 +132,42 @@ interface TowerMarkerProps {
   config: Config;
   selected: boolean;
   onSelect: (id: string) => void;
+  /** The map keeps ONE tooltip; a marker only says when it is hovered. */
+  onHover: (id: string) => void;
+  onHoverEnd: () => void;
   aiOn: boolean;
   renderer: L.Canvas;
   haloLayers: RefObject<Map<string, L.CircleMarker>>;
 }
 
+/** The tooltip that used to be mounted inside all 300 markers.
+ *
+ * Same markup, same text, same `.network-tooltip` class (Leaflet renders it in
+ * one shared element while a site is hovered), so the stylesheet is untouched.
+ * Values are read from the node object it is handed, i.e. still live.
+ */
+export function siteTooltipHtml(node: NodeData, config: Config) {
+  const escape = (value: string) =>
+    value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return (
+    `<strong>${escape(node.id)}</strong><br>` +
+    `${escape(config.status_names[node.status])}<br>` +
+    `${escape(config.metric_labels.vswr)} ${node.vswr.toFixed(2)} · ` +
+    `${escape(config.metric_labels.prb)} ${node.prb.toFixed(1)}%`
+  );
+}
+
 function sameTowerMarker(previous: TowerMarkerProps, next: TowerMarkerProps) {
-  const a = previous.node;
-  const b = next.node;
   return (
     previous.config === next.config &&
     previous.selected === next.selected &&
     previous.onSelect === next.onSelect &&
+    previous.onHover === next.onHover &&
+    previous.onHoverEnd === next.onHoverEnd &&
     previous.aiOn === next.aiOn &&
     previous.renderer === next.renderer &&
     previous.haloLayers === next.haloLayers &&
-    a.id === b.id &&
-    a.lat === b.lat &&
-    a.lon === b.lon &&
-    a.status === b.status &&
-    a.warn === b.warn &&
-    a.vswr === b.vswr &&
-    a.prb === b.prb
+    sameSiteAppearance(previous.node, next.node)
   );
 }
 
@@ -162,6 +176,8 @@ const TowerMarker = memo(function TowerMarker({
   config,
   selected,
   onSelect,
+  onHover,
+  onHoverEnd,
   aiOn,
   renderer,
   haloLayers,
@@ -175,9 +191,14 @@ const TowerMarker = memo(function TowerMarker({
     () => onSelect(node.id),
     [node.id, onSelect],
   );
+  const handleHover = useCallback(() => onHover(node.id), [node.id, onHover]);
   const eventHandlers = useMemo(
-    () => ({ click: handleSelect }),
-    [handleSelect],
+    () => ({
+      click: handleSelect,
+      mouseover: handleHover,
+      mouseout: onHoverEnd,
+    }),
+    [handleSelect, handleHover, onHoverEnd],
   );
   const dotOptions = useMemo(
     () => ({
@@ -241,19 +262,29 @@ const TowerMarker = memo(function TowerMarker({
         radius={5}
         eventHandlers={eventHandlers}
         pathOptions={dotOptions}
-      >
-        <Tooltip className="network-tooltip" direction="top" offset={[0, -7]}>
-          <strong>{node.id}</strong>
-          <br />
-          {config.status_names[node.status]}
-          <br />
-          {config.metric_labels.vswr} {node.vswr.toFixed(2)} ·{" "}
-          {config.metric_labels.prb} {node.prb.toFixed(1)}%
-        </Tooltip>
-      </CircleMarker>
+      />
     </>
   );
 }, sameTowerMarker);
+
+/** Does this site draw differently on screen?
+ *
+ * A dot is 12 px: its colour comes from `status` (+`warn`), its halo from
+ * selection/status/warn and its position from lat/lon — that is the whole
+ * marker. `vswr` and `prb` are printed in the tooltip only (see SiteTooltip,
+ * which keeps them live), so a value that moves in the second decimal must not
+ * redraw a canvas marker: prb moved for ~298/300 sites and vswr for ~137/300
+ * every second, which re-rendered the entire 300-marker layer one second at a
+ * time. Exported for the slice tests. */
+export function sameSiteAppearance(x: NodeData, y: NodeData) {
+  return (
+    x.id === y.id &&
+    x.lat === y.lat &&
+    x.lon === y.lon &&
+    x.status === y.status &&
+    x.warn === y.warn
+  );
+}
 
 /** The slice Towers renders: marker + tooltip fields only. Ticks that change
  * nothing visible skip the whole 300-site pass. Exported for the slice
@@ -262,18 +293,7 @@ export function sameSiteNodes(a: NodeData[], b: NodeData[]) {
   if (a === b) return true;
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i += 1) {
-    const x = a[i];
-    const y = b[i];
-    if (
-      x.id !== y.id ||
-      x.lat !== y.lat ||
-      x.lon !== y.lon ||
-      x.status !== y.status ||
-      x.warn !== y.warn ||
-      x.vswr !== y.vswr ||
-      x.prb !== y.prb
-    )
-      return false;
+    if (!sameSiteAppearance(a[i], b[i])) return false;
   }
   return true;
 }
@@ -285,12 +305,16 @@ const Towers = memo(
     aiOn,
     selectedId,
     onSelect,
+    onHover,
+    onHoverEnd,
   }: {
     nodes: NodeData[];
     config: Config;
     selectedId: string | null;
     onSelect: (id: string) => void;
     aiOn: boolean;
+    onHover: (id: string) => void;
+    onHoverEnd: () => void;
   }) {
     // Own renderer + pane, so toggling the sites layer unmounts both together
     // (same lifecycle LocalBasemap uses). The pane sits above the SVG overlays
@@ -306,6 +330,10 @@ const Towers = memo(
       // matching the old zIndexOffset 300. Runs only when the slice changed.
       for (const layer of haloLayers.current.values()) layer.bringToFront();
     });
+
+    // 300 markers used to each carry their own <Tooltip>. None do now: a marker
+    // only reports hover, and the single shared SiteTooltip is mounted once for
+    // the whole map.
     return (
       <Pane name="sites-canvas" style={{ zIndex: 560 }}>
         {nodes.map((node) => (
@@ -316,6 +344,8 @@ const Towers = memo(
             aiOn={aiOn}
             selected={node.id === selectedId}
             onSelect={onSelect}
+            onHover={onHover}
+            onHoverEnd={onHoverEnd}
             renderer={renderer}
             haloLayers={haloLayers}
           />
@@ -328,8 +358,81 @@ const Towers = memo(
     previous.onSelect === next.onSelect &&
     previous.selectedId === next.selectedId &&
     previous.aiOn === next.aiOn &&
+    previous.onHover === next.onHover &&
+    previous.onHoverEnd === next.onHoverEnd &&
     sameSiteNodes(previous.nodes, next.nodes),
 );
+
+/** The one site tooltip the map owns.
+ *
+ * Replaces 300 per-marker <Tooltip> trees. It renders nothing in React — it moves
+ * one Leaflet tooltip to the hovered site and re-labels it — and because it is
+ * re-rendered by the map on every tick, the numbers it prints stay live while it
+ * is open. Nothing about it runs when no site is hovered.
+ */
+const SiteTooltip = memo(function SiteTooltip({
+  nodes,
+  config,
+  hoveredId,
+  onHide,
+}: {
+  nodes: NodeData[];
+  config: Config;
+  hoveredId: string | null;
+  onHide: () => void;
+}) {
+  const map = useMap();
+  const tooltip = useMemo(
+    () =>
+      L.tooltip({
+        className: "network-tooltip",
+        direction: "top",
+        offset: [0, -7],
+      }),
+    [],
+  );
+  const shown = useRef<{ id: string; html: string } | null>(null);
+
+  useEffect(() => {
+    if (!hoveredId) {
+      shown.current = null;
+      tooltip.remove();
+      return;
+    }
+    const node = nodes.find((candidate) => candidate.id === hoveredId);
+    if (!node) {
+      shown.current = null;
+      onHide();
+      return;
+    }
+    const html = siteTooltipHtml(node, config);
+    if (shown.current?.id === node.id && shown.current.html === html) return;
+    shown.current = { id: node.id, html };
+    tooltip.setLatLng([node.lat, node.lon]).setContent(html);
+    tooltip.openOn(map);
+  }, [nodes, config, hoveredId, map, onHide, tooltip]);
+
+  useEffect(() => {
+    // A click on the bare map closes it. On a phone a tap closes it too: the
+    // inspector is the readout there and a tooltip cannot be dismissed by moving
+    // away.
+    const onMapClick = (event: L.LeafletMouseEvent) => {
+      const coarse =
+        typeof window !== "undefined" &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(pointer: coarse)").matches;
+      const target = (event as unknown as { sourceTarget?: unknown }).sourceTarget;
+      if (coarse || target === map) onHide();
+    };
+    map.on("click", onMapClick);
+    return () => {
+      map.off("click", onMapClick);
+      tooltip.remove();
+    };
+  }, [map, onHide, tooltip]);
+
+  return null;
+});
 
 function sameCoordinates(previous: LatLng[], next: LatLng[]) {
   return (
@@ -791,6 +894,11 @@ export function NetworkMap({
   // The cluster whose Core links are shown in Map view (toggle in the
   // topology panel); cleared by the reset-view button.
   const [selectedCluster, setSelectedCluster] = useState<number | null>(null);
+  // The hovered site, if any. Hover state is held here (not in the 300 markers)
+  // so one shared tooltip can follow it without touching the marker layer.
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const handleHover = useCallback((id: string) => setHoveredId(id), []);
+  const handleHoverEnd = useCallback(() => setHoveredId(null), []);
   const p = config.presentation.palette;
   const selected = data.nodes.find((n) => n.id === selectedId);
   const storm = data.agg.find((a) => a.weather === "Storm");
@@ -904,6 +1012,16 @@ export function NetworkMap({
               selectedId={selectedId}
               aiOn={data.ai.ai_enabled}
               onSelect={onSelect}
+              onHover={handleHover}
+              onHoverEnd={handleHoverEnd}
+            />
+          )}
+          {layers.sites && (
+            <SiteTooltip
+              nodes={data.nodes}
+              config={config}
+              hoveredId={hoveredId}
+              onHide={handleHoverEnd}
             />
           )}
           {layers.sites && data.ai.ai_enabled && (
@@ -1149,7 +1267,7 @@ export function NetworkMap({
                   const row = (
                     <>
                       <span className="mono">RING {r.id}</span>
-                      <span>{r.nodes.length} sites</span>
+                      <span>{r.node_count} sites</span>
                       <span>{r.circumference_km.toFixed(1)} km</span>
                       <span
                         className={

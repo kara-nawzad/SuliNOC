@@ -56,6 +56,11 @@ export function TrafficQualityCard({
   const dropHost = useRef<HTMLDivElement>(null);
   const primaryNote = useRef<HTMLParagraphElement>(null);
   const dropNote = useRef<HTMLParagraphElement>(null);
+  // What the charts were last told, so an unchanged window/domain is not re-sent.
+  const feedSettings = useRef<{ window: number; domainKey: string }>({
+    window: -1,
+    domainKey: "",
+  });
   const charts = useRef<{
     primary: ReturnType<typeof lineChart> | null;
     drop: ReturnType<typeof lineChart> | null;
@@ -130,6 +135,8 @@ export function TrafficQualityCard({
     drop.setDomain(0, 2);
     charts.current.primary = primary;
     charts.current.drop = drop;
+    // Fresh charts start with no window or domain: the next feed must send them.
+    feedSettings.current = { window: -1, domainKey: "" };
     return () => {
       primaryHost.current && (primaryHost.current.innerHTML = "");
       dropHost.current && (dropHost.current.innerHTML = "");
@@ -142,7 +149,8 @@ export function TrafficQualityCard({
   }, [config]);
 
   // Feed the charts. Same window and metric: append only the new ticks.
-  // A new window, metric or run, or a trimmed window start, does setData once.
+  // A new window, metric or run, a backfilled window start or a series that
+  // grew by more than its own tail does setData once.
   useEffect(() => {
     const c = charts.current;
     if (!c.primary || !c.drop) return;
@@ -157,20 +165,28 @@ export function TrafficQualityCard({
     const last = rows.at(-1)?.tick ?? -1;
     const fed = c.fed;
     const fresh = rows.filter((r) => r.tick > fed.last);
-    // If history arrives after the timeframe switch, the last tick may be
-    // unchanged while older samples have been backfilled. Replace the series
-    // whenever its start or point count differs from tail-only appends.
-    const seriesChanged =
-      first !== fed.first || rows.length !== fed.count + fresh.length;
-    // Fixed axis: QCI 9 traffic 20–50 Gbps; PRB stays automatic.
-    c.primary.setWindow(WINDOW_MINUTES[timeframe]);
-    c.drop?.setWindow(WINDOW_MINUTES[timeframe]);
-    // E-RAB drop proxy: fixed 0–3 % axis (three whole-percent ticks above zero).
-    c.drop?.setDomain(0, 3);
-    c.primary.setDomain(metric === "throughput_gbps" ? 20 : null, 50);
-    // The 30 min view holds only a few points, so it is redrawn from the
-    // trimmed window every time; otherwise old points would stay on the axis.
-    if (fed.key !== key || timeframe === "30m" || seriesChanged) {
+    // Older samples appearing at the head mean a late history reply — that needs
+    // a full replace. A window that merely slides (its head advancing, its
+    // length constant) is exactly what append() models, so it must not redraw.
+    const backfilled = first !== -1 && fed.first !== -1 && first < fed.first;
+    const grew = rows.length > fed.count + fresh.length;
+    // Axis settings only when they change; the window and the fixed domains are
+    // the same second after second.
+    const settings = feedSettings.current;
+    const windowMinutes = WINDOW_MINUTES[timeframe];
+    if (settings.window !== windowMinutes) {
+      settings.window = windowMinutes;
+      c.primary.setWindow(windowMinutes);       // fixed axis: QCI 9 traffic 20–50 Gbps
+      c.drop.setWindow(windowMinutes);
+    }
+    const domainKey = `${metric}`;
+    if (settings.domainKey !== domainKey) {
+      settings.domainKey = domainKey;
+      // E-RAB drop proxy: fixed 0–3 % axis (three whole-percent ticks above 0).
+      c.drop.setDomain(0, 3);
+      c.primary.setDomain(metric === "throughput_gbps" ? 20 : null, 50);
+    }
+    if (fed.key !== key || backfilled || grew) {
       c.primary.setData(rows.map((r) => [r.x, r.s[metric]]));
       c.drop.setData(rows.map((r) => [r.x, r.s.drop_rate]));
       stats.redraws += 1;
