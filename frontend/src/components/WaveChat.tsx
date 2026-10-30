@@ -30,6 +30,12 @@ interface WaveMessage {
 }
 
 const MAX_MESSAGES = 80;
+/** Sent turns are bounded by the backend schema (autonoc/api/schemas.py).
+ * Wave's own answers are often longer than the prompt budget, so each turn is
+ * trimmed to what the provider actually reads: resending the raw answer used
+ * to trip request validation and fail every later question in the chat. */
+const MAX_HISTORY_TURNS = 8;
+const MAX_HISTORY_TURN_CHARS = 1200;
 const LAUNCHER_POSITION_KEY = "sulinoc-wave-launcher-position:v1";
 const LAUNCHER_EDGE_GAP = 8;
 const MOBILE_NAV_HEIGHT = 76;
@@ -799,8 +805,17 @@ export function WaveChat({
     const priorMessages = addUserMessage ? messages : messages.slice(0, -2);
     const history: WaveTurn[] = priorMessages
       .filter((message) => message.id !== WELCOME.id && !message.error)
-      .slice(-8)
-      .map(({ role, content }) => ({ role, content }));
+      .slice(-MAX_HISTORY_TURNS)
+      .map(({ role, content }) => ({
+        role,
+        // Trim to the provider's per-turn budget instead of shipping a whole
+        // long answer: the backend reads at most this much anyway, and an
+        // oversized turn is rejected before Wave ever runs.
+        content:
+          content.length > MAX_HISTORY_TURN_CHARS
+            ? content.slice(0, MAX_HISTORY_TURN_CHARS)
+            : content,
+      }));
 
     sendingRef.current = true;
     setSending(true);

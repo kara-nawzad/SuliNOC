@@ -15,6 +15,40 @@ import type { WaveChatReply, WaveProviderState, WaveTurn } from "../types/wave";
 const CAPACITY_CODE = "session_capacity";
 const RETRY_HEADER = "X-AutoNOC-Retry";
 
+type ValidationIssue = { loc?: unknown; msg?: unknown };
+
+/** FastAPI reports schema failures as a LIST of issues, not a string. Reading
+ * only a string detail turned every validation failure into a bare "Request
+ * failed (422)", which hid the offending field and made Wave look like it was
+ * refusing to answer. Name the fields instead. */
+function errorDetail(body: unknown, status: number): string {
+  const detail = (body as { detail?: unknown } | null)?.detail;
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (Array.isArray(detail)) {
+    const issues = detail
+      .map((entry) => {
+        if (!entry || typeof entry !== "object") return "";
+        const { loc, msg } = entry as ValidationIssue;
+        const message = typeof msg === "string" ? msg : "";
+        if (!message) return "";
+        const field = Array.isArray(loc)
+          ? loc
+              .filter(
+                (part) => typeof part === "string" || typeof part === "number",
+              )
+              .slice(1) // drop the leading "body"
+              .join(".")
+          : "";
+        return field ? `${field}: ${message}` : message;
+      })
+      .filter((issue): issue is string => Boolean(issue))
+      .slice(0, 3);
+    if (issues.length)
+      return `The server rejected this request (${status}) — ${issues.join("; ")}`;
+  }
+  return `Request failed (${status})`;
+}
+
 /** The visitor's simulation run is identified by a session token. The server
  * issues it on the first response (x-autonoc-session) and also sets a cookie,
  * but a cross-site embed (or iOS storage partitioning) can drop the cookie. A
@@ -93,11 +127,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       throw new Error(
         "SuliNOC is at capacity. Close an idle dashboard tab and try again.",
       );
-    const detail =
-      typeof body?.detail === "string"
-        ? body.detail
-        : `Request failed (${response.status})`;
-    throw new Error(detail);
+    throw new Error(errorDetail(body, response.status));
   }
   if (body === null)
     throw new Error("The server returned an invalid response.");
@@ -172,11 +202,9 @@ export const api = {
     );
     if (!response.ok) {
       const body = await response.json().catch(() => null);
-      const detail =
-        typeof (body as { detail?: string } | null)?.detail === "string"
-          ? (body as { detail: string }).detail
-          : `Request failed (${response.status})`;
-      const error = new Error(detail) as Error & { status?: number };
+      const error = new Error(errorDetail(body, response.status)) as Error & {
+        status?: number;
+      };
       error.status = response.status;
       throw error;
     }

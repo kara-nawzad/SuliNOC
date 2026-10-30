@@ -413,6 +413,32 @@ describe("Wave generative assistant", () => {
     ).toBeInTheDocument();
   });
 
+  it("trims an oversized earlier answer before resending history", async () => {
+    // Regression: a restored chat can hold a full-length answer (Wave's own
+    // reply). Sending it verbatim tripped the backend's per-turn limit, and
+    // every later question failed with an opaque 422 until the chat was reset.
+    const longAnswer = "Z".repeat(1500);
+    sessionStorage.setItem(
+      "sulinoc-wave-chat:wave-test-run",
+      JSON.stringify([
+        { id: "prior-question", role: "user", content: "How is site power?" },
+        { id: "prior-answer", role: "assistant", content: longAnswer },
+      ]),
+    );
+    vi.mocked(api.waveStatus).mockResolvedValue(providerStatus("not_verified"));
+    vi.mocked(api.waveChat).mockResolvedValue(reply("Short answer."));
+
+    renderWave();
+    openWave();
+    askWave("what is O-RAN - Non-RT RIC?");
+
+    await waitFor(() => expect(api.waveChat).toHaveBeenCalledOnce());
+    const history = vi.mocked(api.waveChat).mock.calls[0][2];
+    expect(history.map((turn) => turn.role)).toEqual(["user", "assistant"]);
+    expect(history[1].content).toHaveLength(1200);
+    expect(longAnswer.startsWith(history[1].content)).toBe(true);
+  });
+
   it("reports missing server configuration and retries the same question", async () => {
     const missingKey = providerStatus("missing_key");
     vi.mocked(api.waveStatus)

@@ -264,3 +264,77 @@ def test_wave_chat_stream_maps_mid_flight_provider_errors(monkeypatch):
         assert "event: done" not in body
         # The failed stream must not verify the key.
         assert client.get("/api/wave/status").json()["status"] != "connected"
+
+
+def test_wave_chat_accepts_a_long_earlier_answer_as_history(monkeypatch):
+    """Regression: a single long answer used to poison every later question.
+
+    The browser echoes Wave's own replies back as conversation history. When
+    the request schema capped a turn at 1200 characters while Wave's answers
+    may be 4000, the next question failed FastAPI validation with an opaque
+    HTTP 422 — for the rest of that conversation, on any topic. That looked
+    like Wave refusing to answer, so the ceiling now covers a full answer.
+    """
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
+    received: list[str] = []
+
+    async def fake_answer(question, snapshot, *, session_id, history):
+        received.extend(turn["content"] for turn in history)
+        return {
+            "answer": "Explained.",
+            "provider": "openai",
+            "model": "test-model",
+            "ai_connected": True,
+            "run_id": snapshot["run_id"],
+            "tick": snapshot["tick"],
+            "sim_time": snapshot["kpis"]["sim_time"],
+        }
+
+    monkeypatch.setattr(M, "answer_wave_question", fake_answer)
+    long_answer = "Z" * 3000
+
+    with TestClient(M.app) as client:
+        data = client.get("/api/delta?since=0").json()
+        response = client.post(
+            "/api/wave/chat",
+            json={
+                "question": "what is O-RAN - Non-RT RIC?",
+                "run_id": data["run_id"],
+                "history": [
+                    {"role": "user", "content": "How is power?"},
+                    {"role": "assistant", "content": long_answer},
+                ],
+            },
+        )
+
+    assert response.status_code == 200, response.text
+    assert received == ["How is power?", long_answer]
+
+
+def test_wave_chat_still_bounds_an_oversized_turn_and_history(monkeypatch):
+    """The ceiling is generous, not absent: hostile payloads stay rejected."""
+    monkeypatch.setattr(M, "simulation_loop", idle_simulation_loop)
+    monkeypatch.setenv("OPENAI_API_KEY", "unit-test-openai-key-not-a-credential")
+    wave_ai._rate_limiter.clear()
+
+    with TestClient(M.app) as client:
+        data = client.get("/api/delta?since=0").json()
+        too_long = client.post(
+            "/api/wave/chat",
+            json={
+                "question": "Status?",
+                "run_id": data["run_id"],
+                "history": [{"role": "assistant", "content": "z" * 4001}],
+            },
+        )
+        too_many = client.post(
+            "/api/wave/chat",
+            json={
+                "question": "Status?",
+                "run_id": data["run_id"],
+                "history": [{"role": "user", "content": "hi"}] * 9,
+            },
+        )
+
+    assert too_long.status_code == 422
+    assert too_many.status_code == 422

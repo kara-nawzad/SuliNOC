@@ -226,23 +226,37 @@ class DeltaResponse(BaseModel):
     ai: Optional[dict] = None        # M6 — Commander panel payload
 
 
+# Bound on a single resent turn. The browser echoes Wave's own answers back as
+# history, and those can be WAVE_ANSWER_MAX_CHARS long, so the turn ceiling has
+# to sit at or above that. When it was 1200, one long answer made every later
+# question in that conversation fail request validation with a bare HTTP 422 —
+# a permanent, self-inflicted outage that looked like Wave refusing to answer.
+# The prompt itself is still trimmed per turn inside autonoc/api/wave_ai.py.
+WAVE_ANSWER_MAX_CHARS = 4000
+WAVE_CHAT_TURN_MAX_CHARS = WAVE_ANSWER_MAX_CHARS
+WAVE_CHAT_HISTORY_MAX_TURNS = 8
+WAVE_CHAT_QUESTION_MAX_CHARS = 1000
+
+
 class WaveChatTurn(BaseModel):
     """A bounded, untrusted turn supplied by the current browser session."""
 
     role: Literal["user", "assistant"]
-    content: str = Field(min_length=1, max_length=1200)
+    content: str = Field(min_length=1, max_length=WAVE_CHAT_TURN_MAX_CHARS)
 
 
 class WaveChatRequest(BaseModel):
     """Read-only Wave request; live context is always captured server-side."""
 
-    question: str = Field(min_length=1, max_length=1000)
+    question: str = Field(min_length=1, max_length=WAVE_CHAT_QUESTION_MAX_CHARS)
     run_id: str = Field(min_length=1, max_length=100)
-    history: list[WaveChatTurn] = Field(default_factory=list, max_length=8)
+    history: list[WaveChatTurn] = Field(
+        default_factory=list, max_length=WAVE_CHAT_HISTORY_MAX_TURNS
+    )
 
 
 class WaveChatResponse(BaseModel):
-    answer: str = Field(min_length=1, max_length=4000)
+    answer: str = Field(min_length=1, max_length=WAVE_ANSWER_MAX_CHARS)
     provider: Literal["openai", "groq"] = "openai"
     model: str
     ai_connected: bool
