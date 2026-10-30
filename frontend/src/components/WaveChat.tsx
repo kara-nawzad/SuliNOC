@@ -1,5 +1,7 @@
 import {
   memo,
+  lazy,
+  Suspense,
   useEffect,
   useRef,
   useState,
@@ -9,13 +11,12 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useReducedMotion } from "framer-motion";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { RefreshCw, Send, X } from "lucide-react";
 import { api } from "../services/api";
 import type { Snapshot } from "../types/api";
 import type {
   WaveExpression,
+  WaveProvider,
   WaveProviderState,
   WaveTurn,
 } from "../types/wave";
@@ -35,7 +36,14 @@ const MAX_MESSAGES = 80;
  * trimmed to what the provider actually reads: resending the raw answer used
  * to trip request validation and fail every later question in the chat. */
 const MAX_HISTORY_TURNS = 8;
-const MAX_HISTORY_TURN_CHARS = 1200;
+const MAX_HISTORY_TURN_CHARS = 2000;
+/** Wave types his answers out instead of letting them pop in. ~60 characters a
+ * second reads as typing; a long answer speeds up so it never takes more than
+ * REVEAL_MAX_TAIL_SECONDS, and a short one keeps a visible minimum so it does
+ * not blink past. Tapping the bubble reveals everything immediately. */
+const REVEAL_CHARS_PER_SECOND = 60;
+const REVEAL_MIN_SECONDS = 0.55;
+const REVEAL_MAX_TAIL_SECONDS = 4;
 const LAUNCHER_POSITION_KEY = "sulinoc-wave-launcher-position:v1";
 const LAUNCHER_EDGE_GAP = 8;
 const MOBILE_NAV_HEIGHT = 76;
@@ -184,6 +192,21 @@ function makeMessageId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** A Day-30 rollover is not worth losing an answer over: the backend grounds
+ * the reply in the new run and flags it, so we keep the text and say so. */
+const RUN_RESTART_NOTE =
+  "\n\n> The simulation restarted while I was answering, so this comes from the new run.";
+
+function withRunNotice(
+  content: string,
+  reply: { run_id: string; run_restarted?: boolean },
+  currentRunId: string,
+): string {
+  return reply.run_restarted || reply.run_id !== currentRunId
+    ? `${content}${RUN_RESTART_NOTE}`
+    : content;
+}
+
 function makeMessage(role: WaveMessage["role"], content: string): WaveMessage {
   return {
     id: makeMessageId(),
@@ -262,18 +285,9 @@ export function visibleWhileTyping(text: string): string {
   return visible;
 }
 
-const markdownComponents: Components = {
-  table: ({ children }) => (
-    <div className="wave-md-tablewrap">
-      <table>{children}</table>
-    </div>
-  ),
-  a: ({ children, href }) => (
-    <a href={href} target="_blank" rel="noreferrer noopener">
-      {children}
-    </a>
-  ),
-};
+/** The markdown parser is a separate chunk: it is ~125 KB raw and only a Wave
+ * reply can need it, so the console's first paint does not download it. */
+const WaveMarkdownBody = lazy(() => import("./WaveMarkdownBody"));
 
 /** Assistant replies render as sanitized markdown (no raw HTML, no
  * dangerouslySetInnerHTML): headings, lists, quotes, code, rules and GFM
@@ -287,14 +301,17 @@ const WaveMarkdown = memo(function WaveMarkdown({
   typing: boolean;
 }) {
   const normalized = normalizeWaveMarkdown(text);
+  const body = typing ? visibleWhileTyping(normalized) : normalized;
   return (
     <div className="wave-md">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={markdownComponents}
+      <Suspense
+        // Plain text until the parser chunk lands: same words, same bubble.
+        fallback={
+          <p className="wave-md-plain">{body}</p>
+        }
       >
-        {typing ? visibleWhileTyping(normalized) : normalized}
-      </ReactMarkdown>
+        <WaveMarkdownBody text={body} />
+      </Suspense>
     </div>
   );
 });
@@ -495,24 +512,18 @@ export function WaveChat({
   }, []);
 
   const lastMessage = messages.at(-1);
-  const providerUnavailable =
-    providerStatus.status === "missing_key" ||
-    providerStatus.status === "unavailable";
+  // Wave always has something to say: when the live model is missing or down
+  // the backend answers from the run snapshot (provider "local"), so a missing
+  // key is a degraded mode rather than an outage. Only a lost connection stops
+  // the assistant.
   const expression: WaveExpression =
     connection !== "live"
       ? "offline"
       : sending
         ? "thinking"
         : lastMessage?.error
-          ? providerUnavailable
-            ? "offline"
-            : "alert"
-          : (responseExpression ??
-            (activeAlerts > 0
-              ? "alert"
-              : providerUnavailable
-                ? "offline"
-                : "idle"));
+          ? "alert"
+          : (responseExpression ?? (activeAlerts > 0 ? "alert" : "idle"));
 
   function toggleOpen() {
     setOpen(!open);
@@ -618,10 +629,22 @@ export function WaveChat({
 
   /** Shared post-reply bookkeeping: provider verification + mascot response. */
   function applyProviderMeta(reply: {
-    provider: string;
+    provider: WaveProvider;
     model: string;
     ai_connected: boolean;
   }) {
+    if (reply.provider === "local") {
+      setProviderStatus((current) => ({
+        ...current,
+        mode: "local",
+        verified: false,
+        detail:
+          "Local mode: answering from the run snapshot and built-in telecom notes.",
+      }));
+      statusRequestRef.current += 1;
+      setResponseExpression("responding");
+      return;
+    }
     const providerName = reply.provider === "groq" ? "Groq" : "OpenAI";
     setProviderStatus({
       provider: reply.provider === "groq" ? "groq" : "openai",
@@ -629,6 +652,7 @@ export function WaveChat({
       configured: true,
       verified: reply.ai_connected,
       status: reply.ai_connected ? "connected" : "not_verified",
+      mode: "live",
       detail: reply.ai_connected
         ? `${providerName} answered this Wave request successfully.`
         : "The provider has not been verified by a successful request.",
@@ -637,83 +661,136 @@ export function WaveChat({
     setResponseExpression("responding");
   }
 
-  /** Tap on the typing bubble: stop holding back partial syntax and reveal
-   * everything received so far, instantly. */
+  /** Tap on the typing bubble: reveal the whole reply at once. */
   function skipTyping() {
     setTypingSkipped(true);
     flushRevealRef.current();
   }
 
-  /** Locally paced reveal for the JSON reply path (older backends without
-   * the SSE route): the full text is known, so it types out at ~320 chars/s
-   * through a frame loop, rendering markdown as it grows. */
-  function revealTypewriter(
-    full: string,
-    meta: { provider: string; model: string; ai_connected: boolean },
-  ) {
-    return new Promise<void>((resolve) => {
-      const id = makeMessageId();
-      setTypingId(id);
+  /** Types a reply out at a readable pace, whether the text arrives as one
+   * JSON answer or as streamed chunks. Chunks are buffered and revealed by a
+   * frame loop, so the speed the provider happens to answer at never becomes
+   * the speed the reader sees. */
+  function startTypewriter(replyId: string) {
+    let source = "";
+    let final: string | null = null;
+    let revealed = 0;
+    let frame = 0;
+    let appended = false;
+    let settled = false;
+    let last = 0;
+    let speed = REVEAL_CHARS_PER_SECOND;
+    let resolveDone: (() => void) | null = null;
+
+    const paint = (content: string) =>
       setMessages((current) =>
-        [...current, { id, role: "assistant" as const, content: "" }].slice(
-          -MAX_MESSAGES,
+        current.map((message) =>
+          message.id === replyId ? { ...message, content } : message,
         ),
       );
-      let revealed = 0;
-      let last = performance.now();
-      let settled = false;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === id ? { ...message, content: full } : message,
-          ),
-        );
-        setTypingId(null);
-        applyProviderMeta(meta);
-        resolve();
-      };
-      const step = (now: number) => {
-        if (settled) return;
-        const next = Math.min(
-          full.length,
-          revealed + Math.max(1, Math.round((now - last) * 0.32)),
-        );
-        if (next !== revealed) {
-          revealed = next;
-          setMessages((current) =>
-            current.map((message) =>
-              message.id === id
-                ? {
-                    ...message,
-                    content: visibleWhileTyping(full.slice(0, revealed)),
-                  }
-                : message,
-            ),
-          );
-        }
-        last = now;
-        if (revealed >= full.length) {
-          finish();
+
+    const append = () => {
+      if (appended) return;
+      appended = true;
+      setTypingId(replyId);
+      setMessages((current) =>
+        [
+          ...current,
+          { id: replyId, role: "assistant" as const, content: "" },
+        ].slice(-MAX_MESSAGES),
+      );
+    };
+
+    const settle = (content: string) => {
+      if (settled) return;
+      settled = true;
+      cancelFrame(frame);
+      frame = 0;
+      flushRevealRef.current = () => {};
+      paint(content);
+      setTypingId(null);
+      resolveDone?.();
+      resolveDone = null;
+    };
+
+    const step = (now: number) => {
+      frame = 0;
+      if (settled) return;
+      if (!last) last = now;
+      const full = final ?? normalizeWaveMarkdown(source);
+      const elapsed = Math.max(0, (now - last) / 1000);
+      last = now;
+      revealed = Math.min(full.length, revealed + Math.max(1, elapsed * speed));
+      if (final !== null && revealed >= full.length) {
+        settle(full);
+        return;
+      }
+      paint(visibleWhileTyping(full.slice(0, Math.floor(revealed))));
+      frame = scheduleFrame(step);
+    };
+
+    const run = () => {
+      if (frame || settled) return;
+      frame = scheduleFrame(step);
+    };
+
+    flushRevealRef.current = () =>
+      settle(final ?? normalizeWaveMarkdown(source));
+
+    return {
+      /** Buffer text for revealing; the first chunk creates the bubble. */
+      push(chunk: string) {
+        source += chunk;
+        if (settled) {
+          paint(visibleWhileTyping(normalizeWaveMarkdown(source)));
           return;
         }
-        frame = scheduleFrame(step);
-      };
-      let frame = scheduleFrame(step);
-      flushRevealRef.current = () => {
+        append();
+        run();
+      },
+      /** End of the answer: reveal the rest at a pace worth waiting for. */
+      done(full: string) {
+        final = full;
+        if (settled) {
+          paint(full);
+          resolveDone?.();
+          resolveDone = null;
+          return Promise.resolve();
+        }
+        append();
+        const tail = Math.max(0, full.length - revealed);
+        const seconds = Math.min(
+          REVEAL_MAX_TAIL_SECONDS,
+          Math.max(REVEAL_MIN_SECONDS, tail / REVEAL_CHARS_PER_SECOND),
+        );
+        speed = tail / seconds;
+        const painted = new Promise<void>((resolve) => {
+          resolveDone = resolve;
+        });
+        run();
+        return painted;
+      },
+      /** Failure path: stop pacing and leave the text already revealed. */
+      cancel() {
+        if (settled) return;
+        settled = true;
         cancelFrame(frame);
-        finish();
-      };
-    });
+        frame = 0;
+        flushRevealRef.current = () => {};
+        if (appended) paint(normalizeWaveMarkdown(source));
+        setTypingId(null);
+        resolveDone?.();
+        resolveDone = null;
+      },
+    };
   }
 
-  /** Streaming path: the backend relays provider deltas over SSE; each chunk
-   * appends to the live message as it arrives. */
+  /** Streaming path: the backend relays provider deltas over SSE. The chunks
+   * feed the shared typewriter, so text lands at reading speed. */
   async function askStreamed(text: string, history: WaveTurn[]) {
     const replyId = makeMessageId();
+    const typer = reducedMotion ? null : startTypewriter(replyId);
     let received = "";
-    let appended = false;
     try {
       const meta = await api.waveChatStream(
         text,
@@ -721,39 +798,16 @@ export function WaveChat({
         history,
         (chunk) => {
           received += chunk;
-          if (reducedMotion) return; // no progressive reveal: show once, done
-          const content = visibleWhileTyping(normalizeWaveMarkdown(received));
-          if (!appended) {
-            appended = true;
-            setTypingId(replyId);
-            setMessages((current) =>
-              [
-                ...current,
-                { id: replyId, role: "assistant" as const, content },
-              ].slice(-MAX_MESSAGES),
-            );
-            return;
-          }
-          setMessages((current) =>
-            current.map((message) =>
-              message.id === replyId ? { ...message, content } : message,
-            ),
-          );
+          typer?.push(chunk);
         },
       );
-      if (meta.run_id !== data.run_id) {
-        throw new Error(
-          "The simulation was reset while Wave was answering. Please ask again.",
-        );
-      }
-      const content = normalizeWaveMarkdown(meta.answer || received);
-      if (appended) {
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === replyId ? { ...message, content } : message,
-          ),
-        );
-        setTypingId(null);
+      const content = withRunNotice(
+        normalizeWaveMarkdown(meta.answer || received),
+        meta,
+        data.run_id,
+      );
+      if (typer) {
+        await typer.done(content);
       } else {
         setMessages((current) =>
           [
@@ -764,30 +818,20 @@ export function WaveChat({
       }
       applyProviderMeta(meta);
     } catch (error) {
-      // Keep whatever arrived, final-render it, then surface the failure.
-      if (appended) {
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === replyId
-              ? { ...message, content: normalizeWaveMarkdown(received) }
-              : message,
-          ),
-        );
-        setTypingId(null);
-      }
+      // Keep whatever arrived, stop pacing, then surface the failure.
+      typer?.cancel();
       throw error;
     }
   }
 
-  /** JSON path: one request, one reply; the reveal is paced locally. */
+  /** JSON path: one request, one reply; the same typewriter paces it. */
   async function askLegacy(text: string, history: WaveTurn[]) {
     const reply = await api.waveChat(text, data.run_id, history);
-    if (reply.run_id !== data.run_id) {
-      throw new Error(
-        "The simulation was reset while Wave was answering. Please ask again.",
-      );
-    }
-    const content = normalizeWaveMarkdown(reply.answer);
+    const content = withRunNotice(
+      normalizeWaveMarkdown(reply.answer),
+      reply,
+      data.run_id,
+    );
     if (reducedMotion) {
       setMessages((current) =>
         [...current, makeMessage("assistant", content)].slice(-MAX_MESSAGES),
@@ -795,7 +839,10 @@ export function WaveChat({
       applyProviderMeta(reply);
       return;
     }
-    await revealTypewriter(content, reply);
+    const typer = startTypewriter(makeMessageId());
+    typer.push(reply.answer);
+    await typer.done(content);
+    applyProviderMeta(reply);
   }
 
   async function ask(question: string, addUserMessage = true) {
@@ -1018,7 +1065,11 @@ export function WaveChat({
               ref={inputRef}
               rows={1}
               maxLength={500}
-              placeholder="Ask about this simulation…"
+              placeholder={
+                providerStatus.mode === "local"
+                  ? "Ask anything — local mode, live model offline…"
+                  : "Ask about this simulation…"
+              }
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={onInputKeyDown}

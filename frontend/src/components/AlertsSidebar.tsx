@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BellRing,
@@ -43,6 +43,19 @@ export function AlertsSidebar({
   const incidents = data.dashboard.incidents.filter(
     (a) => filter === "all" || a.severity === filter,
   );
+  // The list is rebuilt on every tick, so an aria-live region on it re-reads
+  // alarms that did not change. Only a genuinely new alarm is announced, once.
+  const announced = useRef(new Set<string>());
+  const [announcement, setAnnouncement] = useState("");
+  useEffect(() => {
+    const all = data.dashboard.incidents;
+    const fresh = all.filter((alarm) => !announced.current.has(alarm.id));
+    for (const alarm of all) announced.current.add(alarm.id);
+    if (!fresh.length) return;
+    setAnnouncement(
+      `New alarm: ${fresh[0].title}${fresh[0].node_id ? ` at ${fresh[0].node_id}` : ""}`,
+    );
+  }, [data.dashboard.incidents]);
   const pending = data.ai.pending.filter((a) => !hidden.has(a.action_id));
   async function decide(id: number, approve: boolean) {
     setHidden((old) => new Set(old).add(id));
@@ -111,11 +124,10 @@ export function AlertsSidebar({
                   ))}
               </select>
             </div>
-            <div
-              className="incident-list"
-              aria-live="polite"
-              aria-relevant="additions removals"
-            >
+            <p className="sr-only" role="status" aria-live="polite">
+              {announcement}
+            </p>
+            <div className="incident-list">
               <AnimatePresence initial={false} mode="popLayout">
                 {incidents.map((alarm) => (
                   <motion.div

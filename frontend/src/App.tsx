@@ -70,7 +70,7 @@ function Console({
   heroOpen: boolean;
   setHeroOpen: (open: boolean) => void;
 }) {
-  const { config, data, status, error, refresh } = useTelemetry();
+  const { config, data, status, error, warming, refresh } = useTelemetry();
   const activeRunId = useRef<string | null>(null);
   const observedRunId = useRef<string | null>(null);
   if (data?.run_id) activeRunId.current = data.run_id;
@@ -297,7 +297,12 @@ function Console({
           SuliNOC<span> / NETWORK COMMAND</span>
         </h1>
         <Loader2 className="spin" size={22} />
-        <p>{error ?? "Establishing telemetry uplink…"}</p>
+        <p>
+          {error ??
+            (warming
+              ? "Warming up your simulation…"
+              : "Establishing telemetry uplink…")}
+        </p>
         {error && (
           <button className="button secondary" onClick={refresh}>
             Retry connection
@@ -308,16 +313,28 @@ function Console({
     );
   }
   const p = config.presentation.palette;
-  const theme = Object.fromEntries(
-    Object.entries(p).map(([key, val]) => [`--${key}`, val]),
-  ) as CSSProperties;
-  const matched = data.nodes
-    .filter((n) =>
-      `${n.id} ${config.agg_sites.find((a) => a.id === n.agg)?.name}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-    )
-    .slice(0, 12);
+  // The palette only changes when the backend sends a new one; rebuilding this
+  // object every tick re-created the shell's style prop 60 times a minute.
+  const theme = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(p).map(([key, val]) => [`--${key}`, val]),
+      ) as CSSProperties,
+    [p],
+  );
+  // Full-text search over 300 sites: computed only while the search dialog is
+  // open, and only when the query or the site list actually changed.
+  const matched = useMemo(() => {
+    if (dialog !== "search") return [];
+    const needle = query.trim().toLowerCase();
+    return data.nodes
+      .filter((n) =>
+        `${n.id} ${config.agg_sites.find((a) => a.id === n.agg)?.name}`
+          .toLowerCase()
+          .includes(needle),
+      )
+      .slice(0, 12);
+  }, [dialog, query, data.nodes, config.agg_sites]);
   // Greeting follows the simulation clock (the hour of the sim time shown on the dashboard).
   const simMinutes = simTimeToMinutes(data.kpis.sim_time);
   const greetingText = greetingFor(
@@ -888,12 +905,10 @@ function Console({
             </motion.div>
           )}
         </AnimatePresence>
-        <WaveChat
-          key={data.run_id}
-          data={data}
-          connection={status}
-          refresh={refresh}
-        />
+        {/* No key on the run id: a Day-30 rollover used to remount Wave and
+            throw the conversation away mid-question. The chat now survives the
+            restart, and the backend grounds late replies in the new run. */}
+        <WaveChat data={data} connection={status} refresh={refresh} />
       </div>
     </MotionConfig>
   );

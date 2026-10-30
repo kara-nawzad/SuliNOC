@@ -10,6 +10,22 @@
  * (base -> skin -> readable -> desktop type -> components -> phone -> phone layout -> design layer).
  * Edit rules here. Later sections win ties, so keep overrides in the section they belong to. */
 
+/* Screen-reader-only status text (new-alarm announcements). Visually hidden but
+   still in the accessibility tree: the incident list itself is not a live
+   region any more, because it is rebuilt on every tick. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ==================================================================
  * Base console styles (index.css)
  * ================================================================== */
@@ -858,17 +874,37 @@ h1 {
 .crew-wrapper {
   will-change: transform;
 }
+/* The tile fills Leaflet's icon box instead of declaring its own pixel size:
+   iconSize and iconAnchor both come from CREW_MOTION.marker.sizePx, so a tile
+   with a hard-coded width would drift away from the anchor (and therefore away
+   from the crew's real coordinate) the moment either number changed. */
 .crew-marker {
-  height: 27px;
-  width: 27px;
+  position: relative;
+  height: 100%;
+  width: 100%;
   padding: 4px;
+  display: grid;
+  place-items: center;
 }
-.crew-marker svg {
+.crew-marker > svg {
+  grid-area: 1 / 1;
   height: 100%;
   width: 100%;
   /* Inline SVG sits on the text baseline and leaves descender space below,
      nudging the truck off-centre inside its tile. Block layout removes that. */
   display: block;
+}
+/* Repair ring: an overlay pinned to the tile's centre, so it is concentric with
+   the crew's coordinate whatever the tile size is (no -5px arithmetic left to
+   go stale). JS sets --crew-ring-size from CREW_MOTION.repairRing.sizePx. */
+.crew-marker > .crew-repair-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--crew-ring-size, 40px);
+  height: var(--crew-ring-size, 40px);
+  transform: translate(-50%, -50%) rotate(-90deg);
+  pointer-events: none;
 }
 .map-top-overlay {
   position: absolute;
@@ -6796,33 +6832,27 @@ dialog.dialog::backdrop,
 
 /* Coverage line: how much of the chosen window has been recorded so far */
 
-/* Larger crew markers on the map (teams) */
+/* Crew marker skin. Size lives in CREW_MOTION.marker.sizePx — the tile fills
+   the Leaflet icon box, so nothing here may set width/height. */
 .app-shell .crew-marker {
-  width: 30px !important;
-  height: 30px !important;
   padding: 4px !important;
   border-radius: var(--radius-md);
 }
-.app-shell .crew-marker svg {
+.app-shell .crew-marker > svg {
   width: 100% !important;
   height: 100% !important;
 }
 /* Segmented repair-progress ring: floats just outside the tile, shown only
    while the crew is REPAIRING. The faint notched track is always drawn; JS
    lights the solid notches one by one as the mission's ETA counts down. */
-.app-shell .crew-marker .crew-repair-ring {
-  position: absolute;
-  top: -5px;
-  left: -5px;
+.app-shell .crew-marker > .crew-repair-ring {
   /* The blanket svg sizing above must not shrink the ring to the tile. */
-  width: 40px !important;
-  height: 40px !important;
-  transform: rotate(-90deg);
-  pointer-events: none;
+  width: var(--crew-ring-size, 40px) !important;
+  height: var(--crew-ring-size, 40px) !important;
   opacity: 0;
   transition: opacity var(--t-fast) var(--ease);
 }
-.app-shell .crew-marker.crew-repairing .crew-repair-ring {
+.app-shell .crew-marker.crew-repairing > .crew-repair-ring {
   opacity: 1;
 }
 .crew-repair-ring .crew-repair-track {
@@ -8254,12 +8284,12 @@ dialog.dialog::backdrop,
     --wave-launcher-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     --wave-launcher-size: 72px;
   }
+  /* Phones: sit beside the launcher, not above it. Above it the bubble
+     floated over the map card and read like a tooltip for the wrong control. */
   .wave-greeting {
-    right: var(--wave-launcher-right);
-    bottom: calc(
-      var(--wave-launcher-bottom) + var(--wave-launcher-size) + 14px
-    );
-    max-width: min(280px, calc(100vw - 24px));
+    right: calc(var(--wave-launcher-right) + var(--wave-launcher-size) + 8px);
+    bottom: calc(var(--wave-launcher-bottom) + 12px);
+    max-width: min(232px, calc(100vw - var(--wave-launcher-size) - 34px));
   }
   .wave-launcher.is-open {
     visibility: hidden;
