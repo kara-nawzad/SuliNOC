@@ -61,7 +61,11 @@ def test_same_tick_controls_arrive_while_paused(world):
     after = client.get('/api/delta?since=1').json()
     assert before['tick'] == after['tick'] == 1
     assert after['nodes'][0]['status'] == C.STATUS_RF
-    assert any('MANUAL' in row['message'] for row in after['logs'])
+    # The 1 Hz frame no longer carries the log: the Activity dialog fetches it.
+    assert 'logs' not in after
+    activity = client.get('/api/activity').json()
+    assert any('MANUAL' in row['message'] for row in activity['logs'])
+    assert activity['run_id'] == M._run_id
     assert any(inc['node_id'] == nid for inc in after['dashboard']['incidents'])
 
 
@@ -82,9 +86,11 @@ def test_history_is_bounded_and_reads_do_not_mutate(world):
     before = list(M._history.rows)
     get_delta(0); get_delta(0)
     assert list(M._history.rows) == before
+    # Only the newest sample is on the wire (the dashboard appends its own
+    # 30-sample window), and the run's full history is still served on demand.
     rows = get_delta(40)['dashboard']['history']
-    assert len(rows) == 30
-    assert [r['tick'] for r in rows] == list(range(11, 41))
+    assert [r['tick'] for r in rows] == [40]
+    assert len(P.dashboard(world, M._history)['history']) == 30
 
 
 def test_history_reset_starts_with_the_day_one_sample():
@@ -195,3 +201,31 @@ def test_react_build_is_served_when_available(world):
     assert response.status_code == 200
     assert '/assets/' in response.text and 'root' in response.text
     assert response.headers['cache-control'] == 'no-store'
+
+
+def test_long_history_is_thinned_without_losing_peaks():
+    """A 7-day window is ~2 000 samples on a ~600 px chart.
+
+    The endpoint thins it to ~300 rows, but the extremes a visitor would notice
+    (highest and lowest traffic, worst drop rate) must survive.
+    """
+    rows = []
+    for tick in range(2017):
+        traffic = 40 + (10 if tick % 500 == 0 else 0) - (8 if tick % 701 == 0 else 0)
+        drop = 0.4 + (2.0 if tick % 733 == 0 else 0)
+        rows.append({"tick": tick, "sim_time": f"D{tick // 288 + 1}",
+                     "availability": 99.0, "incidents": 0, "power_events": 0,
+                     "throughput_gbps": traffic, "drop_rate": drop, "prb": 40.0,
+                     "online": 298, "degraded": 2, "offline": 0})
+    thinned = M._downsample_samples(rows, 300)
+    assert len(thinned) <= 600
+    assert len(thinned) < len(rows) / 3
+    ticks = [r["tick"] for r in thinned]
+    assert ticks == sorted(ticks) and len(set(ticks)) == len(ticks)
+    assert max(r["throughput_gbps"] for r in thinned) == max(
+        r["throughput_gbps"] for r in rows)
+    assert min(r["throughput_gbps"] for r in thinned) == min(
+        r["throughput_gbps"] for r in rows)
+    assert max(r["drop_rate"] for r in thinned) == max(r["drop_rate"] for r in rows)
+    # A short window is sent exactly as recorded.
+    assert M._downsample_samples(rows[:40], 300) == rows[:40]
