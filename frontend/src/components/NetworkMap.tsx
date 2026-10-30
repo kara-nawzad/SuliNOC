@@ -158,8 +158,6 @@ export function siteTooltipHtml(node: NodeData, config: Config) {
 }
 
 function sameTowerMarker(previous: TowerMarkerProps, next: TowerMarkerProps) {
-  const a = previous.node;
-  const b = next.node;
   return (
     previous.config === next.config &&
     previous.selected === next.selected &&
@@ -169,13 +167,7 @@ function sameTowerMarker(previous: TowerMarkerProps, next: TowerMarkerProps) {
     previous.aiOn === next.aiOn &&
     previous.renderer === next.renderer &&
     previous.haloLayers === next.haloLayers &&
-    a.id === b.id &&
-    a.lat === b.lat &&
-    a.lon === b.lon &&
-    a.status === b.status &&
-    a.warn === b.warn &&
-    a.vswr === b.vswr &&
-    a.prb === b.prb
+    sameSiteAppearance(previous.node, next.node)
   );
 }
 
@@ -275,6 +267,25 @@ const TowerMarker = memo(function TowerMarker({
   );
 }, sameTowerMarker);
 
+/** Does this site draw differently on screen?
+ *
+ * A dot is 12 px: its colour comes from `status` (+`warn`), its halo from
+ * selection/status/warn and its position from lat/lon — that is the whole
+ * marker. `vswr` and `prb` are printed in the tooltip only (see SiteTooltip,
+ * which keeps them live), so a value that moves in the second decimal must not
+ * redraw a canvas marker: prb moved for ~298/300 sites and vswr for ~137/300
+ * every second, which re-rendered the entire 300-marker layer one second at a
+ * time. Exported for the slice tests. */
+export function sameSiteAppearance(x: NodeData, y: NodeData) {
+  return (
+    x.id === y.id &&
+    x.lat === y.lat &&
+    x.lon === y.lon &&
+    x.status === y.status &&
+    x.warn === y.warn
+  );
+}
+
 /** The slice Towers renders: marker + tooltip fields only. Ticks that change
  * nothing visible skip the whole 300-site pass. Exported for the slice
  * tests. */
@@ -282,18 +293,7 @@ export function sameSiteNodes(a: NodeData[], b: NodeData[]) {
   if (a === b) return true;
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i += 1) {
-    const x = a[i];
-    const y = b[i];
-    if (
-      x.id !== y.id ||
-      x.lat !== y.lat ||
-      x.lon !== y.lon ||
-      x.status !== y.status ||
-      x.warn !== y.warn ||
-      x.vswr !== y.vswr ||
-      x.prb !== y.prb
-    )
-      return false;
+    if (!sameSiteAppearance(a[i], b[i])) return false;
   }
   return true;
 }

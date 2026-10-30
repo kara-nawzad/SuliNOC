@@ -18,19 +18,27 @@ export function sameTowerRows(
   if (a === b) return true;
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i += 1) {
-    const row: NodeData = a[i];
-    const other: NodeData = b[i];
-    if (
-      row.id !== other.id ||
-      row.status !== other.status ||
-      row.prb !== other.prb ||
-      row.cqi !== other.cqi ||
-      row.ring !== other.ring ||
-      row.cluster !== other.cluster
-    )
-      return false;
+    if (!sameTowerRow(a[i], b[i])) return false;
   }
   return true;
+}
+
+/** Does this row print differently?
+ *
+ * Exactly the cells the row shows — id, status (name + colour), `prb.toFixed(1)`,
+ * cqi, ring, cluster — plus the two fields the sort uses (`status` for
+ * faulty-first, `id` for the tie-break), so a reorder still re-renders. A PRB
+ * value that only moves in the second decimal prints the same number, and used
+ * to re-render ~298 of 300 rows every second. Exported for the slice tests. */
+export function sameTowerRow(row: NodeData, other: NodeData) {
+  return (
+    row.id === other.id &&
+    row.status === other.status &&
+    row.cqi === other.cqi &&
+    row.ring === other.ring &&
+    row.cluster === other.cluster &&
+    (row.prb === other.prb || row.prb.toFixed(1) === other.prb.toFixed(1))
+  );
 }
 
 /** Every tower in the current run, faulty ones first. Values are the backend's
