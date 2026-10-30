@@ -149,8 +149,8 @@ export function HistoryModal({
       {tab === "events" ? (
         <>
           <p className="dialog-intro">
-            Latest {logs.length} retained events · engine time. Cleared
-            alarms remain here for context.
+            Latest {logs.length} retained events · engine time. Cleared alarms
+            remain here for context.
           </p>
           <div className="event-history">
             {[...logs].reverse().map((entry, i) => (

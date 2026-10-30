@@ -66,10 +66,14 @@ it("labels completed summaries by completion date and simulated day, never run n
 
 it("loads the engine log on demand and shows it in the events tab", async () => {
   vi.stubGlobal("HTMLDialogElement", window.HTMLDialogElement);
-  window.HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+  window.HTMLDialogElement.prototype.showModal = function (
+    this: HTMLDialogElement,
+  ) {
     this.open = true;
   };
-  window.HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+  window.HTMLDialogElement.prototype.close = function (
+    this: HTMLDialogElement,
+  ) {
     this.open = false;
   };
   vi.mocked(api.history).mockResolvedValue({ summaries: [] });

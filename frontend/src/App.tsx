@@ -70,8 +70,16 @@ function Console({
   heroOpen: boolean;
   setHeroOpen: (open: boolean) => void;
 }) {
-  const { config, data, status, error, warming, lastUpdateAt, retryDelay, refresh } =
-    useTelemetry();
+  const {
+    config,
+    data,
+    status,
+    error,
+    warming,
+    lastUpdateAt,
+    retryDelay,
+    refresh,
+  } = useTelemetry();
   const activeRunId = useRef<string | null>(null);
   const observedRunId = useRef<string | null>(null);
   if (data?.run_id) activeRunId.current = data.run_id;
@@ -298,6 +306,35 @@ function Console({
     },
     [selectNode, navigate],
   );
+  // Hooks run in the same order on every render, so both memos below sit above
+  // the early returns: entering the workspace must not change how many hooks
+  // this component calls. (It did, once — React answered "Rendered more hooks
+  // than during the previous render" and unmounted the console on the click
+  // that opens it.)
+  const palette = config?.presentation.palette;
+  const theme = useMemo(
+    () =>
+      (palette
+        ? Object.fromEntries(
+            Object.entries(palette).map(([key, val]) => [`--${key}`, val]),
+          )
+        : {}) as CSSProperties,
+    [palette],
+  );
+  // Full-text search over 300 sites: computed only while the search dialog is
+  // open, and only when the query or the site list actually changed.
+  const matched = useMemo(() => {
+    if (dialog !== "search" || !data || !config) return [];
+    const needle = query.trim().toLowerCase();
+    return data.nodes
+      .filter((n) =>
+        `${n.id} ${config.agg_sites.find((a) => a.id === n.agg)?.name}`
+          .toLowerCase()
+          .includes(needle),
+      )
+      .slice(0, 12);
+  }, [dialog, query, data, config]);
+
   // Keep all console surfaces off-screen while the welcome iframe is loading or open.
   if (heroOpen) return null;
 
@@ -328,29 +365,9 @@ function Console({
       </div>
     );
   }
-  const p = config.presentation.palette;
   // The palette only changes when the backend sends a new one; rebuilding this
   // object every tick re-created the shell's style prop 60 times a minute.
-  const theme = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.entries(p).map(([key, val]) => [`--${key}`, val]),
-      ) as CSSProperties,
-    [p],
-  );
-  // Full-text search over 300 sites: computed only while the search dialog is
-  // open, and only when the query or the site list actually changed.
-  const matched = useMemo(() => {
-    if (dialog !== "search") return [];
-    const needle = query.trim().toLowerCase();
-    return data.nodes
-      .filter((n) =>
-        `${n.id} ${config.agg_sites.find((a) => a.id === n.agg)?.name}`
-          .toLowerCase()
-          .includes(needle),
-      )
-      .slice(0, 12);
-  }, [dialog, query, data.nodes, config.agg_sites]);
+  const p = config.presentation.palette;
   // Greeting follows the simulation clock (the hour of the sim time shown on the dashboard).
   const simMinutes = simTimeToMinutes(data.kpis.sim_time);
   const greetingText = greetingFor(

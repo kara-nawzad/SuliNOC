@@ -131,7 +131,9 @@ export function Sparkline({
       {/* The path is drawn, not morphed: framer's `d` interpolation ran a rAF
           loop for 0.6 s on every tick to animate a 34 px sparkline. The static
           result is the same shape, and the numbers above it still tween. */}
-      {values.length > 1 && <path d={`${d} L110,34 L0,34 Z`} fill={`url(#${id})`} />}
+      {values.length > 1 && (
+        <path d={`${d} L110,34 L0,34 Z`} fill={`url(#${id})`} />
+      )}
       <path
         d={d}
         stroke={color}

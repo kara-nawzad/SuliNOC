@@ -26,7 +26,9 @@ describe("phone panels", () => {
       /\.app-shell \.inspector\s*\{[^}]*max-height:\s*min\(50dvh,\s*480px\)/s,
     );
     // Older browsers that do not parse min()/dvh keep the plain fallback.
-    expect(phone).toMatch(/\.app-shell \.inspector\s*\{[^}]*max-height:\s*50vh/s);
+    expect(phone).toMatch(
+      /\.app-shell \.inspector\s*\{[^}]*max-height:\s*50vh/s,
+    );
     expect(phone).toMatch(
       /\.app-shell \.inspector\s*\{[^}]*overscroll-behavior:\s*contain/s,
     );

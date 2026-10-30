@@ -421,7 +421,8 @@ const SiteTooltip = memo(function SiteTooltip({
         typeof window !== "undefined" &&
         typeof window.matchMedia === "function" &&
         window.matchMedia("(pointer: coarse)").matches;
-      const target = (event as unknown as { sourceTarget?: unknown }).sourceTarget;
+      const target = (event as unknown as { sourceTarget?: unknown })
+        .sourceTarget;
       if (coarse || target === map) onHide();
     };
     map.on("click", onMapClick);
