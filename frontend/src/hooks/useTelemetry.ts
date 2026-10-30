@@ -10,6 +10,25 @@ const POLL_TIMEOUT_MS = 4000;
 const BACKOFF_MIN_MS = 2000;
 const BACKOFF_MAX_MS = 30_000;
 
+/** Merge the seeded window into what this tab has already seen.
+ *
+ * The seed arrives after the first delta, so the newest tick is in both. Live
+ * rows win at the seam (they are the ones the dashboard is drawing), and the
+ * result stays one row per tick, oldest first, capped at the dashboard window.
+ */
+export function mergeHistorySeed(
+  live: TelemetrySample[],
+  seed: TelemetrySample[],
+  limit = 30,
+): TelemetrySample[] {
+  const byTick = new Map<number, TelemetrySample>();
+  for (const row of seed) byTick.set(row.tick, row);
+  for (const row of live) byTick.set(row.tick, row); // live wins
+  return [...byTick.values()]
+    .sort((a, b) => a.tick - b.tick)
+    .slice(-limit);
+}
+
 /** One cancellable request at a time. Controls can request an immediate refresh
  * without racing older polls. History and simulation time always come from Python. */
 export function useTelemetry() {
@@ -40,7 +59,14 @@ export function useTelemetry() {
       // The wire carries only the newest dashboard sample; the dashboard keeps
       // its own rolling window (same 30 samples the server used to send), so the
       // sparklines and the 30 m chart read exactly the same numbers.
-      history: TelemetrySample[] = [];
+      history: TelemetrySample[] = [],
+      // The first frame fills the dashboard window from the server once, so the
+      // sparklines and the 30 m chart start with a real 30 samples instead of
+      // one point that grows a tick at a time. Once per run, never retried on a
+      // live poll: a failed seed just leaves the window to fill from deltas.
+      seededRun = "",
+      seeding = false,
+      latest: Snapshot | null = null;
     async function poll() {
       if (abort.signal.aborted) return;
       if (busy) {
@@ -97,7 +123,34 @@ export function useTelemetry() {
         cursor = next.tick;
         seen = true;
         failures = 0;
+        latest = next;
         setData(next);
+        if (runId !== seededRun && !seeding) {
+          // Fire-and-forget: the console is already usable, the seeded window
+          // lands a moment later. No extra polling — one request per run.
+          seeding = true;
+          const target = runId;
+          void (async () => {
+            try {
+              const seeded = await api.telemetryHistory("30m", target);
+              if (abort.signal.aborted || target !== runId) return;
+              history = mergeHistorySeed(history, seeded.samples);
+              if (latest && latest.run_id === target) {
+                const filled = {
+                  ...latest,
+                  dashboard: { ...latest.dashboard, history },
+                };
+                latest = filled;
+                setData(filled);
+              }
+            } catch {
+              // Silent by design: the window fills from live ticks instead.
+            } finally {
+              seeding = false;
+              seededRun = target;
+            }
+          })();
+        }
         setLastUpdateAt(Date.now());
         setStatus("live");
         setError(null);

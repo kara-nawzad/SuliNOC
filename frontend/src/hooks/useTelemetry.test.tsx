@@ -3,12 +3,23 @@ import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { useTelemetry } from "./useTelemetry";
 import { api } from "../services/api";
 vi.mock("../services/api", () => ({
-  api: { startSession: vi.fn(), config: vi.fn(), delta: vi.fn() },
+  api: {
+    startSession: vi.fn(),
+    config: vi.fn(),
+    delta: vi.fn(),
+    telemetryHistory: vi.fn(),
+  },
 }));
 beforeEach(() => {
   vi.mocked(api.startSession).mockResolvedValue({
     run_id: "run1",
     tick: 0,
+  } as never);
+  vi.mocked(api.telemetryHistory).mockResolvedValue({
+    run_id: "run1",
+    timeframe: "30m",
+    tick_minutes: 5,
+    samples: [],
   } as never);
 });
 const sample = (tick: number) =>
@@ -239,4 +250,104 @@ it("keeps the last frame and its timestamp when an attempt is lost", async () =>
   expect(result.current.error).toBe("No response within 4 s");
   expect(result.current.data?.tick).toBe(8);
   expect(result.current.lastUpdateAt).toBe(stamped);
+});
+
+it("seeds the dashboard window once from the server, without duplicate ticks", async () => {
+  vi.mocked(api.config).mockResolvedValue({
+    presentation: { poll_ms: 10_000 },
+  } as never);
+  const window = Array.from({ length: 30 }, (_, i) => ({
+    tick: 71 + i,
+    sim_time: `D1 0${Math.floor(i / 12)}:${String((i * 5) % 60).padStart(2, "0")}`,
+  }));
+  vi.mocked(api.delta).mockResolvedValue({
+    tick: 100,
+    run_id: "run1",
+    dashboard: { history: [{ tick: 100, sim_time: "D1 08:20" }] },
+  } as never);
+  vi.mocked(api.telemetryHistory).mockResolvedValue({
+    run_id: "run1",
+    timeframe: "30m",
+    tick_minutes: 5,
+    samples: window,
+  } as never);
+  const { result } = renderHook(() => useTelemetry());
+  await waitFor(() =>
+    expect(result.current.data?.dashboard.history).toHaveLength(30),
+  );
+  expect(api.telemetryHistory).toHaveBeenCalledWith("30m", "run1");
+  const ticks = result.current.data!.dashboard.history.map((row) => row.tick);
+  expect(ticks).toEqual(Array.from({ length: 30 }, (_, i) => 71 + i));
+  expect(new Set(ticks).size).toBe(30);   // the seam tick is not duplicated
+  // The console was usable before the seed landed.
+  expect(result.current.status).toBe("live");
+  // One seed per run, not one per poll.
+  act(() => result.current.refresh());
+  await waitFor(() => expect(api.delta).toHaveBeenCalledTimes(2));
+  expect(api.telemetryHistory).toHaveBeenCalledTimes(1);
+});
+
+it("fills the window from live ticks when the seed fails, and does not retry", async () => {
+  vi.mocked(api.config).mockResolvedValue({
+    presentation: { poll_ms: 10_000 },
+  } as never);
+  let tick = 8;
+  vi.mocked(api.delta).mockImplementation(async () => sample(tick++) as never);
+  vi.mocked(api.telemetryHistory).mockRejectedValue(new Error("history down"));
+  const { result } = renderHook(() => useTelemetry());
+  await waitFor(() => expect(result.current.status).toBe("live"));
+  await waitFor(() =>
+    expect(result.current.data?.dashboard.history).toHaveLength(1),
+  );
+  act(() => result.current.refresh());
+  await waitFor(() =>
+    expect(result.current.data?.dashboard.history).toHaveLength(2),
+  );
+  act(() => result.current.refresh());
+  await waitFor(() =>
+    expect(result.current.data?.dashboard.history).toHaveLength(3),
+  );
+  expect(api.telemetryHistory).toHaveBeenCalledTimes(1);
+  expect(result.current.status).toBe("live");
+  expect(result.current.error).toBeNull();
+});
+
+it("seeds again when the server hands the tab a new run", async () => {
+  vi.mocked(api.config).mockResolvedValue({
+    presentation: { poll_ms: 10_000 },
+  } as never);
+  const seed = (tick: number, run: string) => ({
+    run_id: run,
+    timeframe: "30m",
+    tick_minutes: 5,
+    samples: [
+      { tick: tick - 1, sim_time: "D1 00:00" },
+      { tick, sim_time: "D1 00:05" },
+    ],
+  });
+  vi.mocked(api.telemetryHistory)
+    .mockResolvedValueOnce(seed(8, "run1") as never)
+    .mockResolvedValueOnce(seed(3, "run2") as never);
+  vi.mocked(api.delta)
+    .mockResolvedValueOnce(sample(8))
+    .mockResolvedValue({
+      tick: 3,
+      run_id: "run2",
+      dashboard: { history: [{ tick: 3, sim_time: "D1 00:3" }] },
+    } as never);
+  const { result } = renderHook(() => useTelemetry());
+  await waitFor(() =>
+    expect(result.current.data?.dashboard.history.map((r) => r.tick)).toEqual([
+      7, 8,
+    ]),
+  );
+  act(() => result.current.refresh());
+  await waitFor(() => expect(result.current.data?.run_id).toBe("run2"));
+  await waitFor(() =>
+    expect(result.current.data?.dashboard.history.map((r) => r.tick)).toEqual([
+      2, 3,
+    ]),
+  );
+  expect(api.telemetryHistory).toHaveBeenNthCalledWith(1, "30m", "run1");
+  expect(api.telemetryHistory).toHaveBeenNthCalledWith(2, "30m", "run2");
 });
