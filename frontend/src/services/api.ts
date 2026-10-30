@@ -2,6 +2,7 @@ import type {
   ActionResult,
   Config,
   RunHistory,
+  SessionInfo,
   Snapshot,
   TelemetryHistory,
   TelemetryTimeframe,
@@ -169,6 +170,11 @@ async function control(
   return result;
 }
 export const api = {
+  /** Explicit handshake: token-less read-only GETs are answered by the server's
+   * shared engine, so a dashboard introduces itself once per page load and gets
+   * its own run. The reply also carries the session cookie/header. */
+  startSession: (signal?: AbortSignal) =>
+    request<SessionInfo>("/api/session", { method: "POST", signal }),
   config: (signal?: AbortSignal) => request<Config>("/api/config", { signal }),
   waveStatus: (signal?: AbortSignal) =>
     request<WaveProviderState>("/api/wave/status", { signal }),

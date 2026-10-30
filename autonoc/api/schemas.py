@@ -265,6 +265,12 @@ class WaveChatResponse(BaseModel):
     sim_time: str
 
 
+class SessionStartResponse(BaseModel):
+    """Identity of the run this browser now owns (``POST /api/session``)."""
+    run_id: str
+    tick: int = Field(ge=0)
+
+
 class ConfigResponse(BaseModel):
     """Single source of truth for anything the frontend renders.
 

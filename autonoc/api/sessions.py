@@ -58,12 +58,29 @@ COOKIE_NAME = "autonoc_session"
 # The dashboard's first `/api/*` call creates the session and issues the cookie.
 SESSION_FREE_PATHS: frozenset[str] = frozenset({"/api/health", "/api/wave/status"})
 
+# Read-only reads that are answerable from the shared default engine. A request
+# without a session token is crawler, uptime-probe, link-prefetch or curl
+# traffic: it must see the product, but it must not *build* an engine (~700 ms)
+# nor occupy a browser slot. These are answered from the shared engine instead,
+# which only steps on the server clock, so extra readers can never speed the
+# simulation up. ``POST /api/session`` is the explicit handshake a real
+# dashboard uses to claim its own run before it polls.
+SHARED_READ_PATHS: frozenset[str] = SESSION_FREE_PATHS | frozenset({
+    "/api/config", "/api/data", "/api/delta", "/api/activity",
+    "/api/telemetry/history", "/api/history",
+})
+
 
 def requires_session(path: str) -> bool:
     """True when this request needs (and may create) a per-browser session."""
     if path in SESSION_FREE_PATHS:
         return False
     return path.startswith("/api/")
+
+
+def serves_shared(path: str, method: str) -> bool:
+    """True when a token-less read can be answered without owning a session."""
+    return method.upper() in {"GET", "HEAD"} and path in SHARED_READ_PATHS
 
 
 @dataclass
@@ -208,6 +225,23 @@ class SessionRegistry:
                     return self._create()   # registry drained; just create
                 self._reclaim(victim)
                 return self._create()
+
+    def peek(self, token: str | None) -> Session | None:
+        """Return the session this token already owns — never create one.
+
+        Read-only traffic has to ask "do I already have a session?" without the
+        side effect of starting a ~700 ms engine build.
+        """
+        if not token:
+            return None
+        now = time.monotonic()
+        with self._lock:
+            self._purge(now)
+            session = self._sessions.get(token)
+            if session is None:
+                return None
+            session.last_seen = now
+            return session
 
     def holds(self, session: Session) -> bool:
         """True while this object still owns a slot (used by the sim loop)."""

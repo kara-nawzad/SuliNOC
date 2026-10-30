@@ -301,6 +301,11 @@ export interface RunSummary {
 export interface RunHistory {
   summaries: RunSummary[];
 }
+/** Reply to the explicit session handshake. */
+export interface SessionInfo {
+  run_id: string;
+  tick: number;
+}
 export interface Snapshot {
   run_id: string;
   reset_notice: boolean;
