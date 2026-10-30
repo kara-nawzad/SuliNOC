@@ -2589,6 +2589,20 @@ h1 {
 .tab-hidden .cut-pulse,
 .tab-hidden .predictive-pulse,
 .tab-hidden .pulse,
+/* The Wave launcher keeps its own character animations; none of them need to
+   run in a background tab either. */
+.tab-hidden .wave-mascot--idle .wave-figure,
+.tab-hidden .wave-mascot--idle .wave-ring--outer,
+.tab-hidden .wave-mascot--idle .wave-eyes,
+.tab-hidden .wave-mascot--idle .wave-smile,
+.tab-hidden .wave-mascot--idle .wave-antenna-cap,
+.tab-hidden .wave-mascot--idle .wave-arc--outer,
+.tab-hidden .wave-mascot--idle .wave-arc--inner,
+.tab-hidden .wave-mascot--thinking .wave-signal-arcs,
+.tab-hidden .wave-mascot--thinking .wave-eyes,
+.tab-hidden .wave-mascot--thinking .wave-status-light,
+.tab-hidden .wave-mascot--thinking .wave-antenna-cap,
+.tab-hidden .wave-caret,
 .map-interacting .fiber-flow,
 .map-interacting .cut-pulse,
 .map-interacting .predictive-pulse {
@@ -8997,5 +9011,80 @@ dialog.dialog::backdrop,
     margin-left: 0;
     flex-basis: 100%;
     text-align: left;
+  }
+}
+
+/* ==================================================================
+ * Phone / touch paint budget
+ * ------------------------------------------------------------------
+ * Everything below is scoped to (max-width: 767px) or (pointer: coarse): the
+ * desktop rendering is byte-for-byte what it was. On a phone the map, the
+ * sticky header and the launcher share one small GPU, so expensive paint is
+ * swapped for cheap equivalents that keep the same palette and personality.
+ * ================================================================== */
+@media (max-width: 767px), (pointer: coarse) {
+  /* 1. Fibre rings: the dash pattern stays (rings still read as fibre), but the
+     stroke-dashoffset animation that re-rasterised 10 SVG polylines is gone. */
+  .app-shell .fiber-flow {
+    animation: none !important;
+  }
+
+  /* 2. No drop-shadow filters on anything that pulses: the pulse itself stays
+     (opacity), the blurred glow around it does not. */
+  .app-shell .cut-segment,
+  .app-shell .cut-pulse,
+  .app-shell .predictive-pulse,
+  .app-shell .core-marker svg {
+    filter: none !important;
+  }
+
+  /* 3. Sticky chrome: same palette, near-opaque instead of blurred. The blur
+     samples the scrolling page behind it on every frame on a phone GPU. */
+  .app-shell .global-header {
+    background: rgba(234, 243, 254, 0.97) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .app-shell .navigation-rail {
+    /* already a solid var(--sn-s1) at this width — only the blur goes */
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .app-shell .inspector {
+    background: #0c1421 !important;      /* #0c1421f7, alpha folded in */
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* 4. Wave launcher: two cheap animations instead of seven (float + outer
+     ring). The blink, breathe and signal-arc loops are decorative only. */
+  .app-shell .wave-mascot--idle .wave-eyes,
+  .app-shell .wave-mascot--idle .wave-smile,
+  .app-shell .wave-mascot--idle .wave-antenna-cap,
+  .app-shell .wave-mascot--idle .wave-arc--outer,
+  .app-shell .wave-mascot--idle .wave-arc--inner {
+    animation: none !important;
+  }
+
+  /* 5. Where an animation only needed to look the same: pulse opacity instead
+     of stroke-width (a stroke-width animation re-strokes the path every frame
+     and re-runs the glyph cache). */
+  .app-shell .wave-mascot--responding .wave-ring--outer {
+    animation: wave-phone-pulse 1.25s ease-out 1;
+  }
+  .app-shell .wave-mascot--alert .wave-ring--outer {
+    animation: wave-phone-pulse 1.25s ease-out 1;
+  }
+}
+
+@keyframes wave-phone-pulse {
+  0% {
+    opacity: 0.82;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.9;
   }
 }
