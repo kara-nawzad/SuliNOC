@@ -4103,7 +4103,7 @@ button.wordmark,
   margin-top: 16px;
 }
 .chart-subtitle {
-  margin-top: 0;
+  margin-top: 0 !important;
 }
 .chart-note {
   margin: 4px 0 8px;
@@ -8571,7 +8571,7 @@ dialog.dialog::backdrop,
   margin-top: 0;
 }
 .app-shell .traffic-card .chart-provenance {
-  padding-top: 0;
+  padding-top: 0 !important;
 }
 
 /* ---------- towers: touch sizing ---------- */
