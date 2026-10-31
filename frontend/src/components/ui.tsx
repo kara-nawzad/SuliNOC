@@ -150,12 +150,14 @@ export function Modal({
   onClose,
   wide = false,
   hideEyebrow = false,
+  eyebrow,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
   hideEyebrow?: boolean;
+  eyebrow?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
@@ -177,7 +179,9 @@ export function Modal({
       <div className="dialog-content">
         <div className="dialog-heading">
           <div>
-            {!hideEyebrow && <span className="eyebrow">SULINOC COMMAND</span>}
+            {!hideEyebrow && (
+              <span className="eyebrow">{eyebrow ?? "SULINOC COMMAND"}</span>
+            )}
             <h2 id={id}>{title}</h2>
           </div>
           <button
