@@ -639,6 +639,7 @@ function Console({
             setInjectNode(id);
             setDialog("inject");
           }}
+          className={selected ? "maintenance-layout" : ""}
         />
         {(dialog === "cut" || dialog === "inject") && (
           <ScenarioModal
