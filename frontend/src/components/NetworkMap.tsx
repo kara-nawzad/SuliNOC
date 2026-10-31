@@ -879,6 +879,9 @@ export function NetworkMap({
   // Padding trimmed from 0.4: the overlay canvas used to paint ~3.2x the
   // viewport on every redraw; 0.15 keeps ~1.3x and no visible clipping.
   const svgRenderer = useMemo(() => L.svg({ padding: 0.15 }), []);
+  
+  // Apply Maintenance Fleet layout class when clicking a tower
+  const inspectorClass = selectedId !== null ? "maintenance-layout" : "";
   const [layers, setLayers] = useState({
     sites: true,
     fiber: true,
@@ -982,6 +985,7 @@ export function NetworkMap({
           zoomControl={false}
           attributionControl
           scrollWheelZoom
+          className={inspectorClass}
         >
           {(!layers.streets || streetStatus !== "ready") && (
             <LocalBasemap config={config} />

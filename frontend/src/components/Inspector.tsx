@@ -28,11 +28,13 @@ export function Inspector({
   config,
   onClose,
   onInject,
+  className = "",
 }: {
   node?: NodeData;
   config: Config;
   onClose: () => void;
   onInject: (id: string) => void;
+  className?: string;
 }) {
   const gaugeFor = (key: string) => {
     const value = node ? (node[key as keyof NodeData] as number) : NaN;
@@ -50,7 +52,7 @@ export function Inspector({
     <AnimatePresence>
       {node && (
         <motion.aside
-          className="inspector glass"
+          className={`inspector glass ${className}`}
           key="inspector"
           aria-label={`Inspector for ${node.id}`}
           initial={{ opacity: 0, x: 28 }}

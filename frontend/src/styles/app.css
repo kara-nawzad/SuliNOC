@@ -1829,6 +1829,19 @@ h1 {
   overflow: auto;
   border-radius: var(--radius-md);
 }
+
+/* Maintenance Fleet layout for Site Inspector when clicking a tower */
+.inspector.maintenance-layout {
+  background: #e2effe !important;
+  border-color: #1479c4 !important;
+  box-shadow: 0 4px 20px rgba(20, 121, 196, 0.15) !important;
+  backdrop-filter: blur(15px) !important;
+  width: 420px !important;
+  height: 520px !important;
+  padding: 24px !important;
+  border-radius: var(--radius-lg) !important;
+}
+
 .inspector-header {
   display: flex;
   align-items: center;
@@ -4090,7 +4103,7 @@ button.wordmark,
   margin-top: 16px;
 }
 .chart-subtitle {
-  margin-top: 4px;
+  margin-top: 0;
 }
 .chart-note {
   margin: 4px 0 8px;
@@ -5140,10 +5153,30 @@ button.wordmark,
     max-height: min(50dvh, 480px);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-    background: var(--s2) !important;
+    background: #e2effe !important;
+    border-color: #1479c4 !important;
+    box-shadow: 0 4px 20px rgba(20, 121, 196, 0.15) !important;
     backdrop-filter: blur(15px) !important;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    width: 420px !important;
+    height: 520px !important;
+    padding: 24px !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  /* Maintenance Fleet layout for Site Inspector on phone screens */
+  .inspector.maintenance-layout {
+    background: #e2effe !important;
+    border-color: #1479c4 !important;
+    box-shadow: 0 4px 20px rgba(20, 121, 196, 0.15) !important;
+    backdrop-filter: blur(15px) !important;
+    width: 100% !important;
+    max-height: 60vh !important;
+    max-height: min(60dvh, 600px) !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    padding: 28px !important;
+    height: 560px !important;
   }
   .app-shell .toast {
     bottom: calc(64px + var(--space-4) + env(safe-area-inset-bottom, 0px));
@@ -8538,7 +8571,7 @@ dialog.dialog::backdrop,
   margin-top: 0;
 }
 .app-shell .traffic-card .chart-provenance {
-  padding-top: var(--space-3);
+  padding-top: 0;
 }
 
 /* ---------- towers: touch sizing ---------- */
