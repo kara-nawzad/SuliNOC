@@ -48,6 +48,7 @@ export function Inspector({
       />
     );
   };
+  if (!node) return null;
   return (
     <AnimatePresence>
       {node && (
