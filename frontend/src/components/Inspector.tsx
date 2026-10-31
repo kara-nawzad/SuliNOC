@@ -61,9 +61,8 @@ export function Inspector({
           transition={{ type: "spring", stiffness: 340, damping: 32 }}
         >
           <div className="inspector-header">
-            <span className="eyebrow">
-              <RadioTower size={14} /> SITE INSPECTOR
-            </span>
+            <span className="eyebrow">SITE INSPECTOR</span>
+            <h2 className="mono">{node.id}</h2>
             <button
               className="icon-button"
               aria-label="Close site inspector"
@@ -72,7 +71,6 @@ export function Inspector({
               <X size={18} />
             </button>
           </div>
-          <h2 className="mono">{node.id}</h2>
           <div className="inspector-place">
             <MapPin size={14} />
             {config.agg_sites.find((a) => a.id === node.agg)?.name}{" "}
