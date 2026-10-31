@@ -6492,6 +6492,19 @@ dialog.dialog::backdrop,
     margin-top: auto;
   }
 }
+  /*
+ * Desktop: the analytics grid stretches the traffic card to the height of its
+ * neighbouring cards, but its charts render at a fixed height, so a dead band
+ * appeared below the E-RAB chart. Size the card to its content instead so the
+ * two charts fill it evenly with no gap. Column widths and the neighbouring
+ * column are untouched, and phones (single-column grid) are not affected.
+ */
+@media (min-width: 1025px) {
+  .app-shell .analytics-grid .traffic-card {
+    align-self: start;
+  }
+}
+
 /* Narrow laptops and tablets (768–1280 px): two columns, chart full width on
  * top, Radio load and Oracle side by side, power full width at the end. */
 @media (min-width: 768px) and (max-width: 1280px) {
