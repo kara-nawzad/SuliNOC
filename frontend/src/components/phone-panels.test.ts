@@ -21,19 +21,30 @@ function phoneBlock(query: string) {
 describe("phone panels", () => {
   const phone = phoneBlock("(max-width: 767px)");
 
-  it("sizes the inspector sheet to a peek, not the whole screen", () => {
-    expect(phone).toMatch(
-      /\.app-shell \.inspector\s*\{[^}]*max-height:\s*min\(50dvh,\s*480px\)/s,
+  it("opens the inspector in the shared floating dialog card", () => {
+    // The site inspector now reuses the Maintenance fleet's dialog: a centred
+    // floating card with margins on every side, a dimmed blurred backdrop, a
+    // header with the close button, and content that scrolls inside the card.
+    expect(styles).toMatch(/\.dialog\s*\{[^}]*overflow:\s*auto/);
+    expect(styles).toMatch(
+      /dialog\.dialog\s*\{[^}]*max-width:\s*calc\(100vw - 32px\)/s,
     );
-    // Older browsers that do not parse min()/dvh keep the plain fallback.
-    expect(phone).toMatch(
-      /\.app-shell \.inspector\s*\{[^}]*max-height:\s*50vh/s,
+    expect(styles).toMatch(
+      /dialog\.dialog::backdrop[^}]*backdrop-filter:\s*blur/s,
     );
-    expect(phone).toMatch(
-      /\.app-shell \.inspector\s*\{[^}]*overscroll-behavior:\s*contain/s,
+    // On phones the card keeps clear of both screen edges and the bottom bar.
+    expect(styles).toMatch(
+      /dialog\.dialog\s*\{[^}]*width:\s*calc\(100vw - 24px\)/s,
     );
-    // Desktop still gets the fixed side panel it has always had.
-    expect(styles).toMatch(/\.inspector\s*\{[^}]*width:\s*330px/s);
+    expect(styles).toMatch(
+      /dialog\.dialog\s*\{[^}]*max-height:\s*88dvh/s,
+    );
+    // The old fixed side panel (330 px) and the phone bottom sheet are gone.
+    expect(styles).not.toMatch(/\.inspector\s*\{[^}]*position:\s*fixed/);
+    expect(styles).not.toMatch(/\.inspector\s*\{[^}]*width:\s*330px/);
+    expect(phone).not.toMatch(/min\(50dvh,\s*480px/);
+    // The inspector's own typography rules still apply to its content.
+    expect(styles).toMatch(/\.inspector \.spec-group/);
   });
 
   it("keeps the Wave greeting beside the launcher, never stacked above it", () => {
