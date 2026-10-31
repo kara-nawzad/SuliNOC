@@ -3414,13 +3414,23 @@ code,
 .kpi-card,
 .analytics-card,
 .map-panel,
-.inspector,
 .policy-panel,
 .towers-panel {
   background: var(--s2) !important;
   color: var(--tx);
   border: 1px solid var(--ln) !important;
   box-shadow: 0 2px 10px rgba(16, 38, 92, 0.08) !important;
+}
+
+/* The site inspector now lives inside the shared Modal card (which already
+ * supplies the border, shadow and background). Give it a plain inner surface
+ * so there is no second outline inside the panel, and keep breathing room so
+ * nothing looks compressed. */
+.inspector {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0;
 }
 .kpi-title,
 .kpi-note,
