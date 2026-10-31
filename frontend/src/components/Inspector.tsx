@@ -48,6 +48,7 @@ export function Inspector({
       />
     );
   };
+  if (!node) return null;
   return (
     <AnimatePresence>
       {node && (
@@ -73,9 +74,7 @@ export function Inspector({
           </div>
           <div className="inspector-place">
             <MapPin size={14} />
-            {config.agg_sites.find((a) => a.id === node.agg)?.name}{" "}
-            <span>·</span> Cluster {node.cluster} <span>·</span> Ring{" "}
-            {node.ring}
+            {config.agg_sites.find((a) => a.id === node.agg)?.name} <span>·</span> Cluster {node.cluster} <span>·</span> Ring {node.ring}
           </div>
           <span
             className="severity site-status"
@@ -137,8 +136,7 @@ export function Inspector({
               className="inline-warning"
               style={tone(config.presentation.palette.prediction)}
             >
-              Oracle warning · next {config.presentation.prediction_horizon_min}{" "}
-              min
+              Oracle warning · next {config.presentation.prediction_horizon_min} min
             </div>
           )}
           <button
