@@ -6492,7 +6492,7 @@ dialog.dialog::backdrop,
     margin-top: auto;
   }
 }
-  /*
+/*
  * Desktop: the analytics grid stretches the traffic card to the height of its
  * neighbouring cards, but its charts render at a fixed height, so a dead band
  * appeared below the E-RAB chart. Size the card to its content instead so the

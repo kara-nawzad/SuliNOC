@@ -36,9 +36,7 @@ describe("phone panels", () => {
     expect(styles).toMatch(
       /dialog\.dialog\s*\{[^}]*width:\s*calc\(100vw - 24px\)/s,
     );
-    expect(styles).toMatch(
-      /dialog\.dialog\s*\{[^}]*max-height:\s*88dvh/s,
-    );
+    expect(styles).toMatch(/dialog\.dialog\s*\{[^}]*max-height:\s*88dvh/s);
     // The old fixed side panel (330 px) and the phone bottom sheet are gone.
     expect(styles).not.toMatch(/\.inspector\s*\{[^}]*position:\s*fixed/);
     expect(styles).not.toMatch(/\.inspector\s*\{[^}]*width:\s*330px/);
