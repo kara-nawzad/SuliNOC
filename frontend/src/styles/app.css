@@ -1821,10 +1821,10 @@ h1 {
   bottom: 25px;
   width: 330px;
   z-index: 550;
-  background: #0c1421f7;
-  border-color: #263b53;
-  box-shadow: -12px 12px 65px #0009;
-  backdrop-filter: blur(30px);
+  background: var(--s2) !important;
+  border-color: var(--ln) !important;
+  box-shadow: 0 2px 10px rgba(16, 38, 92, 0.08) !important;
+  backdrop-filter: blur(15px) !important;
   padding: var(--space-4) var(--panel-pad);
   overflow: auto;
   border-radius: var(--radius-md);
@@ -5134,17 +5134,16 @@ button.wordmark,
     left: 0 !important;
     right: 0 !important;
     top: auto !important;
-    bottom: 0 !important;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
     width: 100% !important;
-    max-height: 82vh;
+    max-height: 50vh;
+    max-height: min(50dvh, 480px);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* The inspector sheet and the toast clear the fixed bottom bar instead of
-     sliding under it (the bar sits at z 1100, the sheet at z 550). */
-  .app-shell .inspector {
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    background: var(--s2) !important;
+    backdrop-filter: blur(15px) !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
   .app-shell .toast {
     bottom: calc(64px + var(--space-4) + env(safe-area-inset-bottom, 0px));
@@ -8536,7 +8535,7 @@ dialog.dialog::backdrop,
 /* Spare height in the chart card goes between its two chart groups, so the
  * card reads as two balanced halves instead of one empty band at the bottom. */
 .app-shell .traffic-card > .chart-title:last-of-type {
-  margin-top: auto;
+  margin-top: 0;
 }
 .app-shell .traffic-card .chart-provenance {
   padding-top: var(--space-3);
@@ -9060,9 +9059,9 @@ dialog.dialog::backdrop,
     backdrop-filter: none !important;
   }
   .app-shell .inspector {
-    background: #0c1421 !important; /* #0c1421f7, alpha folded in */
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
+    background: var(--s2) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    backdrop-filter: blur(15px) !important;
   }
 
   /* 4. Wave launcher: two cheap animations instead of seven (float + outer
