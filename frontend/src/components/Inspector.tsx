@@ -52,9 +52,8 @@ export function Inspector({
       <div className="inspector">
         <div className="inspector-place">
           <MapPin size={14} />
-          {config.agg_sites.find((a) => a.id === node.agg)?.name}{" "}
-          <span>·</span> Cluster {node.cluster} <span>·</span> Ring{" "}
-          {node.ring}
+          {config.agg_sites.find((a) => a.id === node.agg)?.name} <span>·</span>{" "}
+          Cluster {node.cluster} <span>·</span> Ring {node.ring}
         </div>
         <span
           className="severity site-status"
@@ -92,9 +91,7 @@ export function Inspector({
           </h3>
           <div className="range-source">
             Source now:{" "}
-            <b
-              style={{ color: config.presentation.power_colors[node.power] }}
-            >
+            <b style={{ color: config.presentation.power_colors[node.power] }}>
               {node.power}
             </b>
           </div>
